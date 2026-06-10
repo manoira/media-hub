@@ -3,15 +3,17 @@ import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn, getTmdbImageUrl } from "@/lib/utils";
 import { MediaItem, WatchlistItem, Genre } from "@workspace/api-client-react";
+import { TvProgressBar } from "./tv-progress-bar";
 
 interface MediaCardProps {
   item: MediaItem | WatchlistItem;
   genres?: { movieGenres: Genre[]; tvGenres: Genre[] };
   className?: string;
   showStatus?: boolean;
+  showProgress?: boolean;
 }
 
-export function MediaCard({ item, genres, className, showStatus = true }: MediaCardProps) {
+export function MediaCard({ item, genres, className, showStatus = true, showProgress = false }: MediaCardProps) {
   const isWatchlistItem = "status" in item;
   const status = isWatchlistItem ? item.status : null;
   const rating = isWatchlistItem ? item.userRating : item.voteAverage;
@@ -62,6 +64,9 @@ export function MediaCard({ item, genres, className, showStatus = true }: MediaC
         <p className="text-xs text-muted-foreground mt-0.5">
           {item.releaseDate ? new Date(item.releaseDate).getFullYear() : "TBA"} • {item.mediaType === "movie" ? "Movie" : "TV"}
         </p>
+        {showProgress && item.mediaType === "tv" && (
+          <TvProgressBar tmdbId={item.tmdbId} />
+        )}
       </div>
     </Link>
   );

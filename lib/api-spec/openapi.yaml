@@ -1103,6 +1103,8 @@ components:
           type: integer
         totalWatched:
           type: integer
+        totalEpisodes:
+          type: ["integer", "null"]
         watchedBySeasonNumber:
           type: object
           additionalProperties:

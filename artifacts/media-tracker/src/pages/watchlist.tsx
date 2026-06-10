@@ -40,7 +40,7 @@ export function Watchlist() {
       ) : watchlist?.length ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {watchlist.map(item => (
-            <MediaCard key={item.id} item={item} />
+            <MediaCard key={item.id} item={item} showProgress={item.mediaType === "tv"} />
           ))}
         </div>
       ) : (

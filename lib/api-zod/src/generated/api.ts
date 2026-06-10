@@ -449,6 +449,7 @@ export const GetTvProgressParams = zod.object({
 export const GetTvProgressResponse = zod.object({
   "tmdbId": zod.number(),
   "totalWatched": zod.number(),
+  "totalEpisodes": zod.number().nullish(),
   "watchedBySeasonNumber": zod.record(zod.string(), zod.array(zod.number()))
 })
 

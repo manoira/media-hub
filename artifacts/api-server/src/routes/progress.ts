@@ -9,10 +9,10 @@ router.get("/progress/tv/:tmdbId", async (req, res) => {
   const tmdbId = Number(req.params.tmdbId);
   if (isNaN(tmdbId)) { res.status(400).json({ error: "Invalid tmdbId" }); return; }
 
-  const rows = await db
-    .select()
-    .from(episodeProgressTable)
-    .where(eq(episodeProgressTable.tmdbId, tmdbId));
+  const [rows, tvDetails] = await Promise.all([
+    db.select().from(episodeProgressTable).where(eq(episodeProgressTable.tmdbId, tmdbId)),
+    getTvDetails(tmdbId),
+  ]);
 
   const watched: Record<number, number[]> = {};
   for (const row of rows) {
@@ -20,7 +20,12 @@ router.get("/progress/tv/:tmdbId", async (req, res) => {
     watched[row.seasonNumber].push(row.episodeNumber);
   }
 
-  res.json({ tmdbId, totalWatched: rows.length, watchedBySeasonNumber: watched });
+  res.json({
+    tmdbId,
+    totalWatched: rows.length,
+    totalEpisodes: tvDetails.numberOfEpisodes ?? null,
+    watchedBySeasonNumber: watched,
+  });
 });
 
 router.get("/progress/tv/:tmdbId/season/:seasonNumber", async (req, res) => {

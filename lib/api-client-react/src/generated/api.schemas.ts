@@ -358,6 +358,8 @@ export type TvProgressWatchedBySeasonNumber = {[key: string]: number[]};
 export interface TvProgress {
   tmdbId: number;
   totalWatched: number;
+  /** @nullable */
+  totalEpisodes?: number | null;
   watchedBySeasonNumber: TvProgressWatchedBySeasonNumber;
 }
 

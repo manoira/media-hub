@@ -10,5 +10,7 @@ import type { TvProgressWatchedBySeasonNumber } from './tvProgressWatchedBySeaso
 export interface TvProgress {
   tmdbId: number;
   totalWatched: number;
+  /** @nullable */
+  totalEpisodes?: number | null;
   watchedBySeasonNumber: TvProgressWatchedBySeasonNumber;
 }
