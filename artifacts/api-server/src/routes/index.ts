@@ -4,6 +4,7 @@ import searchRouter from "./search";
 import mediaRouter from "./media";
 import watchlistRouter from "./watchlist";
 import statsRouter from "./stats";
+import progressRouter from "./progress";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(searchRouter);
 router.use(mediaRouter);
 router.use(statsRouter);
 router.use(watchlistRouter);
+router.use(progressRouter);
 
 export default router;

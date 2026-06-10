@@ -356,6 +356,50 @@ export async function getVideos(mediaType: string, tmdbId: number) {
   };
 }
 
+interface TmdbEpisode {
+  id: number;
+  episode_number: number;
+  season_number: number;
+  name: string;
+  overview?: string;
+  air_date?: string;
+  runtime?: number;
+  vote_average?: number;
+  still_path?: string;
+}
+
+export async function getSeasonDetails(tmdbId: number, seasonNumber: number) {
+  const data = await tmdbFetch<{
+    id: number;
+    name: string;
+    overview?: string;
+    poster_path?: string;
+    air_date?: string;
+    season_number: number;
+    episodes?: TmdbEpisode[];
+  }>(`/tv/${tmdbId}/season/${seasonNumber}`);
+
+  return {
+    id: data.id,
+    seasonNumber: data.season_number,
+    name: data.name,
+    overview: data.overview ?? null,
+    posterPath: data.poster_path ?? null,
+    airDate: data.air_date ?? null,
+    episodes: (data.episodes ?? []).map(e => ({
+      id: e.id,
+      episodeNumber: e.episode_number,
+      seasonNumber: e.season_number,
+      name: e.name,
+      overview: e.overview ?? null,
+      airDate: e.air_date ?? null,
+      runtime: e.runtime ?? null,
+      voteAverage: e.vote_average ?? null,
+      stillPath: e.still_path ?? null,
+    })),
+  };
+}
+
 export async function getSimilar(mediaType: string, tmdbId: number) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
     `/${mediaType}/${tmdbId}/similar`

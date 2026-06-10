@@ -22,6 +22,8 @@ import type {
 import type {
   Credits,
   DiscoverMediaParams,
+  EpisodeWatchInput,
+  EpisodeWatchResult,
   GenreList,
   GenreStat,
   GetRecentlyWatchedParams,
@@ -31,8 +33,14 @@ import type {
   MediaDetails,
   MediaSearchResult,
   SearchMediaParams,
+  SeasonDetails,
+  SeasonWatchResult,
+  SeasonWithProgress,
+  SeriesWatchResult,
   StatsSummary,
+  TvProgress,
   VideoList,
+  WatchAllInput,
   WatchStatusResult,
   WatchlistInput,
   WatchlistItem,
@@ -1163,6 +1171,465 @@ export function useGetWatchStatus<TData = Awaited<ReturnType<typeof getWatchStat
 
 
 
+
+export const getGetSeasonDetailsUrl = (tmdbId: number,
+    seasonNumber: number,) => {
+
+
+
+
+  return `/api/media/tv/${tmdbId}/seasons/${seasonNumber}`
+}
+
+/**
+ * @summary Get season details with episode list
+ */
+export const getSeasonDetails = async (tmdbId: number,
+    seasonNumber: number, options?: RequestInit): Promise<SeasonDetails> => {
+
+  return customFetch<SeasonDetails>(getGetSeasonDetailsUrl(tmdbId,seasonNumber),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeasonDetailsQueryKey = (tmdbId: number,
+    seasonNumber: number,) => {
+    return [
+    `/api/media/tv/${tmdbId}/seasons/${seasonNumber}`
+    ] as const;
+    }
+
+
+export const getGetSeasonDetailsQueryOptions = <TData = Awaited<ReturnType<typeof getSeasonDetails>>, TError = ErrorType<unknown>>(tmdbId: number,
+    seasonNumber: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeasonDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeasonDetailsQueryKey(tmdbId,seasonNumber);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeasonDetails>>> = ({ signal }) => getSeasonDetails(tmdbId,seasonNumber, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tmdbId && seasonNumber), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeasonDetails>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSeasonDetailsQueryResult = NonNullable<Awaited<ReturnType<typeof getSeasonDetails>>>
+export type GetSeasonDetailsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get season details with episode list
+ */
+
+export function useGetSeasonDetails<TData = Awaited<ReturnType<typeof getSeasonDetails>>, TError = ErrorType<unknown>>(
+ tmdbId: number,
+    seasonNumber: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeasonDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSeasonDetailsQueryOptions(tmdbId,seasonNumber,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTvProgressUrl = (tmdbId: number,) => {
+
+
+
+
+  return `/api/progress/tv/${tmdbId}`
+}
+
+/**
+ * @summary Get episode watch progress for a TV show
+ */
+export const getTvProgress = async (tmdbId: number, options?: RequestInit): Promise<TvProgress> => {
+
+  return customFetch<TvProgress>(getGetTvProgressUrl(tmdbId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTvProgressQueryKey = (tmdbId: number,) => {
+    return [
+    `/api/progress/tv/${tmdbId}`
+    ] as const;
+    }
+
+
+export const getGetTvProgressQueryOptions = <TData = Awaited<ReturnType<typeof getTvProgress>>, TError = ErrorType<unknown>>(tmdbId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTvProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTvProgressQueryKey(tmdbId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTvProgress>>> = ({ signal }) => getTvProgress(tmdbId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tmdbId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTvProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTvProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getTvProgress>>>
+export type GetTvProgressQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get episode watch progress for a TV show
+ */
+
+export function useGetTvProgress<TData = Awaited<ReturnType<typeof getTvProgress>>, TError = ErrorType<unknown>>(
+ tmdbId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTvProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTvProgressQueryOptions(tmdbId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSeasonProgressUrl = (tmdbId: number,
+    seasonNumber: number,) => {
+
+
+
+
+  return `/api/progress/tv/${tmdbId}/season/${seasonNumber}`
+}
+
+/**
+ * @summary Get season details with watched state per episode
+ */
+export const getSeasonProgress = async (tmdbId: number,
+    seasonNumber: number, options?: RequestInit): Promise<SeasonWithProgress> => {
+
+  return customFetch<SeasonWithProgress>(getGetSeasonProgressUrl(tmdbId,seasonNumber),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeasonProgressQueryKey = (tmdbId: number,
+    seasonNumber: number,) => {
+    return [
+    `/api/progress/tv/${tmdbId}/season/${seasonNumber}`
+    ] as const;
+    }
+
+
+export const getGetSeasonProgressQueryOptions = <TData = Awaited<ReturnType<typeof getSeasonProgress>>, TError = ErrorType<unknown>>(tmdbId: number,
+    seasonNumber: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeasonProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeasonProgressQueryKey(tmdbId,seasonNumber);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeasonProgress>>> = ({ signal }) => getSeasonProgress(tmdbId,seasonNumber, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tmdbId && seasonNumber), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeasonProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSeasonProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getSeasonProgress>>>
+export type GetSeasonProgressQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get season details with watched state per episode
+ */
+
+export function useGetSeasonProgress<TData = Awaited<ReturnType<typeof getSeasonProgress>>, TError = ErrorType<unknown>>(
+ tmdbId: number,
+    seasonNumber: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSeasonProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSeasonProgressQueryOptions(tmdbId,seasonNumber,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getMarkEpisodeWatchedUrl = (tmdbId: number,) => {
+
+
+
+
+  return `/api/progress/tv/${tmdbId}/episode`
+}
+
+/**
+ * @summary Mark a single episode watched or unwatched
+ */
+export const markEpisodeWatched = async (tmdbId: number,
+    episodeWatchInput: EpisodeWatchInput, options?: RequestInit): Promise<EpisodeWatchResult> => {
+
+  return customFetch<EpisodeWatchResult>(getMarkEpisodeWatchedUrl(tmdbId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      episodeWatchInput,)
+  }
+);}
+
+
+
+
+export const getMarkEpisodeWatchedMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markEpisodeWatched>>, TError,{tmdbId: number;data: BodyType<EpisodeWatchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markEpisodeWatched>>, TError,{tmdbId: number;data: BodyType<EpisodeWatchInput>}, TContext> => {
+
+const mutationKey = ['markEpisodeWatched'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markEpisodeWatched>>, {tmdbId: number;data: BodyType<EpisodeWatchInput>}> = (props) => {
+          const {tmdbId,data} = props ?? {};
+
+          return  markEpisodeWatched(tmdbId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkEpisodeWatchedMutationResult = NonNullable<Awaited<ReturnType<typeof markEpisodeWatched>>>
+    export type MarkEpisodeWatchedMutationBody = BodyType<EpisodeWatchInput>
+    export type MarkEpisodeWatchedMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark a single episode watched or unwatched
+ */
+export const useMarkEpisodeWatched = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markEpisodeWatched>>, TError,{tmdbId: number;data: BodyType<EpisodeWatchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markEpisodeWatched>>,
+        TError,
+        {tmdbId: number;data: BodyType<EpisodeWatchInput>},
+        TContext
+      > => {
+      return useMutation(getMarkEpisodeWatchedMutationOptions(options));
+    }
+
+export const getMarkSeasonWatchedUrl = (tmdbId: number,
+    seasonNumber: number,) => {
+
+
+
+
+  return `/api/progress/tv/${tmdbId}/season/${seasonNumber}/watch`
+}
+
+/**
+ * @summary Mark all episodes in a season watched or unwatched
+ */
+export const markSeasonWatched = async (tmdbId: number,
+    seasonNumber: number,
+    watchAllInput: WatchAllInput, options?: RequestInit): Promise<SeasonWatchResult> => {
+
+  return customFetch<SeasonWatchResult>(getMarkSeasonWatchedUrl(tmdbId,seasonNumber),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      watchAllInput,)
+  }
+);}
+
+
+
+
+export const getMarkSeasonWatchedMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSeasonWatched>>, TError,{tmdbId: number;seasonNumber: number;data: BodyType<WatchAllInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markSeasonWatched>>, TError,{tmdbId: number;seasonNumber: number;data: BodyType<WatchAllInput>}, TContext> => {
+
+const mutationKey = ['markSeasonWatched'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markSeasonWatched>>, {tmdbId: number;seasonNumber: number;data: BodyType<WatchAllInput>}> = (props) => {
+          const {tmdbId,seasonNumber,data} = props ?? {};
+
+          return  markSeasonWatched(tmdbId,seasonNumber,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkSeasonWatchedMutationResult = NonNullable<Awaited<ReturnType<typeof markSeasonWatched>>>
+    export type MarkSeasonWatchedMutationBody = BodyType<WatchAllInput>
+    export type MarkSeasonWatchedMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark all episodes in a season watched or unwatched
+ */
+export const useMarkSeasonWatched = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSeasonWatched>>, TError,{tmdbId: number;seasonNumber: number;data: BodyType<WatchAllInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markSeasonWatched>>,
+        TError,
+        {tmdbId: number;seasonNumber: number;data: BodyType<WatchAllInput>},
+        TContext
+      > => {
+      return useMutation(getMarkSeasonWatchedMutationOptions(options));
+    }
+
+export const getMarkSeriesWatchedUrl = (tmdbId: number,) => {
+
+
+
+
+  return `/api/progress/tv/${tmdbId}/watch-all`
+}
+
+/**
+ * @summary Mark all episodes across all seasons watched or unwatched
+ */
+export const markSeriesWatched = async (tmdbId: number,
+    watchAllInput: WatchAllInput, options?: RequestInit): Promise<SeriesWatchResult> => {
+
+  return customFetch<SeriesWatchResult>(getMarkSeriesWatchedUrl(tmdbId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      watchAllInput,)
+  }
+);}
+
+
+
+
+export const getMarkSeriesWatchedMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSeriesWatched>>, TError,{tmdbId: number;data: BodyType<WatchAllInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markSeriesWatched>>, TError,{tmdbId: number;data: BodyType<WatchAllInput>}, TContext> => {
+
+const mutationKey = ['markSeriesWatched'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markSeriesWatched>>, {tmdbId: number;data: BodyType<WatchAllInput>}> = (props) => {
+          const {tmdbId,data} = props ?? {};
+
+          return  markSeriesWatched(tmdbId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkSeriesWatchedMutationResult = NonNullable<Awaited<ReturnType<typeof markSeriesWatched>>>
+    export type MarkSeriesWatchedMutationBody = BodyType<WatchAllInput>
+    export type MarkSeriesWatchedMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark all episodes across all seasons watched or unwatched
+ */
+export const useMarkSeriesWatched = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSeriesWatched>>, TError,{tmdbId: number;data: BodyType<WatchAllInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markSeriesWatched>>,
+        TError,
+        {tmdbId: number;data: BodyType<WatchAllInput>},
+        TContext
+      > => {
+      return useMutation(getMarkSeriesWatchedMutationOptions(options));
+    }
 
 export const getGetStatsSummaryUrl = () => {
 

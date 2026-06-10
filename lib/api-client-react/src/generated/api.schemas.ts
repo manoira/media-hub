@@ -304,6 +304,93 @@ export interface GenreStat {
   count: number;
 }
 
+export interface Episode {
+  id: number;
+  episodeNumber: number;
+  seasonNumber: number;
+  name: string;
+  /** @nullable */
+  overview?: string | null;
+  /** @nullable */
+  airDate?: string | null;
+  /** @nullable */
+  runtime?: number | null;
+  /** @nullable */
+  voteAverage?: number | null;
+  /** @nullable */
+  stillPath?: string | null;
+}
+
+export type EpisodeWithProgress = Episode & {
+  watched: boolean;
+};
+
+export interface SeasonDetails {
+  id: number;
+  seasonNumber: number;
+  name: string;
+  /** @nullable */
+  overview?: string | null;
+  /** @nullable */
+  posterPath?: string | null;
+  /** @nullable */
+  airDate?: string | null;
+  episodes: Episode[];
+}
+
+export interface SeasonWithProgress {
+  id: number;
+  seasonNumber: number;
+  name: string;
+  /** @nullable */
+  overview?: string | null;
+  /** @nullable */
+  posterPath?: string | null;
+  /** @nullable */
+  airDate?: string | null;
+  episodes: EpisodeWithProgress[];
+  watchedCount: number;
+  totalCount: number;
+}
+
+export type TvProgressWatchedBySeasonNumber = {[key: string]: number[]};
+
+export interface TvProgress {
+  tmdbId: number;
+  totalWatched: number;
+  watchedBySeasonNumber: TvProgressWatchedBySeasonNumber;
+}
+
+export interface EpisodeWatchInput {
+  seasonNumber: number;
+  episodeNumber: number;
+  watched: boolean;
+}
+
+export interface EpisodeWatchResult {
+  tmdbId: number;
+  seasonNumber: number;
+  episodeNumber: number;
+  watched: boolean;
+}
+
+export interface WatchAllInput {
+  watched: boolean;
+}
+
+export interface SeasonWatchResult {
+  tmdbId: number;
+  seasonNumber: number;
+  watched: boolean;
+  episodeCount?: number;
+}
+
+export interface SeriesWatchResult {
+  tmdbId: number;
+  watched: boolean;
+  episodeCount?: number;
+}
+
 export type SearchMediaParams = {
 query: string;
 type?: SearchMediaType;

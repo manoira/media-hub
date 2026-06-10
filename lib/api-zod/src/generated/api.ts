@@ -411,6 +411,141 @@ export const GetWatchStatusResponse = zod.object({
 
 
 /**
+ * @summary Get season details with episode list
+ */
+export const GetSeasonDetailsParams = zod.object({
+  "tmdbId": zod.coerce.number(),
+  "seasonNumber": zod.coerce.number()
+})
+
+export const GetSeasonDetailsResponse = zod.object({
+  "id": zod.number(),
+  "seasonNumber": zod.number(),
+  "name": zod.string(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "airDate": zod.string().nullish(),
+  "episodes": zod.array(zod.object({
+  "id": zod.number(),
+  "episodeNumber": zod.number(),
+  "seasonNumber": zod.number(),
+  "name": zod.string(),
+  "overview": zod.string().nullish(),
+  "airDate": zod.string().nullish(),
+  "runtime": zod.number().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "stillPath": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Get episode watch progress for a TV show
+ */
+export const GetTvProgressParams = zod.object({
+  "tmdbId": zod.coerce.number()
+})
+
+export const GetTvProgressResponse = zod.object({
+  "tmdbId": zod.number(),
+  "totalWatched": zod.number(),
+  "watchedBySeasonNumber": zod.record(zod.string(), zod.array(zod.number()))
+})
+
+
+/**
+ * @summary Get season details with watched state per episode
+ */
+export const GetSeasonProgressParams = zod.object({
+  "tmdbId": zod.coerce.number(),
+  "seasonNumber": zod.coerce.number()
+})
+
+export const GetSeasonProgressResponse = zod.object({
+  "id": zod.number(),
+  "seasonNumber": zod.number(),
+  "name": zod.string(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "airDate": zod.string().nullish(),
+  "episodes": zod.array(zod.object({
+  "id": zod.number(),
+  "episodeNumber": zod.number(),
+  "seasonNumber": zod.number(),
+  "name": zod.string(),
+  "overview": zod.string().nullish(),
+  "airDate": zod.string().nullish(),
+  "runtime": zod.number().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "stillPath": zod.string().nullish()
+}).and(zod.object({
+  "watched": zod.boolean()
+}))),
+  "watchedCount": zod.number(),
+  "totalCount": zod.number()
+})
+
+
+/**
+ * @summary Mark a single episode watched or unwatched
+ */
+export const MarkEpisodeWatchedParams = zod.object({
+  "tmdbId": zod.coerce.number()
+})
+
+export const MarkEpisodeWatchedBody = zod.object({
+  "seasonNumber": zod.number(),
+  "episodeNumber": zod.number(),
+  "watched": zod.boolean()
+})
+
+export const MarkEpisodeWatchedResponse = zod.object({
+  "tmdbId": zod.number(),
+  "seasonNumber": zod.number(),
+  "episodeNumber": zod.number(),
+  "watched": zod.boolean()
+})
+
+
+/**
+ * @summary Mark all episodes in a season watched or unwatched
+ */
+export const MarkSeasonWatchedParams = zod.object({
+  "tmdbId": zod.coerce.number(),
+  "seasonNumber": zod.coerce.number()
+})
+
+export const MarkSeasonWatchedBody = zod.object({
+  "watched": zod.boolean()
+})
+
+export const MarkSeasonWatchedResponse = zod.object({
+  "tmdbId": zod.number(),
+  "seasonNumber": zod.number(),
+  "watched": zod.boolean(),
+  "episodeCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Mark all episodes across all seasons watched or unwatched
+ */
+export const MarkSeriesWatchedParams = zod.object({
+  "tmdbId": zod.coerce.number()
+})
+
+export const MarkSeriesWatchedBody = zod.object({
+  "watched": zod.boolean()
+})
+
+export const MarkSeriesWatchedResponse = zod.object({
+  "tmdbId": zod.number(),
+  "watched": zod.boolean(),
+  "episodeCount": zod.number().optional()
+})
+
+
+/**
  * @summary Get user stats summary
  */
 export const GetStatsSummaryResponse = zod.object({

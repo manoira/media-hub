@@ -356,6 +356,153 @@ paths:
               schema:
                 $ref: "#/components/schemas/WatchStatusResult"
 
+  /media/tv/{tmdbId}/seasons/{seasonNumber}:
+    get:
+      operationId: getSeasonDetails
+      tags: [media]
+      summary: Get season details with episode list
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: seasonNumber
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Season details with episodes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeasonDetails"
+
+  /progress/tv/{tmdbId}:
+    get:
+      operationId: getTvProgress
+      tags: [watchlist]
+      summary: Get episode watch progress for a TV show
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Episode progress summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TvProgress"
+
+  /progress/tv/{tmdbId}/season/{seasonNumber}:
+    get:
+      operationId: getSeasonProgress
+      tags: [watchlist]
+      summary: Get season details with watched state per episode
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: seasonNumber
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Season with per-episode watched state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeasonWithProgress"
+
+  /progress/tv/{tmdbId}/episode:
+    post:
+      operationId: markEpisodeWatched
+      tags: [watchlist]
+      summary: Mark a single episode watched or unwatched
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EpisodeWatchInput"
+      responses:
+        "200":
+          description: Updated episode state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EpisodeWatchResult"
+
+  /progress/tv/{tmdbId}/season/{seasonNumber}/watch:
+    post:
+      operationId: markSeasonWatched
+      tags: [watchlist]
+      summary: Mark all episodes in a season watched or unwatched
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: seasonNumber
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchAllInput"
+      responses:
+        "200":
+          description: Season mark result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeasonWatchResult"
+
+  /progress/tv/{tmdbId}/watch-all:
+    post:
+      operationId: markSeriesWatched
+      tags: [watchlist]
+      summary: Mark all episodes across all seasons watched or unwatched
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchAllInput"
+      responses:
+        "200":
+          description: Series mark result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeriesWatchResult"
+
   /stats/summary:
     get:
       operationId: getStatsSummary
@@ -855,3 +1002,182 @@ components:
         - genreId
         - genreName
         - count
+
+    Episode:
+      type: object
+      properties:
+        id:
+          type: integer
+        episodeNumber:
+          type: integer
+        seasonNumber:
+          type: integer
+        name:
+          type: string
+        overview:
+          type: ["string", "null"]
+        airDate:
+          type: ["string", "null"]
+        runtime:
+          type: ["integer", "null"]
+        voteAverage:
+          type: ["number", "null"]
+        stillPath:
+          type: ["string", "null"]
+      required:
+        - id
+        - episodeNumber
+        - seasonNumber
+        - name
+
+    EpisodeWithProgress:
+      allOf:
+        - $ref: "#/components/schemas/Episode"
+        - type: object
+          properties:
+            watched:
+              type: boolean
+          required:
+            - watched
+
+    SeasonDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        seasonNumber:
+          type: integer
+        name:
+          type: string
+        overview:
+          type: ["string", "null"]
+        posterPath:
+          type: ["string", "null"]
+        airDate:
+          type: ["string", "null"]
+        episodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Episode"
+      required:
+        - id
+        - seasonNumber
+        - name
+        - episodes
+
+    SeasonWithProgress:
+      type: object
+      properties:
+        id:
+          type: integer
+        seasonNumber:
+          type: integer
+        name:
+          type: string
+        overview:
+          type: ["string", "null"]
+        posterPath:
+          type: ["string", "null"]
+        airDate:
+          type: ["string", "null"]
+        episodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/EpisodeWithProgress"
+        watchedCount:
+          type: integer
+        totalCount:
+          type: integer
+      required:
+        - id
+        - seasonNumber
+        - name
+        - episodes
+        - watchedCount
+        - totalCount
+
+    TvProgress:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        totalWatched:
+          type: integer
+        watchedBySeasonNumber:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+      required:
+        - tmdbId
+        - totalWatched
+        - watchedBySeasonNumber
+
+    EpisodeWatchInput:
+      type: object
+      properties:
+        seasonNumber:
+          type: integer
+        episodeNumber:
+          type: integer
+        watched:
+          type: boolean
+      required:
+        - seasonNumber
+        - episodeNumber
+        - watched
+
+    EpisodeWatchResult:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        seasonNumber:
+          type: integer
+        episodeNumber:
+          type: integer
+        watched:
+          type: boolean
+      required:
+        - tmdbId
+        - seasonNumber
+        - episodeNumber
+        - watched
+
+    WatchAllInput:
+      type: object
+      properties:
+        watched:
+          type: boolean
+      required:
+        - watched
+
+    SeasonWatchResult:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        seasonNumber:
+          type: integer
+        watched:
+          type: boolean
+        episodeCount:
+          type: integer
+      required:
+        - tmdbId
+        - seasonNumber
+        - watched
+
+    SeriesWatchResult:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        watched:
+          type: boolean
+        episodeCount:
+          type: integer
+      required:
+        - tmdbId
+        - watched

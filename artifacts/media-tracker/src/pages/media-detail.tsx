@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { WatchlistButton } from "@/components/media/watchlist-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard } from "@/components/media/media-card";
+import { SeasonsPanel } from "@/components/media/seasons-panel";
 
 export function MediaDetail() {
   const { mediaType, tmdbId } = useParams();
@@ -147,6 +148,10 @@ export function MediaDetail() {
           )}
         </div>
       </div>
+
+      {type === "tv" && details.seasons && details.seasons.length > 0 && (
+        <SeasonsPanel tmdbId={id} seasons={details.seasons} />
+      )}
 
       {similar?.results && similar.results.length > 0 && (
         <section className="pt-8">
