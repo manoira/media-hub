@@ -1,22 +1,29 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Media Tracker API - TMDB powered movie and TV tracking
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: search
+    description: Search and discover media
+  - name: media
+    description: Media details
+  - name: watchlist
+    description: User watchlist management
+  - name: stats
+    description: User statistics and summaries
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +31,380 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /search:
+    get:
+      operationId: searchMedia
+      tags: [search]
+      summary: Search movies and TV shows
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, movie, tv]
+            default: all
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaSearchResult"
+
+  /discover:
+    get:
+      operationId: discoverMedia
+      tags: [search]
+      summary: Discover trending and popular media
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [movie, tv]
+            default: movie
+        - name: genre
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [popularity.desc, vote_average.desc, release_date.desc, trending]
+            default: popularity.desc
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Discovery results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaSearchResult"
+
+  /trending:
+    get:
+      operationId: getTrending
+      tags: [search]
+      summary: Get trending movies and TV shows
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, movie, tv]
+            default: all
+        - name: time_window
+          in: query
+          schema:
+            type: string
+            enum: [day, week]
+            default: week
+      responses:
+        "200":
+          description: Trending media
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaSearchResult"
+
+  /genres:
+    get:
+      operationId: getGenres
+      tags: [search]
+      summary: Get all genres for movies and TV
+      responses:
+        "200":
+          description: Genre list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenreList"
+
+  /media/{mediaType}/{tmdbId}:
+    get:
+      operationId: getMediaDetails
+      tags: [media]
+      summary: Get full details for a movie or TV show
+      parameters:
+        - name: mediaType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Full media details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaDetails"
+        "404":
+          description: Not found
+
+  /media/{mediaType}/{tmdbId}/credits:
+    get:
+      operationId: getMediaCredits
+      tags: [media]
+      summary: Get cast and crew
+      parameters:
+        - name: mediaType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cast and crew credits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credits"
+
+  /media/{mediaType}/{tmdbId}/videos:
+    get:
+      operationId: getMediaVideos
+      tags: [media]
+      summary: Get trailers and videos
+      parameters:
+        - name: mediaType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Videos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoList"
+
+  /media/{mediaType}/{tmdbId}/similar:
+    get:
+      operationId: getSimilarMedia
+      tags: [media]
+      summary: Get similar movies or shows
+      parameters:
+        - name: mediaType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Similar media
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaSearchResult"
+
+  /watchlist:
+    get:
+      operationId: getWatchlist
+      tags: [watchlist]
+      summary: Get user watchlist
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [watching, watched, want_to_watch]
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: genre
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [added_at, title, rating, release_date]
+            default: added_at
+      responses:
+        "200":
+          description: Watchlist items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WatchlistItem"
+    post:
+      operationId: addToWatchlist
+      tags: [watchlist]
+      summary: Add item to watchlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistInput"
+      responses:
+        "201":
+          description: Added to watchlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistItem"
+
+  /watchlist/{id}:
+    patch:
+      operationId: updateWatchlistItem
+      tags: [watchlist]
+      summary: Update watch status or rating
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistUpdate"
+      responses:
+        "200":
+          description: Updated watchlist item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistItem"
+        "404":
+          description: Not found
+    delete:
+      operationId: removeFromWatchlist
+      tags: [watchlist]
+      summary: Remove item from watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  /watchlist/status/{mediaType}/{tmdbId}:
+    get:
+      operationId: getWatchStatus
+      tags: [watchlist]
+      summary: Get watch status for a specific item
+      parameters:
+        - name: mediaType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Watch status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchStatusResult"
+
+  /stats/summary:
+    get:
+      operationId: getStatsSummary
+      tags: [stats]
+      summary: Get user stats summary
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsSummary"
+
+  /stats/genres:
+    get:
+      operationId: getGenreStats
+      tags: [stats]
+      summary: Get watch counts by genre
+      responses:
+        "200":
+          description: Genre breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GenreStat"
+
+  /stats/recently-watched:
+    get:
+      operationId: getRecentlyWatched
+      tags: [stats]
+      summary: Get recently watched items
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Recently watched
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WatchlistItem"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +415,443 @@ components:
       required:
         - status
 
+    MediaItem:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        title:
+          type: string
+        originalTitle:
+          type: ["string", "null"]
+        overview:
+          type: ["string", "null"]
+        posterPath:
+          type: ["string", "null"]
+        backdropPath:
+          type: ["string", "null"]
+        releaseDate:
+          type: ["string", "null"]
+        voteAverage:
+          type: ["number", "null"]
+        voteCount:
+          type: ["integer", "null"]
+        popularity:
+          type: ["number", "null"]
+        genreIds:
+          type: array
+          items:
+            type: integer
+        adult:
+          type: ["boolean", "null"]
+        originalLanguage:
+          type: ["string", "null"]
+      required:
+        - tmdbId
+        - mediaType
+        - title
+
+    MediaSearchResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaItem"
+        totalResults:
+          type: integer
+        totalPages:
+          type: integer
+        page:
+          type: integer
+      required:
+        - results
+        - totalResults
+        - totalPages
+        - page
+
+    MediaDetails:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        title:
+          type: string
+        originalTitle:
+          type: ["string", "null"]
+        overview:
+          type: ["string", "null"]
+        tagline:
+          type: ["string", "null"]
+        posterPath:
+          type: ["string", "null"]
+        backdropPath:
+          type: ["string", "null"]
+        releaseDate:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        voteAverage:
+          type: ["number", "null"]
+        voteCount:
+          type: ["integer", "null"]
+        popularity:
+          type: ["number", "null"]
+        runtime:
+          type: ["integer", "null"]
+        budget:
+          type: ["integer", "null"]
+        revenue:
+          type: ["integer", "null"]
+        homepage:
+          type: ["string", "null"]
+        imdbId:
+          type: ["string", "null"]
+        originalLanguage:
+          type: ["string", "null"]
+        spokenLanguages:
+          type: array
+          items:
+            type: string
+        productionCountries:
+          type: array
+          items:
+            type: string
+        productionCompanies:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductionCompany"
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+        adult:
+          type: ["boolean", "null"]
+        numberOfSeasons:
+          type: ["integer", "null"]
+        numberOfEpisodes:
+          type: ["integer", "null"]
+        episodeRunTime:
+          type: array
+          items:
+            type: integer
+        networks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Network"
+        createdBy:
+          type: array
+          items:
+            type: string
+        seasons:
+          type: array
+          items:
+            $ref: "#/components/schemas/Season"
+        watchlistEntry:
+          oneOf:
+            - $ref: "#/components/schemas/WatchlistItem"
+            - type: "null"
+      required:
+        - tmdbId
+        - mediaType
+        - title
+
+    Genre:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    GenreList:
+      type: object
+      properties:
+        movieGenres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+        tvGenres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+      required:
+        - movieGenres
+        - tvGenres
+
+    ProductionCompany:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        logoPath:
+          type: ["string", "null"]
+        originCountry:
+          type: string
+      required:
+        - id
+        - name
+        - originCountry
+
+    Network:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        logoPath:
+          type: ["string", "null"]
+        originCountry:
+          type: string
+      required:
+        - id
+        - name
+        - originCountry
+
+    Season:
+      type: object
+      properties:
+        id:
+          type: integer
+        seasonNumber:
+          type: integer
+        name:
+          type: string
+        overview:
+          type: ["string", "null"]
+        posterPath:
+          type: ["string", "null"]
+        airDate:
+          type: ["string", "null"]
+        episodeCount:
+          type: ["integer", "null"]
+      required:
+        - id
+        - seasonNumber
+        - name
+
+    CastMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        character:
+          type: ["string", "null"]
+        profilePath:
+          type: ["string", "null"]
+        order:
+          type: ["integer", "null"]
+        knownForDepartment:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+
+    CrewMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        job:
+          type: ["string", "null"]
+        department:
+          type: ["string", "null"]
+        profilePath:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+
+    Credits:
+      type: object
+      properties:
+        cast:
+          type: array
+          items:
+            $ref: "#/components/schemas/CastMember"
+        crew:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrewMember"
+      required:
+        - cast
+        - crew
+
+    Video:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        site:
+          type: string
+        type:
+          type: string
+        official:
+          type: boolean
+        publishedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - key
+        - name
+        - site
+        - type
+        - official
+
+    VideoList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Video"
+      required:
+        - results
+
+    WatchlistItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        tmdbId:
+          type: integer
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        status:
+          type: string
+          enum: [watching, watched, want_to_watch]
+        userRating:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+        addedAt:
+          type: string
+        updatedAt:
+          type: string
+        title:
+          type: string
+        posterPath:
+          type: ["string", "null"]
+        backdropPath:
+          type: ["string", "null"]
+        releaseDate:
+          type: ["string", "null"]
+        voteAverage:
+          type: ["number", "null"]
+        genreIds:
+          type: array
+          items:
+            type: integer
+        overview:
+          type: ["string", "null"]
+      required:
+        - id
+        - tmdbId
+        - mediaType
+        - status
+        - addedAt
+        - updatedAt
+        - title
+
+    WatchlistInput:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        status:
+          type: string
+          enum: [watching, watched, want_to_watch]
+        userRating:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+      required:
+        - tmdbId
+        - mediaType
+        - status
+
+    WatchlistUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [watching, watched, want_to_watch]
+        userRating:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+
+    WatchStatusResult:
+      type: object
+      properties:
+        inWatchlist:
+          type: boolean
+        entry:
+          oneOf:
+            - $ref: "#/components/schemas/WatchlistItem"
+            - type: "null"
+      required:
+        - inWatchlist
+
+    StatsSummary:
+      type: object
+      properties:
+        totalWatched:
+          type: integer
+        totalWatching:
+          type: integer
+        totalWantToWatch:
+          type: integer
+        totalMovies:
+          type: integer
+        totalTvShows:
+          type: integer
+        averageRating:
+          type: ["number", "null"]
+        totalItems:
+          type: integer
+      required:
+        - totalWatched
+        - totalWatching
+        - totalWantToWatch
+        - totalMovies
+        - totalTvShows
+        - totalItems
+
+    GenreStat:
+      type: object
+      properties:
+        genreId:
+          type: integer
+        genreName:
+          type: string
+        count:
+          type: integer
+      required:
+        - genreId
+        - genreName
+        - count

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Media Tracker"
+version = "1.0.0"
+id = "artifacts/media-tracker"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18499
+
+[services.development]
+run = "pnpm --filter @workspace/media-tracker run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/media-tracker", "run", "build" ]
+publicDir = "artifacts/media-tracker/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18499"
+BASE_PATH = "/"
