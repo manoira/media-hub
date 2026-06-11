@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { getMovieDetails, getTvDetails, getCredits, getVideos, getSimilar } from "../lib/tmdb";
+import { getMovieDetails, getTvDetails, getCredits, getVideos, getSimilar, getWatchProviders } from "../lib/tmdb";
 import { db, watchlistTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import {
@@ -11,6 +11,8 @@ import {
   GetMediaVideosResponse,
   GetSimilarMediaParams,
   GetSimilarMediaResponse,
+  GetWatchProvidersParams,
+  GetWatchProvidersResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -111,6 +113,22 @@ router.get("/media/:mediaType/:tmdbId/similar", async (req, res): Promise<void> 
   } catch (err: unknown) {
     req.log.error({ err }, "Similar error");
     res.status(500).json({ error: "Failed to get similar" });
+  }
+});
+
+router.get("/media/:mediaType/:tmdbId/watch-providers", async (req, res): Promise<void> => {
+  const params = GetWatchProvidersParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const { mediaType, tmdbId } = params.data;
+  try {
+    const providers = await getWatchProviders(mediaType, tmdbId, "SE");
+    res.json(GetWatchProvidersResponse.parse(providers));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Watch providers error");
+    res.status(500).json({ error: "Failed to get watch providers" });
   }
 });
 

@@ -400,6 +400,45 @@ export async function getSeasonDetails(tmdbId: number, seasonNumber: number) {
   };
 }
 
+interface TmdbProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+  display_priority: number;
+}
+interface TmdbWatchProvidersCountry {
+  link?: string;
+  flatrate?: TmdbProvider[];
+  rent?: TmdbProvider[];
+  buy?: TmdbProvider[];
+  free?: TmdbProvider[];
+  ads?: TmdbProvider[];
+}
+
+function normalizeProviders(list?: TmdbProvider[]) {
+  return (list ?? []).map(p => ({
+    providerId: p.provider_id,
+    providerName: p.provider_name,
+    logoPath: p.logo_path,
+    displayPriority: p.display_priority,
+  }));
+}
+
+export async function getWatchProviders(mediaType: string, tmdbId: number, countryCode = "SE") {
+  const data = await tmdbFetch<{ results: Record<string, TmdbWatchProvidersCountry> }>(
+    `/${mediaType}/${tmdbId}/watch/providers`
+  );
+  const country: TmdbWatchProvidersCountry = data.results?.[countryCode] ?? {};
+  return {
+    link: country.link ?? null,
+    flatrate: normalizeProviders(country.flatrate),
+    rent: normalizeProviders(country.rent),
+    buy: normalizeProviders(country.buy),
+    free: normalizeProviders(country.free),
+    ads: normalizeProviders(country.ads),
+  };
+}
+
 export async function getPopular(mediaType: "movie" | "tv", page = 1) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
     `/${mediaType}/popular`, { page }

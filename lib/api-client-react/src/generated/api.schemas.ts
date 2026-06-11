@@ -393,6 +393,23 @@ export interface SeriesWatchResult {
   episodeCount?: number;
 }
 
+export interface WatchProvider {
+  providerId: number;
+  providerName: string;
+  logoPath: string;
+  displayPriority: number;
+}
+
+export interface WatchProvidersResult {
+  /** @nullable */
+  link?: string | null;
+  flatrate: WatchProvider[];
+  rent: WatchProvider[];
+  buy: WatchProvider[];
+  free: WatchProvider[];
+  ads: WatchProvider[];
+}
+
 export type SearchMediaParams = {
 query: string;
 type?: SearchMediaType;

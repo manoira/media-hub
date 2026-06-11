@@ -330,6 +330,49 @@ export const GetSimilarMediaResponse = zod.object({
 
 
 /**
+ * @summary Get streaming, rental and purchase availability
+ */
+export const GetWatchProvidersParams = zod.object({
+  "mediaType": zod.enum(['movie', 'tv']),
+  "tmdbId": zod.coerce.number()
+})
+
+export const GetWatchProvidersResponse = zod.object({
+  "link": zod.string().nullish(),
+  "flatrate": zod.array(zod.object({
+  "providerId": zod.number(),
+  "providerName": zod.string(),
+  "logoPath": zod.string(),
+  "displayPriority": zod.number()
+})),
+  "rent": zod.array(zod.object({
+  "providerId": zod.number(),
+  "providerName": zod.string(),
+  "logoPath": zod.string(),
+  "displayPriority": zod.number()
+})),
+  "buy": zod.array(zod.object({
+  "providerId": zod.number(),
+  "providerName": zod.string(),
+  "logoPath": zod.string(),
+  "displayPriority": zod.number()
+})),
+  "free": zod.array(zod.object({
+  "providerId": zod.number(),
+  "providerName": zod.string(),
+  "logoPath": zod.string(),
+  "displayPriority": zod.number()
+})),
+  "ads": zod.array(zod.object({
+  "providerId": zod.number(),
+  "providerName": zod.string(),
+  "logoPath": zod.string(),
+  "displayPriority": zod.number()
+}))
+})
+
+
+/**
  * @summary Get user watchlist
  */
 export const getWatchlistQuerySortByDefault = `added_at`;

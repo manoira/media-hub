@@ -58,4 +58,6 @@ export * from './watchlistItemMediaType';
 export * from './watchlistItemStatus';
 export * from './watchlistUpdate';
 export * from './watchlistUpdateStatus';
+export * from './watchProvider';
+export * from './watchProvidersResult';
 export * from './watchStatusResult';

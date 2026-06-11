@@ -42,6 +42,7 @@ import type {
   TvProgress,
   VideoList,
   WatchAllInput,
+  WatchProvidersResult,
   WatchStatusResult,
   WatchlistInput,
   WatchlistItem,
@@ -866,6 +867,88 @@ export function useGetSimilarMedia<TData = Awaited<ReturnType<typeof getSimilarM
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSimilarMediaQueryOptions(mediaType,tmdbId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetWatchProvidersUrl = (mediaType: 'movie' | 'tv',
+    tmdbId: number,) => {
+
+
+
+
+  return `/api/media/${mediaType}/${tmdbId}/watch-providers`
+}
+
+/**
+ * @summary Get streaming, rental and purchase availability
+ */
+export const getWatchProviders = async (mediaType: 'movie' | 'tv',
+    tmdbId: number, options?: RequestInit): Promise<WatchProvidersResult> => {
+
+  return customFetch<WatchProvidersResult>(getGetWatchProvidersUrl(mediaType,tmdbId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWatchProvidersQueryKey = (mediaType: 'movie' | 'tv',
+    tmdbId: number,) => {
+    return [
+    `/api/media/${mediaType}/${tmdbId}/watch-providers`
+    ] as const;
+    }
+
+
+export const getGetWatchProvidersQueryOptions = <TData = Awaited<ReturnType<typeof getWatchProviders>>, TError = ErrorType<unknown>>(mediaType: 'movie' | 'tv',
+    tmdbId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWatchProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWatchProvidersQueryKey(mediaType,tmdbId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWatchProviders>>> = ({ signal }) => getWatchProviders(mediaType,tmdbId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(mediaType && tmdbId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWatchProviders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWatchProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof getWatchProviders>>>
+export type GetWatchProvidersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get streaming, rental and purchase availability
+ */
+
+export function useGetWatchProviders<TData = Awaited<ReturnType<typeof getWatchProviders>>, TError = ErrorType<unknown>>(
+ mediaType: 'movie' | 'tv',
+    tmdbId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWatchProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWatchProvidersQueryOptions(mediaType,tmdbId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -6,6 +6,7 @@ import { WatchlistButton } from "@/components/media/watchlist-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard } from "@/components/media/media-card";
 import { SeasonsPanel } from "@/components/media/seasons-panel";
+import { WatchProviders } from "@/components/media/watch-providers";
 
 export function MediaDetail() {
   const { mediaType, tmdbId } = useParams();
@@ -148,6 +149,8 @@ export function MediaDetail() {
           )}
         </div>
       </div>
+
+      <WatchProviders mediaType={type} tmdbId={id} />
 
       {type === "tv" && details.seasons && details.seasons.length > 0 && (
         <SeasonsPanel tmdbId={id} seasons={details.seasons} />

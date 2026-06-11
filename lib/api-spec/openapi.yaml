@@ -263,6 +263,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/MediaSearchResult"
 
+  /media/{mediaType}/{tmdbId}/watch-providers:
+    get:
+      operationId: getWatchProviders
+      tags: [media]
+      summary: Get streaming, rental and purchase availability
+      parameters:
+        - name: mediaType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Watch provider availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchProvidersResult"
+
   /watchlist:
     get:
       operationId: getWatchlist
@@ -1208,3 +1233,52 @@ components:
       required:
         - tmdbId
         - watched
+
+    WatchProvider:
+      type: object
+      properties:
+        providerId:
+          type: integer
+        providerName:
+          type: string
+        logoPath:
+          type: string
+        displayPriority:
+          type: integer
+      required:
+        - providerId
+        - providerName
+        - logoPath
+        - displayPriority
+
+    WatchProvidersResult:
+      type: object
+      properties:
+        link:
+          type: ["string", "null"]
+        flatrate:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
+        rent:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
+        buy:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
+        free:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
+        ads:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
+      required:
+        - flatrate
+        - rent
+        - buy
+        - free
+        - ads
