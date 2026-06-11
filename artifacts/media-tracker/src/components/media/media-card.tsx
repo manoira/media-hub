@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn, getTmdbImageUrl } from "@/lib/utils";
 import { MediaItem, WatchlistItem, Genre } from "@workspace/api-client-react";
 import { TvProgressBar } from "./tv-progress-bar";
+import { WatchStatusBadge } from "./watch-status-badge";
 
 interface MediaCardProps {
   item: MediaItem | WatchlistItem;
@@ -47,6 +48,9 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
           <Badge className={cn("absolute top-2 left-2 shadow-md", statusColors[status])}>
             {statusLabels[status]}
           </Badge>
+        )}
+        {!isWatchlistItem && (
+          <WatchStatusBadge mediaType={item.mediaType as "movie" | "tv"} tmdbId={item.tmdbId} />
         )}
         
         <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs font-medium text-white">
