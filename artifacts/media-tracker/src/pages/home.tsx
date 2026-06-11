@@ -23,22 +23,22 @@ export function Home() {
     <div className="space-y-10 pb-20">
       {stats && (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-primary/50 transition-colors">
+          <Link href="/watchlist" className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-primary/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-3xl font-bold text-primary">{stats.totalItems}</span>
             <span className="text-sm text-muted-foreground">Total Tracked</span>
-          </div>
-          <div className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-green-500/50 transition-colors">
+          </Link>
+          <Link href="/watchlist?status=watched" className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-green-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-3xl font-bold text-green-500">{stats.totalWatched}</span>
             <span className="text-sm text-muted-foreground">Watched</span>
-          </div>
-          <div className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-blue-500/50 transition-colors">
+          </Link>
+          <Link href="/watchlist?status=watching" className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-blue-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-3xl font-bold text-blue-500">{stats.totalWatching}</span>
             <span className="text-sm text-muted-foreground">Watching</span>
-          </div>
-          <div className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-amber-500/50 transition-colors">
+          </Link>
+          <Link href="/watchlist?status=want_to_watch" className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-amber-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-3xl font-bold text-amber-500">{stats.totalWantToWatch}</span>
             <span className="text-sm text-muted-foreground">Want to Watch</span>
-          </div>
+          </Link>
         </section>
       )}
 

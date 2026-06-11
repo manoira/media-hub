@@ -2,10 +2,21 @@ import { useGetWatchlist, getGetWatchlistQueryKey, WatchlistItemStatus } from "@
 import { MediaCard } from "@/components/media/media-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useSearch, useLocation } from "wouter";
 
 export function Watchlist() {
-  const [status, setStatus] = useState<WatchlistItemStatus | undefined>();
+  const search = useSearch();
+  const [, setLocation] = useLocation();
+  const params = new URLSearchParams(search);
+  const rawStatus = params.get("status");
+  const status = (rawStatus === "watched" || rawStatus === "watching" || rawStatus === "want_to_watch")
+    ? rawStatus as WatchlistItemStatus
+    : undefined;
+
+  const setStatus = (v: string) => {
+    if (v === "all") setLocation("/watchlist");
+    else setLocation(`/watchlist?status=${v}`);
+  };
 
   const { data: watchlist, isLoading } = useGetWatchlist(
     { status },
@@ -17,7 +28,7 @@ export function Watchlist() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">My List</h1>
         
-        <Tabs value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? undefined : v as WatchlistItemStatus)}>
+        <Tabs value={status || "all"} onValueChange={setStatus}>
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="watching">Watching</TabsTrigger>

@@ -1,6 +1,7 @@
 import { useGetStatsSummary, useGetGenreStats, getGetStatsSummaryQueryKey, getGetGenreStatsQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { Link } from "wouter";
 
 export function Stats() {
   const { data: stats, isLoading: isLoadingStats } = useGetStatsSummary({
@@ -29,22 +30,22 @@ export function Stats() {
       
       {stats && (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center">
+          <Link href="/watchlist" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-primary/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-primary mb-2">{stats.totalItems}</span>
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Tracked</span>
-          </div>
-          <div className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center">
+          </Link>
+          <Link href="/watchlist?status=watched" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-green-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-green-500 mb-2">{stats.totalWatched}</span>
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Watched</span>
-          </div>
-          <div className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center">
+          </Link>
+          <Link href="/watchlist?status=watching" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-blue-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-blue-500 mb-2">{stats.totalWatching}</span>
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Watching</span>
-          </div>
-          <div className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center">
+          </Link>
+          <Link href="/watchlist?status=want_to_watch" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-amber-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-amber-500 mb-2">{stats.totalWantToWatch}</span>
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Want to Watch</span>
-          </div>
+          </Link>
         </section>
       )}
 
