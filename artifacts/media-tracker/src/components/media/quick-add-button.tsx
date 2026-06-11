@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BookmarkPlus, BookmarkCheck, Eye, EyeOff, Loader2, ChevronDown } from "lucide-react";
 import {
   useGetWatchStatus,
@@ -43,6 +44,7 @@ const STATUS_COLORS = {
 } as const;
 
 export function QuickAddButton({ mediaType, tmdbId }: QuickAddButtonProps) {
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: statusData } = useGetWatchStatus(mediaType, tmdbId, {
@@ -61,6 +63,7 @@ export function QuickAddButton({ mediaType, tmdbId }: QuickAddButtonProps) {
   };
 
   const handleSelect = (newStatus: WatchlistInputStatus | null) => {
+    setOpen(false);
     if (!newStatus) {
       if (statusData?.entry) {
         removeFromWatchlist.mutate({ id: statusData.entry.id }, { onSuccess: invalidate });
@@ -85,10 +88,10 @@ export function QuickAddButton({ mediaType, tmdbId }: QuickAddButtonProps) {
   const iconColor = currentStatus ? STATUS_COLORS[currentStatus] : "text-white";
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v); }}
           onPointerDown={(e) => e.stopPropagation()}
           disabled={isPending}
           className={cn(
@@ -110,13 +113,12 @@ export function QuickAddButton({ mediaType, tmdbId }: QuickAddButtonProps) {
         align="end"
         side="top"
         className="w-44 z-50"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {STATUS_OPTIONS.map((opt) => (
           <DropdownMenuItem
             key={opt.value}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSelect(opt.value); }}
+            onSelect={() => handleSelect(opt.value)}
             className={cn("cursor-pointer", currentStatus === opt.value && "bg-muted")}
           >
             {opt.value === "want_to_watch" && <BookmarkPlus className={cn("w-4 h-4 mr-2", opt.color)} />}
@@ -130,7 +132,7 @@ export function QuickAddButton({ mediaType, tmdbId }: QuickAddButtonProps) {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSelect(null); }}
+              onSelect={() => handleSelect(null)}
               className="cursor-pointer text-destructive focus:text-destructive"
             >
               <EyeOff className="w-4 h-4 mr-2" />
