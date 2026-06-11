@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, Film, Tv, BarChart2, Bookmark, Menu } from "lucide-react";
+import { Search, Film, Compass, BarChart2, Bookmark, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -21,6 +21,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home", icon: Film },
+    { href: "/browse", label: "Browse", icon: Compass },
     { href: "/watchlist", label: "My List", icon: Bookmark },
     { href: "/stats", label: "Stats", icon: BarChart2 },
   ];

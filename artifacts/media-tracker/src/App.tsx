@@ -10,6 +10,7 @@ import { Search } from "@/pages/search";
 import { MediaDetail } from "@/pages/media-detail";
 import { Watchlist } from "@/pages/watchlist";
 import { Stats } from "@/pages/stats";
+import { Browse } from "@/pages/browse";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/media/:mediaType/:tmdbId" component={MediaDetail} />
         <Route path="/watchlist" component={Watchlist} />
         <Route path="/stats" component={Stats} />
+        <Route path="/browse" component={Browse} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
