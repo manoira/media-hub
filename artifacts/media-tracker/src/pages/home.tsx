@@ -1,6 +1,6 @@
 import {
-  useGetTrending, useGetGenres, useGetStatsSummary, useGetRecentlyWatched, useGetBrowseCategory,
-  getGetTrendingQueryKey, getGetGenresQueryKey, getGetStatsSummaryQueryKey, getGetRecentlyWatchedQueryKey,
+  useGetTrending, useGetGenres, useGetStatsSummary, useGetBrowseCategory,
+  getGetTrendingQueryKey, getGetGenresQueryKey, getGetStatsSummaryQueryKey,
   getGetBrowseCategoryQueryKey,
 } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
@@ -27,7 +27,6 @@ export function Home() {
   );
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
   const { data: stats } = useGetStatsSummary({ query: { queryKey: getGetStatsSummaryQueryKey() } });
-  const { data: recent } = useGetRecentlyWatched({ limit: 8 }, { query: { queryKey: getGetRecentlyWatchedQueryKey({ limit: 8 }) } });
 
   const { data: popularMovies, isLoading: loadingPopMovies }     = useBrowse("popular_movies");
   const { data: popularTv, isLoading: loadingPopTv }             = useBrowse("popular_tv");
@@ -60,21 +59,6 @@ export function Home() {
         </section>
       )}
 
-      {recent && recent.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Continue Watching</h2>
-            <Button variant="ghost" size="sm" asChild><Link href="/watchlist">View All</Link></Button>
-          </div>
-          <div className="flex gap-3 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: "none" }}>
-            {recent.map(item => (
-              <div key={item.id} className="flex-none w-[160px]">
-                <MediaCard key={item.id} item={item} genres={genres} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
