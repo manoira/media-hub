@@ -1,9 +1,21 @@
-import { useGetTrending, useGetGenres, useGetStatsSummary, useGetRecentlyWatched, getGetTrendingQueryKey, getGetGenresQueryKey, getGetStatsSummaryQueryKey, getGetRecentlyWatchedQueryKey } from "@workspace/api-client-react";
+import {
+  useGetTrending, useGetGenres, useGetStatsSummary, useGetRecentlyWatched, useGetBrowseCategory,
+  getGetTrendingQueryKey, getGetGenresQueryKey, getGetStatsSummaryQueryKey, getGetRecentlyWatchedQueryKey,
+  getGetBrowseCategoryQueryKey,
+} from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
+import { MediaSlider } from "@/components/media/media-slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Link } from "wouter";
+
+function useBrowse(category: string) {
+  return useGetBrowseCategory(
+    { category } as Parameters<typeof useGetBrowseCategory>[0],
+    { query: { queryKey: getGetBrowseCategoryQueryKey({ category } as Parameters<typeof getGetBrowseCategoryQueryKey>[0]) } }
+  );
+}
 
 export function Home() {
   const [type, setType] = useState<"all" | "movie" | "tv">("all");
@@ -13,11 +25,17 @@ export function Home() {
     { type, time_window: timeWindow },
     { query: { queryKey: getGetTrendingQueryKey({ type, time_window: timeWindow }) } }
   );
-
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
-  
   const { data: stats } = useGetStatsSummary({ query: { queryKey: getGetStatsSummaryQueryKey() } });
-  const { data: recent } = useGetRecentlyWatched({ limit: 4 }, { query: { queryKey: getGetRecentlyWatchedQueryKey({ limit: 4 }) } });
+  const { data: recent } = useGetRecentlyWatched({ limit: 8 }, { query: { queryKey: getGetRecentlyWatchedQueryKey({ limit: 8 }) } });
+
+  const { data: popularMovies, isLoading: loadingPopMovies }     = useBrowse("popular_movies");
+  const { data: popularTv, isLoading: loadingPopTv }             = useBrowse("popular_tv");
+  const { data: topRatedMovies, isLoading: loadingTopMovies }    = useBrowse("top_rated_movies");
+  const { data: topRatedTv, isLoading: loadingTopTv }            = useBrowse("top_rated_tv");
+  const { data: nowPlaying, isLoading: loadingNowPlaying }       = useBrowse("now_playing");
+  const { data: upcoming, isLoading: loadingUpcoming }           = useBrowse("upcoming");
+  const { data: onAir, isLoading: loadingOnAir }                 = useBrowse("on_air");
 
   return (
     <div className="space-y-10 pb-20">
@@ -45,12 +63,14 @@ export function Home() {
       {recent && recent.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold">Recently Tracked</h2>
-            <Button variant="ghost" asChild><Link href="/watchlist">View All</Link></Button>
+            <h2 className="text-xl font-bold">Continue Watching</h2>
+            <Button variant="ghost" size="sm" asChild><Link href="/watchlist">View All</Link></Button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="flex gap-3 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: "none" }}>
             {recent.map(item => (
-              <MediaCard key={item.id} item={item} genres={genres} />
+              <div key={item.id} className="flex-none w-[160px]">
+                <MediaCard key={item.id} item={item} genres={genres} />
+              </div>
             ))}
           </div>
         </section>
@@ -58,7 +78,7 @@ export function Home() {
 
       <section>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h2 className="text-2xl font-bold">Trending</h2>
+          <h2 className="text-xl font-bold">Trending</h2>
           <div className="flex items-center gap-2">
             <div className="flex bg-muted rounded-md p-1">
               <Button variant={type === "all" ? "default" : "ghost"} size="sm" onClick={() => setType("all")}>All</Button>
@@ -73,23 +93,33 @@ export function Home() {
         </div>
 
         {isLoadingTrending ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="flex gap-3 overflow-x-hidden pb-2">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-2">
+              <div key={i} className="flex-none w-[160px] space-y-2">
                 <Skeleton className="aspect-[2/3] w-full rounded-lg" />
-                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3.5 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
               </div>
             ))}
           </div>
         ) : trending?.results ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="flex gap-3 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: "none" }}>
             {trending.results.map(item => (
-              <MediaCard key={item.tmdbId} item={item} genres={genres} />
+              <div key={item.tmdbId} className="flex-none w-[160px]">
+                <MediaCard item={item} genres={genres} />
+              </div>
             ))}
           </div>
         ) : null}
       </section>
+
+      <MediaSlider title="Popular Movies"       items={popularMovies?.results}  isLoading={loadingPopMovies}    genres={genres} />
+      <MediaSlider title="Popular TV Shows"     items={popularTv?.results}      isLoading={loadingPopTv}        genres={genres} />
+      <MediaSlider title="Now Playing in Cinemas" items={nowPlaying?.results}   isLoading={loadingNowPlaying}   genres={genres} />
+      <MediaSlider title="Coming Soon"          items={upcoming?.results}       isLoading={loadingUpcoming}     genres={genres} />
+      <MediaSlider title="Top Rated Movies"     items={topRatedMovies?.results} isLoading={loadingTopMovies}    genres={genres} />
+      <MediaSlider title="Currently Airing TV"  items={onAir?.results}          isLoading={loadingOnAir}        genres={genres} />
+      <MediaSlider title="Top Rated TV Shows"   items={topRatedTv?.results}     isLoading={loadingTopTv}        genres={genres} />
     </div>
   );
 }

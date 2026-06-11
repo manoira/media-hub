@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres } from "../lib/tmdb";
+import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres, getPopular, getTopRated, getNowPlaying, getUpcoming, getOnAir } from "../lib/tmdb";
 import {
   SearchMediaQueryParams,
   SearchMediaResponse,
@@ -8,6 +8,8 @@ import {
   GetTrendingQueryParams,
   GetTrendingResponse,
   GetGenresResponse,
+  GetBrowseCategoryQueryParams,
+  GetBrowseCategoryResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -65,6 +67,32 @@ router.get("/trending", async (req, res): Promise<void> => {
   } catch (err: unknown) {
     req.log.error({ err }, "Trending error");
     res.status(500).json({ error: "Failed to get trending" });
+  }
+});
+
+router.get("/browse", async (req, res): Promise<void> => {
+  const parsed = GetBrowseCategoryQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { category, page = 1 } = parsed.data;
+  try {
+    let result;
+    switch (category) {
+      case "popular_movies":    result = await getPopular("movie", page); break;
+      case "popular_tv":        result = await getPopular("tv", page); break;
+      case "top_rated_movies":  result = await getTopRated("movie", page); break;
+      case "top_rated_tv":      result = await getTopRated("tv", page); break;
+      case "now_playing":       result = await getNowPlaying(page); break;
+      case "upcoming":          result = await getUpcoming(page); break;
+      case "on_air":            result = await getOnAir(page); break;
+      default:                  res.status(400).json({ error: "Unknown category" }); return;
+    }
+    res.json(GetBrowseCategoryResponse.parse(result));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Browse error");
+    res.status(500).json({ error: "Failed to browse category" });
   }
 });
 

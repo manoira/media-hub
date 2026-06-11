@@ -458,6 +458,24 @@ export const GetTrendingTimeWindow = {
   week: 'week',
 } as const;
 
+export type GetBrowseCategoryParams = {
+category: GetBrowseCategoryCategory;
+page?: number;
+};
+
+export type GetBrowseCategoryCategory = typeof GetBrowseCategoryCategory[keyof typeof GetBrowseCategoryCategory];
+
+
+export const GetBrowseCategoryCategory = {
+  popular_movies: 'popular_movies',
+  popular_tv: 'popular_tv',
+  top_rated_movies: 'top_rated_movies',
+  top_rated_tv: 'top_rated_tv',
+  now_playing: 'now_playing',
+  upcoming: 'upcoming',
+  on_air: 'on_air',
+} as const;
+
 export type GetWatchlistParams = {
 status?: GetWatchlistStatus;
 type?: GetWatchlistType;

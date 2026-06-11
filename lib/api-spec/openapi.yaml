@@ -123,6 +123,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/MediaSearchResult"
 
+  /browse:
+    get:
+      operationId: getBrowseCategory
+      tags: [search]
+      summary: Browse media by category
+      parameters:
+        - name: category
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [popular_movies, popular_tv, top_rated_movies, top_rated_tv, now_playing, upcoming, on_air]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Browse results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaSearchResult"
+
   /genres:
     get:
       operationId: getGenres

@@ -19,6 +19,8 @@ export * from './episodeWithProgress';
 export * from './genre';
 export * from './genreList';
 export * from './genreStat';
+export * from './getBrowseCategoryCategory';
+export * from './getBrowseCategoryParams';
 export * from './getRecentlyWatchedParams';
 export * from './getTrendingParams';
 export * from './getTrendingTimeWindow';

@@ -123,6 +123,39 @@ export const GetTrendingResponse = zod.object({
 
 
 /**
+ * @summary Browse media by category
+ */
+export const getBrowseCategoryQueryPageDefault = 1;
+
+export const GetBrowseCategoryQueryParams = zod.object({
+  "category": zod.enum(['popular_movies', 'popular_tv', 'top_rated_movies', 'top_rated_tv', 'now_playing', 'upcoming', 'on_air']),
+  "page": zod.coerce.number().default(getBrowseCategoryQueryPageDefault)
+})
+
+export const GetBrowseCategoryResponse = zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+})
+
+
+/**
  * @summary Get all genres for movies and TV
  */
 export const GetGenresResponse = zod.object({

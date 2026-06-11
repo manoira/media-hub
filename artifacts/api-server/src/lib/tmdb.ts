@@ -400,6 +400,56 @@ export async function getSeasonDetails(tmdbId: number, seasonNumber: number) {
   };
 }
 
+export async function getPopular(mediaType: "movie" | "tv", page = 1) {
+  const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
+    `/${mediaType}/popular`, { page }
+  );
+  return {
+    results: data.results.map(r => normalizeMediaItem(r, mediaType)),
+    totalResults: data.total_results, totalPages: data.total_pages, page: data.page,
+  };
+}
+
+export async function getTopRated(mediaType: "movie" | "tv", page = 1) {
+  const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
+    `/${mediaType}/top_rated`, { page }
+  );
+  return {
+    results: data.results.map(r => normalizeMediaItem(r, mediaType)),
+    totalResults: data.total_results, totalPages: data.total_pages, page: data.page,
+  };
+}
+
+export async function getNowPlaying(page = 1) {
+  const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
+    `/movie/now_playing`, { page }
+  );
+  return {
+    results: data.results.map(r => normalizeMediaItem(r, "movie")),
+    totalResults: data.total_results, totalPages: data.total_pages, page: data.page,
+  };
+}
+
+export async function getUpcoming(page = 1) {
+  const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
+    `/movie/upcoming`, { page }
+  );
+  return {
+    results: data.results.map(r => normalizeMediaItem(r, "movie")),
+    totalResults: data.total_results, totalPages: data.total_pages, page: data.page,
+  };
+}
+
+export async function getOnAir(page = 1) {
+  const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
+    `/tv/on_the_air`, { page }
+  );
+  return {
+    results: data.results.map(r => normalizeMediaItem(r, "tv")),
+    totalResults: data.total_results, totalPages: data.total_pages, page: data.page,
+  };
+}
+
 export async function getSimilar(mediaType: string, tmdbId: number) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
     `/${mediaType}/${tmdbId}/similar`

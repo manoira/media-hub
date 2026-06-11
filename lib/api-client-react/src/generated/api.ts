@@ -26,6 +26,7 @@ import type {
   EpisodeWatchResult,
   GenreList,
   GenreStat,
+  GetBrowseCategoryParams,
   GetRecentlyWatchedParams,
   GetTrendingParams,
   GetWatchlistParams,
@@ -376,6 +377,90 @@ export function useGetTrending<TData = Awaited<ReturnType<typeof getTrending>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTrendingQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetBrowseCategoryUrl = (params: GetBrowseCategoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/browse?${stringifiedParams}` : `/api/browse`
+}
+
+/**
+ * @summary Browse media by category
+ */
+export const getBrowseCategory = async (params: GetBrowseCategoryParams, options?: RequestInit): Promise<MediaSearchResult> => {
+
+  return customFetch<MediaSearchResult>(getGetBrowseCategoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBrowseCategoryQueryKey = (params?: GetBrowseCategoryParams,) => {
+    return [
+    `/api/browse`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBrowseCategoryQueryOptions = <TData = Awaited<ReturnType<typeof getBrowseCategory>>, TError = ErrorType<unknown>>(params: GetBrowseCategoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBrowseCategory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBrowseCategoryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBrowseCategory>>> = ({ signal }) => getBrowseCategory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBrowseCategory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBrowseCategoryQueryResult = NonNullable<Awaited<ReturnType<typeof getBrowseCategory>>>
+export type GetBrowseCategoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Browse media by category
+ */
+
+export function useGetBrowseCategory<TData = Awaited<ReturnType<typeof getBrowseCategory>>, TError = ErrorType<unknown>>(
+ params: GetBrowseCategoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBrowseCategory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBrowseCategoryQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
