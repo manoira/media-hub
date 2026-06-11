@@ -5,6 +5,7 @@ import { cn, getTmdbImageUrl } from "@/lib/utils";
 import { MediaItem, WatchlistItem, Genre } from "@workspace/api-client-react";
 import { TvProgressBar } from "./tv-progress-bar";
 import { WatchStatusBadge } from "./watch-status-badge";
+import { QuickAddButton } from "./quick-add-button";
 
 interface MediaCardProps {
   item: MediaItem | WatchlistItem;
@@ -58,8 +59,11 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
           <span>{rating ? rating.toFixed(1) : "NR"}</span>
         </div>
         
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 gap-2">
           <div className="text-white text-sm font-medium line-clamp-2">{item.overview}</div>
+          <div className="flex justify-end">
+            <QuickAddButton mediaType={item.mediaType as "movie" | "tv"} tmdbId={item.tmdbId} />
+          </div>
         </div>
       </div>
       
