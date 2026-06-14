@@ -1,6 +1,6 @@
-# [Project name]
+# Media Hub
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Track movies and TV shows with TMDB discovery, watchlist, episode progress, and stats.
 
 ## Run & Operate
 
@@ -47,6 +47,17 @@ $env:DATABASE_URL="<dev-url>"; corepack pnpm --filter @workspace/db run push    
 $env:DATABASE_URL="<dev-url>"; corepack pnpm --filter @workspace/scripts run import-data
 ```
 
+## Production (Render)
+
+- **URL:** https://media-hub-05s0.onrender.com/
+- **Host:** Render free web service, auto-deploys from `main` on GitHub
+- **Build:** `pnpm install && pnpm --filter @workspace/api-server... run build` (API build also runs Vite frontend build)
+- **Start:** `pnpm --filter @workspace/api-server run start`
+- **Health check:** `/api/healthz`
+- **Env on Render:** `DATABASE_URL` (production Neon), `TMDB_API_KEY`, `NODE_ENV=production`, `BASE_PATH=/` — do not set `PORT`
+- **Architecture:** one service serves React static files + `/api/*` (see `render.yaml`, `artifacts/api-server/src/lib/static-frontend.ts`)
+- **Neon production host:** `ep-wandering-morning-apbbwjdd` (us-east-1). Local `.env` uses dev DB only.
+
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
@@ -78,7 +89,7 @@ Each Cursor project gets its own dedicated localhost port so multiple dev server
 | ---- | ------- |
 | 5173 | mail-web-client |
 | 5174 | media-hub (this project — `@workspace/media-tracker`) |
-| 5175 | _next new project_ |
+| 5175 | notes_hub |
 | 5176 | _next new project_ |
 
 Start this project's web app with:
