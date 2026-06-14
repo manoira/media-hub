@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
 import { rm } from "node:fs/promises";
@@ -9,6 +10,33 @@ import { rm } from "node:fs/promises";
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+
+function buildFrontend(repoRoot) {
+  console.log("Building Media Tracker frontend...");
+  const env = {
+    ...process.env,
+    PORT: process.env.PORT ?? "8080",
+    BASE_PATH: process.env.BASE_PATH ?? "/",
+    NODE_ENV: process.env.NODE_ENV ?? "production",
+  };
+  const args = ["--filter", "@workspace/media-tracker", "run", "build"];
+  const result = process.env.npm_execpath
+    ? spawnSync(process.execPath, [process.env.npm_execpath, ...args], {
+        cwd: repoRoot,
+        env,
+        stdio: "inherit",
+      })
+    : spawnSync("pnpm", args, {
+        cwd: repoRoot,
+        env,
+        stdio: "inherit",
+        shell: true,
+      });
+
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+}
 
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
@@ -118,6 +146,8 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  buildFrontend(path.resolve(artifactDir, "../.."));
 }
 
 buildAll().catch((err) => {
