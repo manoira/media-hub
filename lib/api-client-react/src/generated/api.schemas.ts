@@ -432,6 +432,22 @@ type?: DiscoverMediaType;
  */
 genre?: number | null;
 sort_by?: DiscoverMediaSortBy;
+/**
+ * @nullable
+ */
+min_rating?: number | null;
+/**
+ * @nullable
+ */
+min_year?: number | null;
+/**
+ * @nullable
+ */
+max_year?: number | null;
+/**
+ * @nullable
+ */
+language?: string | null;
 page?: number;
 };
 
@@ -449,8 +465,11 @@ export type DiscoverMediaSortBy = typeof DiscoverMediaSortBy[keyof typeof Discov
 export const DiscoverMediaSortBy = {
   popularitydesc: 'popularity.desc',
   vote_averagedesc: 'vote_average.desc',
+  vote_countdesc: 'vote_count.desc',
   release_datedesc: 'release_date.desc',
-  trending: 'trending',
+  release_dateasc: 'release_date.asc',
+  revenuedesc: 'revenue.desc',
+  titleasc: 'title.asc',
 } as const;
 
 export type GetTrendingParams = {

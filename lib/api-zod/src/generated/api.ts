@@ -61,7 +61,11 @@ export const discoverMediaQueryPageDefault = 1;
 export const DiscoverMediaQueryParams = zod.object({
   "type": zod.enum(['movie', 'tv']).default(discoverMediaQueryTypeDefault),
   "genre": zod.coerce.number().nullish(),
-  "sort_by": zod.enum(['popularity.desc', 'vote_average.desc', 'release_date.desc', 'trending']).default(discoverMediaQuerySortByDefault),
+  "sort_by": zod.enum(['popularity.desc', 'vote_average.desc', 'vote_count.desc', 'release_date.desc', 'release_date.asc', 'revenue.desc', 'title.asc']).default(discoverMediaQuerySortByDefault),
+  "min_rating": zod.coerce.number().nullish(),
+  "min_year": zod.coerce.number().nullish(),
+  "max_year": zod.coerce.number().nullish(),
+  "language": zod.coerce.string().nullish(),
   "page": zod.coerce.number().default(discoverMediaQueryPageDefault)
 })
 

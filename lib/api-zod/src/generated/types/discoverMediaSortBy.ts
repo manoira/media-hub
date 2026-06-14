@@ -12,6 +12,9 @@ export type DiscoverMediaSortBy = typeof DiscoverMediaSortBy[keyof typeof Discov
 export const DiscoverMediaSortBy = {
   popularitydesc: 'popularity.desc',
   vote_averagedesc: 'vote_average.desc',
+  vote_countdesc: 'vote_count.desc',
   release_datedesc: 'release_date.desc',
-  trending: 'trending',
+  release_dateasc: 'release_date.asc',
+  revenuedesc: 'revenue.desc',
+  titleasc: 'title.asc',
 } as const;

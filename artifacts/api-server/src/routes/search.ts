@@ -39,10 +39,18 @@ router.get("/discover", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { type = "movie", genre, sort_by = "popularity.desc", page = 1 } = parsed.data;
+  const { type = "movie", genre, sort_by = "popularity.desc", min_rating, min_year, max_year, language, page = 1 } = parsed.data;
   try {
     let result;
-    const params = { genre: genre ?? undefined, sort_by, page };
+    const params = {
+      genre: genre ?? undefined,
+      sort_by,
+      page,
+      min_rating: min_rating ?? undefined,
+      min_year: min_year ?? undefined,
+      max_year: max_year ?? undefined,
+      language: language ?? undefined,
+    };
     if (type === "tv") result = await discoverTv(params);
     else result = await discoverMovies(params);
     res.json(DiscoverMediaResponse.parse(result));

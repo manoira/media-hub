@@ -15,5 +15,21 @@ type?: DiscoverMediaType;
  */
 genre?: number | null;
 sort_by?: DiscoverMediaSortBy;
+/**
+ * @nullable
+ */
+min_rating?: number | null;
+/**
+ * @nullable
+ */
+min_year?: number | null;
+/**
+ * @nullable
+ */
+max_year?: number | null;
+/**
+ * @nullable
+ */
+language?: string | null;
 page?: number;
 };

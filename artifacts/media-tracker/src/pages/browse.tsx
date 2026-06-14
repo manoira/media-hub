@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useDiscoverMedia, useGetGenres, getGetGenresQueryKey, getDiscoverMediaQueryKey } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,19 +14,103 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import type { MediaItem } from "@workspace/api-client-react";
 
-const SORT_OPTIONS = [
+type SortValue =
+  | "popularity.desc"
+  | "vote_average.desc"
+  | "vote_count.desc"
+  | "release_date.desc"
+  | "release_date.asc"
+  | "revenue.desc"
+  | "title.asc";
+type MediaType = "movie" | "tv";
+
+const SORT_OPTIONS: { value: SortValue; label: string; movieOnly?: boolean }[] = [
   { value: "popularity.desc", label: "Most Popular" },
   { value: "vote_average.desc", label: "Top Rated" },
-  { value: "release_date.desc", label: "Latest Release" },
+  { value: "vote_count.desc", label: "Most Voted" },
+  { value: "release_date.desc", label: "Newest" },
+  { value: "release_date.asc", label: "Oldest" },
+  { value: "revenue.desc", label: "Highest Grossing", movieOnly: true },
+  { value: "title.asc", label: "Title (A–Z)" },
 ];
 
-type SortValue = "popularity.desc" | "vote_average.desc" | "release_date.desc";
-type MediaType = "movie" | "tv";
+type YearRange = { label: string; min?: number; max?: number };
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+const YEAR_OPTIONS: YearRange[] = [
+  { label: "Any year" },
+  ...Array.from({ length: 8 }, (_, i) => {
+    const y = CURRENT_YEAR - i;
+    return { label: String(y), min: y, max: y };
+  }),
+  { label: "2020s", min: 2020, max: 2029 },
+  { label: "2010s", min: 2010, max: 2019 },
+  { label: "2000s", min: 2000, max: 2009 },
+  { label: "1990s", min: 1990, max: 1999 },
+  { label: "1980s", min: 1980, max: 1989 },
+  { label: "Before 1980", max: 1979 },
+];
+
+const RATING_OPTIONS: { label: string; value?: number }[] = [
+  { label: "Any rating" },
+  { label: "9+", value: 9 },
+  { label: "8+", value: 8 },
+  { label: "7+", value: 7 },
+  { label: "6+", value: 6 },
+  { label: "5+", value: 5 },
+];
+
+const LANGUAGE_OPTIONS: { label: string; value?: string }[] = [
+  { label: "Any language" },
+  { label: "English", value: "en" },
+  { label: "Spanish", value: "es" },
+  { label: "French", value: "fr" },
+  { label: "German", value: "de" },
+  { label: "Italian", value: "it" },
+  { label: "Japanese", value: "ja" },
+  { label: "Korean", value: "ko" },
+  { label: "Chinese", value: "zh" },
+  { label: "Hindi", value: "hi" },
+  { label: "Portuguese", value: "pt" },
+  { label: "Swedish", value: "sv" },
+];
+
+function FilterMenu({
+  label,
+  active,
+  children,
+}: {
+  label: string;
+  active: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("gap-2", active && "border-primary text-foreground")}
+        >
+          {label}
+          <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export function Browse() {
   const [mediaType, setMediaType] = useState<MediaType>("movie");
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<SortValue>("popularity.desc");
+  const [yearRange, setYearRange] = useState<YearRange>(YEAR_OPTIONS[0]);
+  const [minRating, setMinRating] = useState<number | undefined>(undefined);
+  const [language, setLanguage] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [allItems, setAllItems] = useState<MediaItem[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -37,6 +121,10 @@ export function Browse() {
     type: mediaType,
     genre: selectedGenre ?? undefined,
     sort_by: sortBy,
+    min_rating: minRating,
+    min_year: yearRange.min,
+    max_year: yearRange.max,
+    language,
     page,
   };
 
@@ -57,17 +145,27 @@ export function Browse() {
           return [...prev, ...fresh];
         });
       }
-      setHasMore(page < (data.totalPages ?? 1) && page < 10);
+      setHasMore(page < (data.totalPages ?? 1) && page < 100);
     }
   }, [data, page]);
 
-  const resetAndFilter = useCallback((opts: { type?: MediaType; genre?: number | null; sort?: SortValue }) => {
+  const resetAndFilter = useCallback((opts: {
+    type?: MediaType;
+    genre?: number | null;
+    sort?: SortValue;
+    year?: YearRange;
+    rating?: number;
+    lang?: string;
+  }) => {
     setAllItems([]);
     setHasMore(true);
     setPage(1);
     if (opts.type !== undefined) setMediaType(opts.type);
     if (opts.genre !== undefined) setSelectedGenre(opts.genre);
     if (opts.sort !== undefined) setSortBy(opts.sort);
+    if (opts.year !== undefined) setYearRange(opts.year);
+    if ("rating" in opts) setMinRating(opts.rating);
+    if ("lang" in opts) setLanguage(opts.lang);
   }, []);
 
   useEffect(() => {
@@ -86,6 +184,7 @@ export function Browse() {
   }, [isFetching, hasMore]);
 
   const activeGenres = mediaType === "movie" ? genres?.movieGenres : genres?.tvGenres;
+  const visibleSortOptions = SORT_OPTIONS.filter(o => !o.movieOnly || mediaType === "movie");
   const currentSort = SORT_OPTIONS.find(o => o.value === sortBy)!;
 
   const cardSkeletons = Array.from({ length: 20 }).map((_, i) => (
@@ -110,11 +209,11 @@ export function Browse() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {SORT_OPTIONS.map(opt => (
+              {visibleSortOptions.map(opt => (
                 <DropdownMenuItem
                   key={opt.value}
                   className={cn("cursor-pointer", sortBy === opt.value && "bg-muted")}
-                  onClick={() => resetAndFilter({ sort: opt.value as SortValue })}
+                  onClick={() => resetAndFilter({ sort: opt.value })}
                 >
                   {opt.label}
                   {sortBy === opt.value && <span className="ml-auto text-[10px] text-muted-foreground">✓</span>}
@@ -135,10 +234,57 @@ export function Browse() {
           <Button
             variant={mediaType === "tv" ? "default" : "ghost"}
             size="sm"
-            onClick={() => resetAndFilter({ type: "tv", genre: null })}
+            onClick={() => resetAndFilter({ type: "tv", genre: null, sort: sortBy === "revenue.desc" ? "popularity.desc" : undefined })}
           >
             TV Shows
           </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <FilterMenu
+            label={yearRange.min !== undefined || yearRange.max !== undefined ? yearRange.label : "Year"}
+            active={yearRange.min !== undefined || yearRange.max !== undefined}
+          >
+            {YEAR_OPTIONS.map(opt => (
+              <DropdownMenuItem
+                key={opt.label}
+                className={cn("cursor-pointer", yearRange.label === opt.label && "bg-muted")}
+                onClick={() => resetAndFilter({ year: opt })}
+              >
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
+          </FilterMenu>
+
+          <FilterMenu
+            label={minRating !== undefined ? `Rating ${minRating}+` : "Rating"}
+            active={minRating !== undefined}
+          >
+            {RATING_OPTIONS.map(opt => (
+              <DropdownMenuItem
+                key={opt.label}
+                className={cn("cursor-pointer", minRating === opt.value && "bg-muted")}
+                onClick={() => resetAndFilter({ rating: opt.value })}
+              >
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
+          </FilterMenu>
+
+          <FilterMenu
+            label={language !== undefined ? (LANGUAGE_OPTIONS.find(l => l.value === language)?.label ?? "Language") : "Language"}
+            active={language !== undefined}
+          >
+            {LANGUAGE_OPTIONS.map(opt => (
+              <DropdownMenuItem
+                key={opt.label}
+                className={cn("cursor-pointer", language === opt.value && "bg-muted")}
+                onClick={() => resetAndFilter({ lang: opt.value })}
+              >
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
+          </FilterMenu>
         </div>
 
         <div className="flex flex-wrap gap-2">

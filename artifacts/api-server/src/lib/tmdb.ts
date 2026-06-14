@@ -134,15 +134,74 @@ export async function searchTv(query: string, page = 1) {
   };
 }
 
-export async function discoverMovies(params: { genre?: number; sort_by?: string; page?: number }) {
+export interface DiscoverParams {
+  genre?: number;
+  sort_by?: string;
+  page?: number;
+  min_rating?: number;
+  min_year?: number;
+  max_year?: number;
+  language?: string;
+}
+
+// Map our logical sort values to the field names TMDB's movie/tv discover
+// endpoints actually accept (they differ between movie and tv).
+const MOVIE_SORT_MAP: Record<string, string> = {
+  "popularity.desc": "popularity.desc",
+  "vote_average.desc": "vote_average.desc",
+  "vote_count.desc": "vote_count.desc",
+  "release_date.desc": "primary_release_date.desc",
+  "release_date.asc": "primary_release_date.asc",
+  "revenue.desc": "revenue.desc",
+  "title.asc": "title.asc",
+};
+
+const TV_SORT_MAP: Record<string, string> = {
+  "popularity.desc": "popularity.desc",
+  "vote_average.desc": "vote_average.desc",
+  "vote_count.desc": "vote_count.desc",
+  "release_date.desc": "first_air_date.desc",
+  "release_date.asc": "first_air_date.asc",
+  "revenue.desc": "popularity.desc", // revenue isn't supported for tv
+  "title.asc": "name.asc",
+};
+
+function buildDiscoverQuery(
+  mediaType: "movie" | "tv",
+  params: DiscoverParams,
+): Record<string, string | number | boolean | undefined> {
+  const sortKey = params.sort_by ?? "popularity.desc";
+  const sortMap = mediaType === "movie" ? MOVIE_SORT_MAP : TV_SORT_MAP;
+  const sort_by = sortMap[sortKey] ?? "popularity.desc";
+
+  const dateField = mediaType === "movie" ? "primary_release_date" : "first_air_date";
+
+  // When ranking by rating (or filtering by a minimum rating), require a
+  // minimum vote count so well-known titles surface instead of obscure
+  // perfect scores from a handful of votes.
+  const needsVoteFloor = sortKey === "vote_average.desc" || params.min_rating !== undefined;
+  const voteFloor = mediaType === "movie" ? 300 : 100;
+
+  const query: Record<string, string | number | boolean | undefined> = {
+    with_genres: params.genre,
+    sort_by,
+    page: params.page ?? 1,
+    with_original_language: params.language,
+    "vote_average.gte": params.min_rating,
+    "vote_count.gte": needsVoteFloor ? voteFloor : undefined,
+    [`${dateField}.gte`]: params.min_year ? `${params.min_year}-01-01` : undefined,
+    [`${dateField}.lte`]: params.max_year ? `${params.max_year}-12-31` : undefined,
+  };
+
+  if (mediaType === "movie") query.include_adult = false;
+
+  return query;
+}
+
+export async function discoverMovies(params: DiscoverParams) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
     "/discover/movie",
-    {
-      with_genres: params.genre,
-      sort_by: params.sort_by ?? "popularity.desc",
-      page: params.page ?? 1,
-      include_adult: false,
-    }
+    buildDiscoverQuery("movie", params),
   );
   return {
     results: data.results.map(r => normalizeMediaItem(r, "movie")),
@@ -152,14 +211,10 @@ export async function discoverMovies(params: { genre?: number; sort_by?: string;
   };
 }
 
-export async function discoverTv(params: { genre?: number; sort_by?: string; page?: number }) {
+export async function discoverTv(params: DiscoverParams) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
     "/discover/tv",
-    {
-      with_genres: params.genre,
-      sort_by: params.sort_by ?? "popularity.desc",
-      page: params.page ?? 1,
-    }
+    buildDiscoverQuery("tv", params),
   );
   return {
     results: data.results.map(r => normalizeMediaItem(r, "tv")),

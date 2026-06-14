@@ -82,8 +82,33 @@ paths:
           in: query
           schema:
             type: string
-            enum: [popularity.desc, vote_average.desc, release_date.desc, trending]
+            enum:
+              [
+                popularity.desc,
+                vote_average.desc,
+                vote_count.desc,
+                release_date.desc,
+                release_date.asc,
+                revenue.desc,
+                title.asc,
+              ]
             default: popularity.desc
+        - name: min_rating
+          in: query
+          schema:
+            type: ["number", "null"]
+        - name: min_year
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: max_year
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: language
+          in: query
+          schema:
+            type: ["string", "null"]
         - name: page
           in: query
           schema:
