@@ -34,7 +34,22 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+### Local dev port registry
+
+Each Cursor project gets its own dedicated localhost port so multiple dev servers can run side by side without collisions. Assign the next free port to any new project (uploaded or created in Cursor):
+
+| Port | Project |
+| ---- | ------- |
+| 5173 | mail-web-client |
+| 5174 | media-hub (this project — `@workspace/media-tracker`) |
+| 5175 | _next new project_ |
+| 5176 | _next new project_ |
+
+Start this project's web app with:
+
+```powershell
+$env:PORT="5174"; $env:BASE_PATH="/"; corepack pnpm --filter @workspace/media-tracker run dev
+```
 
 ## Gotchas
 
