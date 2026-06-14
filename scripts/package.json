@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "export-data": "tsx ./src/export-data.ts",
+    "import-data": "tsx ./src/import-data.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",
