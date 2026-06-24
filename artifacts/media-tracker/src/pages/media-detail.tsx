@@ -1,5 +1,5 @@
 import { useGetMediaDetails, useGetMediaCredits, useGetMediaVideos, useGetSimilarMedia, getGetMediaDetailsQueryKey, getGetMediaCreditsQueryKey, getGetMediaVideosQueryKey, getGetSimilarMediaQueryKey } from "@workspace/api-client-react";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { getTmdbImageUrl, getYoutubeEmbedUrl, formatRuntime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { WatchlistButton } from "@/components/media/watchlist-button";
@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard } from "@/components/media/media-card";
 import { SeasonsPanel } from "@/components/media/seasons-panel";
 import { WatchProviders } from "@/components/media/watch-providers";
+import { MediaMetadataPanel } from "@/components/media/media-metadata-panel";
 
 export function MediaDetail() {
   const { mediaType, tmdbId } = useParams();
@@ -98,17 +99,21 @@ export function MediaDetail() {
               <h2 className="text-2xl font-semibold mb-4">Cast</h2>
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 {credits.cast.slice(0, 10).map(person => (
-                  <div key={person.id} className="min-w-[120px] max-w-[120px] flex flex-col gap-2">
+                  <Link
+                    key={person.id}
+                    href={`/person/${person.id}`}
+                    className="min-w-[120px] max-w-[120px] flex flex-col gap-2 group/person"
+                  >
                     <img 
                       src={getTmdbImageUrl(person.profilePath, "profile") || "/favicon.svg"} 
                       alt={person.name} 
-                      className="w-full aspect-[2/3] object-cover rounded-lg bg-muted"
+                      className="w-full aspect-[2/3] object-cover rounded-lg bg-muted transition-transform group-hover/person:scale-[1.02]"
                     />
                     <div>
-                      <p className="font-semibold text-sm leading-tight">{person.name}</p>
+                      <p className="font-semibold text-sm leading-tight group-hover/person:text-primary transition-colors">{person.name}</p>
                       <p className="text-xs text-muted-foreground">{person.character}</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </section>
@@ -126,31 +131,60 @@ export function MediaDetail() {
               </div>
             </section>
           )}
+
+          <MediaMetadataPanel mediaType={type} tmdbId={id} />
         </div>
 
-        <div className="space-y-6 border border-border/50 rounded-xl p-6 bg-card/30 backdrop-blur-sm h-fit">
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">Status</h3>
-            <p>{details.status}</p>
-          </div>
-          {details.originalLanguage && (
+        <div className="space-y-6">
+          <WatchProviders mediaType={type} tmdbId={id} />
+
+          <div className="space-y-6 border border-border/50 rounded-xl p-6 bg-card/30 backdrop-blur-sm h-fit">
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Original Language</h3>
-              <p className="uppercase">{details.originalLanguage}</p>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Status</h3>
+              <p>{details.status}</p>
             </div>
-          )}
-          {details.productionCompanies && details.productionCompanies.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Production</h3>
-              <div className="flex flex-wrap gap-2">
-                {details.productionCompanies.map(c => c.name).join(", ")}
+            {details.originalLanguage && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Original Language</h3>
+                <p className="uppercase">{details.originalLanguage}</p>
               </div>
-            </div>
-          )}
+            )}
+            {details.spokenLanguages && details.spokenLanguages.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Languages</h3>
+                <p>{details.spokenLanguages.join(", ")}</p>
+              </div>
+            )}
+            {details.productionCountries && details.productionCountries.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Countries</h3>
+                <p>{details.productionCountries.join(", ")}</p>
+              </div>
+            )}
+            {details.imdbId && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">IMDb</h3>
+                <a
+                  href={`https://www.imdb.com/title/${details.imdbId}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {details.imdbId}
+                </a>
+              </div>
+            )}
+            {details.productionCompanies && details.productionCompanies.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Production</h3>
+                <div className="flex flex-wrap gap-2">
+                  {details.productionCompanies.map(c => c.name).join(", ")}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      <WatchProviders mediaType={type} tmdbId={id} />
 
       {type === "tv" && details.seasons && details.seasons.length > 0 && (
         <SeasonsPanel tmdbId={id} seasons={details.seasons} />

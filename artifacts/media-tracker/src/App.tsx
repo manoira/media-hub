@@ -11,6 +11,7 @@ import { MediaDetail } from "@/pages/media-detail";
 import { Watchlist } from "@/pages/watchlist";
 import { Stats } from "@/pages/stats";
 import { Browse } from "@/pages/browse";
+import { PersonDetail } from "@/pages/person-detail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +28,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/search" component={Search} />
+        <Route path="/person/:personId" component={PersonDetail} />
         <Route path="/media/:mediaType/:tmdbId" component={MediaDetail} />
         <Route path="/watchlist" component={Watchlist} />
         <Route path="/stats" component={Stats} />

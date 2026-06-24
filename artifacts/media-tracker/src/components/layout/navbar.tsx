@@ -60,7 +60,7 @@ export function Navbar() {
               <Input
                 type="search"
                 name="q"
-                placeholder="Search movies & TV..."
+                placeholder="Search movies, TV, people & tags..."
                 className="pl-8 bg-muted/50 border-none focus-visible:ring-1 md:w-[300px]"
               />
             </form>

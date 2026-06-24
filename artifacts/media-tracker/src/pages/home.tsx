@@ -2,39 +2,45 @@ import {
   useGetTrending, useGetGenres, useGetStatsSummary, useGetBrowseCategory,
   getGetTrendingQueryKey, getGetGenresQueryKey, getGetStatsSummaryQueryKey,
   getGetBrowseCategoryQueryKey,
+  type GetBrowseCategoryParams,
 } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
 import { MediaSlider } from "@/components/media/media-slider";
+import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
+import { withExcludeTracked } from "@/lib/exclude-tracked";
 import { useState } from "react";
 import { Link } from "wouter";
 
-function useBrowse(category: string) {
-  return useGetBrowseCategory(
-    { category } as Parameters<typeof useGetBrowseCategory>[0],
-    { query: { queryKey: getGetBrowseCategoryQueryKey({ category } as Parameters<typeof getGetBrowseCategoryQueryKey>[0]) } }
-  );
+function useBrowse(category: GetBrowseCategoryParams["category"], hideTracked: boolean) {
+  const params = withExcludeTracked({ category }, hideTracked);
+  return useGetBrowseCategory(params, {
+    query: { queryKey: getGetBrowseCategoryQueryKey(params) },
+  });
 }
 
 export function Home() {
   const [type, setType] = useState<"all" | "movie" | "tv">("all");
   const [timeWindow, setTimeWindow] = useState<"day" | "week">("week");
+  const { hideTracked, setHideTracked } = useHideTrackedPreference();
 
+  const trendingParams = withExcludeTracked({ type, time_window: timeWindow }, hideTracked);
   const { data: trending, isLoading: isLoadingTrending } = useGetTrending(
-    { type, time_window: timeWindow },
-    { query: { queryKey: getGetTrendingQueryKey({ type, time_window: timeWindow }) } }
+    trendingParams,
+    { query: { queryKey: getGetTrendingQueryKey(trendingParams) } },
   );
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
   const { data: stats } = useGetStatsSummary({ query: { queryKey: getGetStatsSummaryQueryKey() } });
 
-  const { data: popularMovies, isLoading: loadingPopMovies }     = useBrowse("popular_movies");
-  const { data: popularTv, isLoading: loadingPopTv }             = useBrowse("popular_tv");
-  const { data: topRatedMovies, isLoading: loadingTopMovies }    = useBrowse("top_rated_movies");
-  const { data: topRatedTv, isLoading: loadingTopTv }            = useBrowse("top_rated_tv");
-  const { data: nowPlaying, isLoading: loadingNowPlaying }       = useBrowse("now_playing");
-  const { data: upcoming, isLoading: loadingUpcoming }           = useBrowse("upcoming");
-  const { data: onAir, isLoading: loadingOnAir }                 = useBrowse("on_air");
+  const { data: popularMovies, isLoading: loadingPopMovies }     = useBrowse("popular_movies", hideTracked);
+  const { data: popularTv, isLoading: loadingPopTv }             = useBrowse("popular_tv", hideTracked);
+  const { data: topRatedMovies, isLoading: loadingTopMovies }    = useBrowse("top_rated_movies", hideTracked);
+  const { data: topRatedTv, isLoading: loadingTopTv }            = useBrowse("top_rated_tv", hideTracked);
+  const { data: nowPlaying, isLoading: loadingNowPlaying }       = useBrowse("now_playing", hideTracked);
+  const { data: upcoming, isLoading: loadingUpcoming }           = useBrowse("upcoming", hideTracked);
+  const { data: onAir, isLoading: loadingOnAir }                 = useBrowse("on_air", hideTracked);
 
   return (
     <div className="space-y-10 pb-20">
@@ -59,6 +65,11 @@ export function Home() {
         </section>
       )}
 
+      <HideTrackedToggle
+        checked={hideTracked}
+        onCheckedChange={setHideTracked}
+        id="hide-tracked-home"
+      />
 
       <section>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -86,7 +97,7 @@ export function Home() {
               </div>
             ))}
           </div>
-        ) : trending?.results ? (
+        ) : trending?.results && trending.results.length > 0 ? (
           <div className="flex gap-3 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: "none" }}>
             {trending.results.map(item => (
               <div key={item.tmdbId} className="flex-none w-[160px]">
@@ -94,7 +105,13 @@ export function Home() {
               </div>
             ))}
           </div>
-        ) : null}
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {hideTracked
+              ? "No untracked trending items right now. Turn off the filter to see everything."
+              : "No trending items right now."}
+          </p>
+        )}
       </section>
 
       <MediaSlider title="Popular Movies"       items={popularMovies?.results}  isLoading={loadingPopMovies}    genres={genres} />

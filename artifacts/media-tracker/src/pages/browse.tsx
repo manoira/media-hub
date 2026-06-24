@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useDiscoverMedia, useGetGenres, getGetGenresQueryKey, getDiscoverMediaQueryKey } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
+import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { withExcludeTracked } from "@/lib/exclude-tracked";
+import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -11,7 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useQueryClient } from "@tanstack/react-query";
 import type { MediaItem } from "@workspace/api-client-react";
 
 type SortValue =
@@ -115,9 +117,9 @@ export function Browse() {
   const [allItems, setAllItems] = useState<MediaItem[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
+  const { hideTracked, setHideTracked } = useHideTrackedPreference();
 
-  const params = {
+  const params = withExcludeTracked({
     type: mediaType,
     genre: selectedGenre ?? undefined,
     sort_by: sortBy,
@@ -126,7 +128,7 @@ export function Browse() {
     max_year: yearRange.max,
     language,
     page,
-  };
+  }, hideTracked);
 
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
 
@@ -148,6 +150,12 @@ export function Browse() {
       setHasMore(page < (data.totalPages ?? 1) && page < 100);
     }
   }, [data, page]);
+
+  useEffect(() => {
+    setAllItems([]);
+    setHasMore(true);
+    setPage(1);
+  }, [hideTracked]);
 
   const resetAndFilter = useCallback((opts: {
     type?: MediaType;
@@ -285,36 +293,37 @@ export function Browse() {
               </DropdownMenuItem>
             ))}
           </FilterMenu>
-        </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => resetAndFilter({ genre: null })}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
-              selectedGenre === null
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-            )}
+          <FilterMenu
+            label={activeGenres?.find(g => g.id === selectedGenre)?.name ?? "Genre"}
+            active={selectedGenre !== null}
           >
-            All
-          </button>
-          {activeGenres?.map(genre => (
-            <button
-              key={genre.id}
-              onClick={() => resetAndFilter({ genre: genre.id === selectedGenre ? null : genre.id })}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
-                selectedGenre === genre.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-              )}
+            <DropdownMenuItem
+              className={cn("cursor-pointer", selectedGenre === null && "bg-muted")}
+              onClick={() => resetAndFilter({ genre: null })}
             >
-              {genre.name}
-            </button>
-          ))}
+              All
+              {selectedGenre === null && <span className="ml-auto text-[10px] text-muted-foreground">✓</span>}
+            </DropdownMenuItem>
+            {activeGenres?.map(genre => (
+              <DropdownMenuItem
+                key={genre.id}
+                className={cn("cursor-pointer", selectedGenre === genre.id && "bg-muted")}
+                onClick={() => resetAndFilter({ genre: genre.id })}
+              >
+                {genre.name}
+                {selectedGenre === genre.id && <span className="ml-auto text-[10px] text-muted-foreground">✓</span>}
+              </DropdownMenuItem>
+            ))}
+          </FilterMenu>
         </div>
       </div>
+
+      <HideTrackedToggle
+        checked={hideTracked}
+        onCheckedChange={setHideTracked}
+        id="hide-tracked-browse"
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {allItems.map(item => (
@@ -339,6 +348,14 @@ export function Browse() {
 
       {!hasMore && allItems.length > 0 && (
         <p className="text-center text-sm text-muted-foreground py-4">You've reached the end</p>
+      )}
+
+      {!isFetching && allItems.length === 0 && (
+        <p className="text-center text-sm text-muted-foreground py-12">
+          {hideTracked
+            ? "No untracked items match these filters. Try turning off \"Hide items already on my watchlist\"."
+            : "No items match these filters."}
+        </p>
       )}
     </div>
   );

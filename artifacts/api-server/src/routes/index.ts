@@ -5,11 +5,13 @@ import mediaRouter from "./media";
 import watchlistRouter from "./watchlist";
 import statsRouter from "./stats";
 import progressRouter from "./progress";
+import peopleRouter from "./people";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(searchRouter);
+router.use(peopleRouter);
 router.use(mediaRouter);
 router.use(statsRouter);
 router.use(watchlistRouter);

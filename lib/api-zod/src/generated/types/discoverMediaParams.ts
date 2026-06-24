@@ -32,4 +32,8 @@ max_year?: number | null;
  */
 language?: string | null;
 page?: number;
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
 };

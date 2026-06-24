@@ -11,4 +11,9 @@ export interface WatchProvider {
   providerName: string;
   logoPath: string;
   displayPriority: number;
+  /**
+     * Direct link to watch, rent, or buy on the provider
+     * @nullable
+     */
+  link?: string | null;
 }

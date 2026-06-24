@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { getMovieDetails, getTvDetails, getCredits, getVideos, getSimilar, getWatchProviders } from "../lib/tmdb";
+import { getMovieDetails, getTvDetails, getCredits, getVideos, getSimilar, getWatchProviders, getMediaMetadata } from "../lib/tmdb";
 import { db, watchlistTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import {
@@ -13,6 +13,8 @@ import {
   GetSimilarMediaResponse,
   GetWatchProvidersParams,
   GetWatchProvidersResponse,
+  GetMediaMetadataParams,
+  GetMediaMetadataResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -81,6 +83,22 @@ router.get("/media/:mediaType/:tmdbId/credits", async (req, res): Promise<void> 
   } catch (err: unknown) {
     req.log.error({ err }, "Credits error");
     res.status(500).json({ error: "Failed to get credits" });
+  }
+});
+
+router.get("/media/:mediaType/:tmdbId/metadata", async (req, res): Promise<void> => {
+  const params = GetMediaMetadataParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const { mediaType, tmdbId } = params.data;
+  try {
+    const metadata = await getMediaMetadata(mediaType, tmdbId);
+    res.json(GetMediaMetadataResponse.parse(metadata));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Media metadata error");
+    res.status(500).json({ error: "Failed to get media metadata" });
   }
 });
 

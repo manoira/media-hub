@@ -1,3 +1,5 @@
+import { getProviderLink, resolveWatchProviderLinks } from "./watch-provider-links";
+
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
 function getApiKey(): string {
@@ -470,12 +472,18 @@ interface TmdbWatchProvidersCountry {
   ads?: TmdbProvider[];
 }
 
-function normalizeProviders(list?: TmdbProvider[]) {
+function normalizeProviders(
+  list: TmdbProvider[] | undefined,
+  linkMap: Map<string, string>,
+  countryLink: string | null | undefined,
+  category: "flatrate" | "free" | "ads" | "rent" | "buy",
+) {
   return (list ?? []).map(p => ({
     providerId: p.provider_id,
     providerName: p.provider_name,
     logoPath: p.logo_path,
     displayPriority: p.display_priority,
+    link: getProviderLink(linkMap, p.provider_id, p.provider_name, category, countryLink),
   }));
 }
 
@@ -484,13 +492,16 @@ export async function getWatchProviders(mediaType: string, tmdbId: number, count
     `/${mediaType}/${tmdbId}/watch/providers`
   );
   const country: TmdbWatchProvidersCountry = data.results?.[countryCode] ?? {};
+  const countryLink = country.link ?? null;
+  const linkMap = await resolveWatchProviderLinks(countryLink);
+
   return {
-    link: country.link ?? null,
-    flatrate: normalizeProviders(country.flatrate),
-    rent: normalizeProviders(country.rent),
-    buy: normalizeProviders(country.buy),
-    free: normalizeProviders(country.free),
-    ads: normalizeProviders(country.ads),
+    link: countryLink,
+    flatrate: normalizeProviders(country.flatrate, linkMap, countryLink, "flatrate"),
+    rent: normalizeProviders(country.rent, linkMap, countryLink, "rent"),
+    buy: normalizeProviders(country.buy, linkMap, countryLink, "buy"),
+    free: normalizeProviders(country.free, linkMap, countryLink, "free"),
+    ads: normalizeProviders(country.ads, linkMap, countryLink, "ads"),
   };
 }
 
@@ -553,5 +564,263 @@ export async function getSimilar(mediaType: string, tmdbId: number) {
     totalResults: data.total_results,
     totalPages: data.total_pages,
     page: data.page,
+  };
+}
+
+interface TmdbPerson {
+  id: number;
+  name: string;
+  profile_path?: string;
+  known_for_department?: string;
+  known_for?: TmdbMovie[];
+}
+
+interface TmdbPersonDetails {
+  id: number;
+  name: string;
+  biography?: string;
+  birthday?: string;
+  place_of_birth?: string;
+  profile_path?: string;
+  known_for_department?: string;
+}
+
+interface TmdbCombinedCredit extends TmdbMovie {
+  media_type: string;
+  character?: string;
+}
+
+function normalizePersonSummary(person: TmdbPerson) {
+  return {
+    id: person.id,
+    name: person.name,
+    profilePath: person.profile_path ?? null,
+    knownForDepartment: person.known_for_department ?? null,
+    knownFor: (person.known_for ?? [])
+      .filter(item => item.media_type === "movie" || item.media_type === "tv" || !item.media_type)
+      .slice(0, 3)
+      .map(item => normalizeMediaItem(item, item.media_type === "tv" ? "tv" : "movie")),
+  };
+}
+
+function normalizePersonDetails(person: TmdbPersonDetails) {
+  return {
+    id: person.id,
+    name: person.name,
+    profilePath: person.profile_path ?? null,
+    biography: person.biography ?? null,
+    birthday: person.birthday ?? null,
+    placeOfBirth: person.place_of_birth ?? null,
+    knownForDepartment: person.known_for_department ?? null,
+  };
+}
+
+function normalizePersonCredit(credit: TmdbCombinedCredit) {
+  const mediaType = credit.media_type === "tv" ? "tv" : "movie";
+  return {
+    ...normalizeMediaItem(credit, mediaType),
+    character: credit.character ?? null,
+  };
+}
+
+export async function searchPeople(query: string, page = 1) {
+  const data = await tmdbFetch<{ results: TmdbPerson[]; total_results: number; total_pages: number; page: number }>(
+    "/search/person",
+    { query, page, include_adult: false }
+  );
+  return {
+    results: data.results.map(normalizePersonSummary),
+    totalResults: data.total_results,
+    totalPages: data.total_pages,
+    page: data.page,
+  };
+}
+
+export async function getPersonDetails(personId: number) {
+  const data = await tmdbFetch<TmdbPersonDetails>(`/person/${personId}`);
+  return normalizePersonDetails(data);
+}
+
+export async function getPersonCredits(
+  personId: number,
+  type: "all" | "movie" | "tv" = "all",
+  page = 1,
+  pageSize = 24,
+) {
+  const [person, creditsData] = await Promise.all([
+    getPersonDetails(personId),
+    tmdbFetch<{ cast: TmdbCombinedCredit[] }>(`/person/${personId}/combined_credits`),
+  ]);
+
+  let credits = (creditsData.cast ?? [])
+    .filter(c => c.media_type === "movie" || c.media_type === "tv")
+    .map(normalizePersonCredit);
+
+  if (type === "movie") credits = credits.filter(c => c.mediaType === "movie");
+  else if (type === "tv") credits = credits.filter(c => c.mediaType === "tv");
+
+  credits.sort((a, b) => {
+    const dateA = a.releaseDate ? Date.parse(a.releaseDate) : 0;
+    const dateB = b.releaseDate ? Date.parse(b.releaseDate) : 0;
+    return dateB - dateA;
+  });
+
+  const totalResults = credits.length;
+  const totalPages = Math.max(1, Math.ceil(totalResults / pageSize));
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const start = (safePage - 1) * pageSize;
+  const results = credits.slice(start, start + pageSize);
+
+  return {
+    person,
+    results,
+    totalResults,
+    totalPages,
+    page: safePage,
+  };
+}
+
+interface TmdbKeyword {
+  id: number;
+  name: string;
+}
+
+interface TmdbAltTitle {
+  iso_3166_1?: string;
+  title: string;
+  type?: string;
+}
+
+const WRITER_JOBS = new Set([
+  "Writer",
+  "Screenplay",
+  "Novel",
+  "Author",
+  "Story",
+  "Book",
+  "Characters",
+  "Teleplay",
+  "Original Story",
+  "Short Story",
+]);
+
+const SOURCE_MATERIAL_PATTERN = /based on|adaptation|remake of|spin off|spin-off/i;
+
+function normalizeKeyword(keyword: TmdbKeyword) {
+  return { id: keyword.id, name: keyword.name };
+}
+
+async function fetchKeywords(mediaType: string, tmdbId: number) {
+  if (mediaType === "tv") {
+    const data = await tmdbFetch<{ results?: TmdbKeyword[] }>(`/tv/${tmdbId}/keywords`);
+    return (data.results ?? []).map(normalizeKeyword);
+  }
+  const data = await tmdbFetch<{ keywords?: TmdbKeyword[] }>(`/movie/${tmdbId}/keywords`);
+  return (data.keywords ?? []).map(normalizeKeyword);
+}
+
+async function fetchAlternativeTitles(mediaType: string, tmdbId: number) {
+  if (mediaType === "tv") {
+    const data = await tmdbFetch<{ results?: TmdbAltTitle[] }>(`/tv/${tmdbId}/alternative_titles`);
+    return (data.results ?? []).map(t => ({
+      title: t.title,
+      country: t.iso_3166_1 ?? null,
+    }));
+  }
+  const data = await tmdbFetch<{ titles?: TmdbAltTitle[] }>(`/movie/${tmdbId}/alternative_titles`);
+  return (data.titles ?? []).map(t => ({
+    title: t.title,
+    country: t.iso_3166_1 ?? null,
+  }));
+}
+
+async function fetchWriters(mediaType: string, tmdbId: number) {
+  const endpoint = mediaType === "tv" ? `/tv/${tmdbId}/aggregate_credits` : `/movie/${tmdbId}/credits`;
+  const data = await tmdbFetch<{ crew?: TmdbCrew[] }>(endpoint);
+  const seen = new Set<number>();
+  const writers: { id: number; name: string; job: string | null; profilePath: string | null }[] = [];
+
+  for (const member of data.crew ?? []) {
+    if (!member.job || !WRITER_JOBS.has(member.job) || seen.has(member.id)) continue;
+    seen.add(member.id);
+    writers.push({
+      id: member.id,
+      name: member.name,
+      job: member.job,
+      profilePath: member.profile_path ?? null,
+    });
+  }
+
+  return writers;
+}
+
+export async function getMediaMetadata(mediaType: string, tmdbId: number) {
+  const [keywords, alternativeTitles, writers] = await Promise.all([
+    fetchKeywords(mediaType, tmdbId),
+    fetchAlternativeTitles(mediaType, tmdbId),
+    fetchWriters(mediaType, tmdbId),
+  ]);
+
+  const sourceMaterial = keywords.filter(k => SOURCE_MATERIAL_PATTERN.test(k.name));
+
+  return {
+    keywords,
+    sourceMaterial,
+    writers,
+    alternativeTitles,
+  };
+}
+
+export async function searchByTag(query: string, type: "all" | "movie" | "tv" = "all", page = 1) {
+  const keywordData = await tmdbFetch<{ results: TmdbKeyword[]; total_results: number; total_pages: number }>(
+    "/search/keyword",
+    { query, page: 1 },
+  );
+
+  const matchedKeywords = keywordData.results.slice(0, 5).map(normalizeKeyword);
+  if (matchedKeywords.length === 0) {
+    return {
+      results: [],
+      matchedKeywords: [],
+      totalResults: 0,
+      totalPages: 0,
+      page: 1,
+    };
+  }
+
+  const keywordParam = matchedKeywords.map(k => k.id).join("|");
+  const discoverCalls: Promise<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>[] = [];
+
+  if (type === "movie" || type === "all") {
+    discoverCalls.push(
+      tmdbFetch("/discover/movie", { with_keywords: keywordParam, sort_by: "popularity.desc", page }),
+    );
+  }
+  if (type === "tv" || type === "all") {
+    discoverCalls.push(
+      tmdbFetch("/discover/tv", { with_keywords: keywordParam, sort_by: "popularity.desc", page }),
+    );
+  }
+
+  const pages = await Promise.all(discoverCalls);
+  const merged = pages.flatMap((data, index) => {
+    const mediaTypeOverride = type === "all" ? (index === 0 ? "movie" : "tv") : type;
+    return data.results.map(r => normalizeMediaItem(r, mediaTypeOverride));
+  });
+
+  const deduped = Array.from(
+    new Map(merged.map(item => [`${item.mediaType}:${item.tmdbId}`, item])).values(),
+  );
+  deduped.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+
+  const totalResults = pages.reduce((sum, p) => sum + p.total_results, 0);
+  const totalPages = Math.max(...pages.map(p => p.total_pages), 1);
+
+  return {
+    results: deduped,
+    matchedKeywords,
+    totalResults,
+    totalPages,
+    page,
   };
 }

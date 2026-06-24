@@ -21,11 +21,13 @@ export const HealthCheckResponse = zod.object({
  */
 export const searchMediaQueryTypeDefault = `all`;
 export const searchMediaQueryPageDefault = 1;
+export const searchMediaQueryExcludeTrackedDefault = false;
 
 export const SearchMediaQueryParams = zod.object({
   "query": zod.coerce.string(),
   "type": zod.enum(['all', 'movie', 'tv']).default(searchMediaQueryTypeDefault),
-  "page": zod.coerce.number().default(searchMediaQueryPageDefault)
+  "page": zod.coerce.number().default(searchMediaQueryPageDefault),
+  "exclude_tracked": zod.coerce.boolean().default(searchMediaQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
 })
 
 export const SearchMediaResponse = zod.object({
@@ -52,11 +54,160 @@ export const SearchMediaResponse = zod.object({
 
 
 /**
+ * @summary Search actors and other people
+ */
+export const searchPeopleQueryPageDefault = 1;
+
+export const SearchPeopleQueryParams = zod.object({
+  "query": zod.coerce.string(),
+  "page": zod.coerce.number().default(searchPeopleQueryPageDefault)
+})
+
+export const SearchPeopleResponse = zod.object({
+  "results": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "profilePath": zod.string().nullish(),
+  "knownForDepartment": zod.string().nullish(),
+  "knownFor": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+}))
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+})
+
+
+/**
+ * @summary Search movies and TV by theme tags (keywords)
+ */
+export const searchByTagQueryTypeDefault = `all`;
+export const searchByTagQueryPageDefault = 1;
+export const searchByTagQueryExcludeTrackedDefault = false;
+
+export const SearchByTagQueryParams = zod.object({
+  "query": zod.coerce.string(),
+  "type": zod.enum(['all', 'movie', 'tv']).default(searchByTagQueryTypeDefault),
+  "page": zod.coerce.number().default(searchByTagQueryPageDefault),
+  "exclude_tracked": zod.coerce.boolean().default(searchByTagQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
+})
+
+export const SearchByTagResponse = zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "matchedKeywords": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+})
+
+
+/**
+ * @summary Get person profile
+ */
+export const GetPersonDetailsParams = zod.object({
+  "personId": zod.coerce.number()
+})
+
+export const GetPersonDetailsResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "profilePath": zod.string().nullish(),
+  "biography": zod.string().nullish(),
+  "birthday": zod.string().nullish(),
+  "placeOfBirth": zod.string().nullish(),
+  "knownForDepartment": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get movies and TV shows a person appeared in
+ */
+export const GetPersonCreditsParams = zod.object({
+  "personId": zod.coerce.number()
+})
+
+export const getPersonCreditsQueryTypeDefault = `all`;
+export const getPersonCreditsQueryPageDefault = 1;
+export const getPersonCreditsQueryPageSizeDefault = 24;
+
+export const GetPersonCreditsQueryParams = zod.object({
+  "type": zod.enum(['all', 'movie', 'tv']).default(getPersonCreditsQueryTypeDefault),
+  "page": zod.coerce.number().default(getPersonCreditsQueryPageDefault),
+  "page_size": zod.coerce.number().default(getPersonCreditsQueryPageSizeDefault)
+})
+
+export const GetPersonCreditsResponse = zod.object({
+  "person": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "profilePath": zod.string().nullish(),
+  "biography": zod.string().nullish(),
+  "birthday": zod.string().nullish(),
+  "placeOfBirth": zod.string().nullish(),
+  "knownForDepartment": zod.string().nullish()
+}),
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish(),
+  "character": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+})
+
+
+/**
  * @summary Discover trending and popular media
  */
 export const discoverMediaQueryTypeDefault = `movie`;
 export const discoverMediaQuerySortByDefault = `popularity.desc`;
 export const discoverMediaQueryPageDefault = 1;
+export const discoverMediaQueryExcludeTrackedDefault = false;
 
 export const DiscoverMediaQueryParams = zod.object({
   "type": zod.enum(['movie', 'tv']).default(discoverMediaQueryTypeDefault),
@@ -66,7 +217,8 @@ export const DiscoverMediaQueryParams = zod.object({
   "min_year": zod.coerce.number().nullish(),
   "max_year": zod.coerce.number().nullish(),
   "language": zod.coerce.string().nullish(),
-  "page": zod.coerce.number().default(discoverMediaQueryPageDefault)
+  "page": zod.coerce.number().default(discoverMediaQueryPageDefault),
+  "exclude_tracked": zod.coerce.boolean().default(discoverMediaQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
 })
 
 export const DiscoverMediaResponse = zod.object({
@@ -97,10 +249,12 @@ export const DiscoverMediaResponse = zod.object({
  */
 export const getTrendingQueryTypeDefault = `all`;
 export const getTrendingQueryTimeWindowDefault = `week`;
+export const getTrendingQueryExcludeTrackedDefault = false;
 
 export const GetTrendingQueryParams = zod.object({
   "type": zod.enum(['all', 'movie', 'tv']).default(getTrendingQueryTypeDefault),
-  "time_window": zod.enum(['day', 'week']).default(getTrendingQueryTimeWindowDefault)
+  "time_window": zod.enum(['day', 'week']).default(getTrendingQueryTimeWindowDefault),
+  "exclude_tracked": zod.coerce.boolean().default(getTrendingQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
 })
 
 export const GetTrendingResponse = zod.object({
@@ -130,10 +284,12 @@ export const GetTrendingResponse = zod.object({
  * @summary Browse media by category
  */
 export const getBrowseCategoryQueryPageDefault = 1;
+export const getBrowseCategoryQueryExcludeTrackedDefault = false;
 
 export const GetBrowseCategoryQueryParams = zod.object({
   "category": zod.enum(['popular_movies', 'popular_tv', 'top_rated_movies', 'top_rated_tv', 'now_playing', 'upcoming', 'on_air']),
-  "page": zod.coerce.number().default(getBrowseCategoryQueryPageDefault)
+  "page": zod.coerce.number().default(getBrowseCategoryQueryPageDefault),
+  "exclude_tracked": zod.coerce.boolean().default(getBrowseCategoryQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
 })
 
 export const GetBrowseCategoryResponse = zod.object({
@@ -282,6 +438,36 @@ export const GetMediaCreditsResponse = zod.object({
 
 
 /**
+ * @summary Get tags, writers, and alternative titles
+ */
+export const GetMediaMetadataParams = zod.object({
+  "mediaType": zod.enum(['movie', 'tv']),
+  "tmdbId": zod.coerce.number()
+})
+
+export const GetMediaMetadataResponse = zod.object({
+  "keywords": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "sourceMaterial": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "writers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "job": zod.string().nullish(),
+  "profilePath": zod.string().nullish()
+})),
+  "alternativeTitles": zod.array(zod.object({
+  "title": zod.string(),
+  "country": zod.string().nullish()
+}))
+})
+
+
+/**
  * @summary Get trailers and videos
  */
 export const GetMediaVideosParams = zod.object({
@@ -347,31 +533,36 @@ export const GetWatchProvidersResponse = zod.object({
   "providerId": zod.number(),
   "providerName": zod.string(),
   "logoPath": zod.string(),
-  "displayPriority": zod.number()
+  "displayPriority": zod.number(),
+  "link": zod.string().nullish().describe('Direct link to watch, rent, or buy on the provider')
 })),
   "rent": zod.array(zod.object({
   "providerId": zod.number(),
   "providerName": zod.string(),
   "logoPath": zod.string(),
-  "displayPriority": zod.number()
+  "displayPriority": zod.number(),
+  "link": zod.string().nullish().describe('Direct link to watch, rent, or buy on the provider')
 })),
   "buy": zod.array(zod.object({
   "providerId": zod.number(),
   "providerName": zod.string(),
   "logoPath": zod.string(),
-  "displayPriority": zod.number()
+  "displayPriority": zod.number(),
+  "link": zod.string().nullish().describe('Direct link to watch, rent, or buy on the provider')
 })),
   "free": zod.array(zod.object({
   "providerId": zod.number(),
   "providerName": zod.string(),
   "logoPath": zod.string(),
-  "displayPriority": zod.number()
+  "displayPriority": zod.number(),
+  "link": zod.string().nullish().describe('Direct link to watch, rent, or buy on the provider')
 })),
   "ads": zod.array(zod.object({
   "providerId": zod.number(),
   "providerName": zod.string(),
   "logoPath": zod.string(),
-  "displayPriority": zod.number()
+  "displayPriority": zod.number(),
+  "link": zod.string().nullish().describe('Direct link to watch, rent, or buy on the provider')
 }))
 })
 

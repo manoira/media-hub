@@ -27,18 +27,26 @@ import type {
   GenreList,
   GenreStat,
   GetBrowseCategoryParams,
+  GetPersonCreditsParams,
   GetRecentlyWatchedParams,
   GetTrendingParams,
   GetWatchlistParams,
   HealthStatus,
   MediaDetails,
+  MediaMetadata,
   MediaSearchResult,
+  PersonCreditsResult,
+  PersonDetails,
+  PersonSearchResult,
+  SearchByTagParams,
   SearchMediaParams,
+  SearchPeopleParams,
   SeasonDetails,
   SeasonWatchResult,
   SeasonWithProgress,
   SeriesWatchResult,
   StatsSummary,
+  TagSearchResult,
   TvProgress,
   VideoList,
   WatchAllInput,
@@ -210,6 +218,340 @@ export function useSearchMedia<TData = Awaited<ReturnType<typeof searchMedia>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getSearchMediaQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSearchPeopleUrl = (params: SearchPeopleParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/search/people?${stringifiedParams}` : `/api/search/people`
+}
+
+/**
+ * @summary Search actors and other people
+ */
+export const searchPeople = async (params: SearchPeopleParams, options?: RequestInit): Promise<PersonSearchResult> => {
+
+  return customFetch<PersonSearchResult>(getSearchPeopleUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchPeopleQueryKey = (params?: SearchPeopleParams,) => {
+    return [
+    `/api/search/people`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchPeopleQueryOptions = <TData = Awaited<ReturnType<typeof searchPeople>>, TError = ErrorType<unknown>>(params: SearchPeopleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchPeople>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchPeopleQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchPeople>>> = ({ signal }) => searchPeople(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchPeople>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchPeopleQueryResult = NonNullable<Awaited<ReturnType<typeof searchPeople>>>
+export type SearchPeopleQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Search actors and other people
+ */
+
+export function useSearchPeople<TData = Awaited<ReturnType<typeof searchPeople>>, TError = ErrorType<unknown>>(
+ params: SearchPeopleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchPeople>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchPeopleQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSearchByTagUrl = (params: SearchByTagParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/search/by-tag?${stringifiedParams}` : `/api/search/by-tag`
+}
+
+/**
+ * @summary Search movies and TV by theme tags (keywords)
+ */
+export const searchByTag = async (params: SearchByTagParams, options?: RequestInit): Promise<TagSearchResult> => {
+
+  return customFetch<TagSearchResult>(getSearchByTagUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchByTagQueryKey = (params?: SearchByTagParams,) => {
+    return [
+    `/api/search/by-tag`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchByTagQueryOptions = <TData = Awaited<ReturnType<typeof searchByTag>>, TError = ErrorType<unknown>>(params: SearchByTagParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchByTag>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchByTagQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchByTag>>> = ({ signal }) => searchByTag(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchByTag>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchByTagQueryResult = NonNullable<Awaited<ReturnType<typeof searchByTag>>>
+export type SearchByTagQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Search movies and TV by theme tags (keywords)
+ */
+
+export function useSearchByTag<TData = Awaited<ReturnType<typeof searchByTag>>, TError = ErrorType<unknown>>(
+ params: SearchByTagParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchByTag>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchByTagQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPersonDetailsUrl = (personId: number,) => {
+
+
+
+
+  return `/api/people/${personId}`
+}
+
+/**
+ * @summary Get person profile
+ */
+export const getPersonDetails = async (personId: number, options?: RequestInit): Promise<PersonDetails> => {
+
+  return customFetch<PersonDetails>(getGetPersonDetailsUrl(personId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPersonDetailsQueryKey = (personId: number,) => {
+    return [
+    `/api/people/${personId}`
+    ] as const;
+    }
+
+
+export const getGetPersonDetailsQueryOptions = <TData = Awaited<ReturnType<typeof getPersonDetails>>, TError = ErrorType<unknown>>(personId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPersonDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPersonDetailsQueryKey(personId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPersonDetails>>> = ({ signal }) => getPersonDetails(personId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(personId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPersonDetails>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPersonDetailsQueryResult = NonNullable<Awaited<ReturnType<typeof getPersonDetails>>>
+export type GetPersonDetailsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get person profile
+ */
+
+export function useGetPersonDetails<TData = Awaited<ReturnType<typeof getPersonDetails>>, TError = ErrorType<unknown>>(
+ personId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPersonDetails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPersonDetailsQueryOptions(personId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPersonCreditsUrl = (personId: number,
+    params?: GetPersonCreditsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/people/${personId}/credits?${stringifiedParams}` : `/api/people/${personId}/credits`
+}
+
+/**
+ * @summary Get movies and TV shows a person appeared in
+ */
+export const getPersonCredits = async (personId: number,
+    params?: GetPersonCreditsParams, options?: RequestInit): Promise<PersonCreditsResult> => {
+
+  return customFetch<PersonCreditsResult>(getGetPersonCreditsUrl(personId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPersonCreditsQueryKey = (personId: number,
+    params?: GetPersonCreditsParams,) => {
+    return [
+    `/api/people/${personId}/credits`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPersonCreditsQueryOptions = <TData = Awaited<ReturnType<typeof getPersonCredits>>, TError = ErrorType<unknown>>(personId: number,
+    params?: GetPersonCreditsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPersonCredits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPersonCreditsQueryKey(personId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPersonCredits>>> = ({ signal }) => getPersonCredits(personId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(personId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPersonCredits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPersonCreditsQueryResult = NonNullable<Awaited<ReturnType<typeof getPersonCredits>>>
+export type GetPersonCreditsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get movies and TV shows a person appeared in
+ */
+
+export function useGetPersonCredits<TData = Awaited<ReturnType<typeof getPersonCredits>>, TError = ErrorType<unknown>>(
+ personId: number,
+    params?: GetPersonCreditsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPersonCredits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPersonCreditsQueryOptions(personId,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -703,6 +1045,88 @@ export function useGetMediaCredits<TData = Awaited<ReturnType<typeof getMediaCre
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMediaCreditsQueryOptions(mediaType,tmdbId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMediaMetadataUrl = (mediaType: 'movie' | 'tv',
+    tmdbId: number,) => {
+
+
+
+
+  return `/api/media/${mediaType}/${tmdbId}/metadata`
+}
+
+/**
+ * @summary Get tags, writers, and alternative titles
+ */
+export const getMediaMetadata = async (mediaType: 'movie' | 'tv',
+    tmdbId: number, options?: RequestInit): Promise<MediaMetadata> => {
+
+  return customFetch<MediaMetadata>(getGetMediaMetadataUrl(mediaType,tmdbId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMediaMetadataQueryKey = (mediaType: 'movie' | 'tv',
+    tmdbId: number,) => {
+    return [
+    `/api/media/${mediaType}/${tmdbId}/metadata`
+    ] as const;
+    }
+
+
+export const getGetMediaMetadataQueryOptions = <TData = Awaited<ReturnType<typeof getMediaMetadata>>, TError = ErrorType<unknown>>(mediaType: 'movie' | 'tv',
+    tmdbId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMediaMetadata>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMediaMetadataQueryKey(mediaType,tmdbId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMediaMetadata>>> = ({ signal }) => getMediaMetadata(mediaType,tmdbId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(mediaType && tmdbId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMediaMetadata>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMediaMetadataQueryResult = NonNullable<Awaited<ReturnType<typeof getMediaMetadata>>>
+export type GetMediaMetadataQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get tags, writers, and alternative titles
+ */
+
+export function useGetMediaMetadata<TData = Awaited<ReturnType<typeof getMediaMetadata>>, TError = ErrorType<unknown>>(
+ mediaType: 'movie' | 'tv',
+    tmdbId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMediaMetadata>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMediaMetadataQueryOptions(mediaType,tmdbId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

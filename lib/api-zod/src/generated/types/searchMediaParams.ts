@@ -11,4 +11,8 @@ export type SearchMediaParams = {
 query: string;
 type?: SearchMediaType;
 page?: number;
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
 };

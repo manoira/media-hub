@@ -10,4 +10,8 @@ import type { GetBrowseCategoryCategory } from './getBrowseCategoryCategory';
 export type GetBrowseCategoryParams = {
 category: GetBrowseCategoryCategory;
 page?: number;
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
 };

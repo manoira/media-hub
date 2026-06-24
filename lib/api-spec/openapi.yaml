@@ -54,6 +54,12 @@ paths:
           schema:
             type: integer
             default: 1
+        - name: exclude_tracked
+          in: query
+          description: Omit items already on the watchlist (any status)
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Search results
@@ -61,6 +67,120 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MediaSearchResult"
+
+  /search/people:
+    get:
+      operationId: searchPeople
+      tags: [search]
+      summary: Search actors and other people
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: People search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonSearchResult"
+
+  /search/by-tag:
+    get:
+      operationId: searchByTag
+      tags: [search]
+      summary: Search movies and TV by theme tags (keywords)
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, movie, tv]
+            default: all
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: exclude_tracked
+          in: query
+          description: Omit items already on the watchlist (any status)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Titles matching theme tags
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagSearchResult"
+
+  /people/{personId}:
+    get:
+      operationId: getPersonDetails
+      tags: [search]
+      summary: Get person profile
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Person profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonDetails"
+
+  /people/{personId}/credits:
+    get:
+      operationId: getPersonCredits
+      tags: [search]
+      summary: Get movies and TV shows a person appeared in
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, movie, tv]
+            default: all
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 24
+      responses:
+        "200":
+          description: Person acting credits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonCreditsResult"
 
   /discover:
     get:
@@ -114,6 +234,12 @@ paths:
           schema:
             type: integer
             default: 1
+        - name: exclude_tracked
+          in: query
+          description: Omit items already on the watchlist (any status)
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Discovery results
@@ -140,6 +266,12 @@ paths:
             type: string
             enum: [day, week]
             default: week
+        - name: exclude_tracked
+          in: query
+          description: Omit items already on the watchlist (any status)
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Trending media
@@ -165,6 +297,12 @@ paths:
           schema:
             type: integer
             default: 1
+        - name: exclude_tracked
+          in: query
+          description: Omit items already on the watchlist (any status)
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Browse results
@@ -237,6 +375,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Credits"
+
+  /media/{mediaType}/{tmdbId}/metadata:
+    get:
+      operationId: getMediaMetadata
+      tags: [media]
+      summary: Get tags, writers, and alternative titles
+      parameters:
+        - name: mediaType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [movie, tv]
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Extra metadata for a title
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaMetadata"
 
   /media/{mediaType}/{tmdbId}/videos:
     get:
@@ -691,6 +854,214 @@ components:
           type: integer
       required:
         - results
+        - totalResults
+        - totalPages
+        - page
+
+    PersonSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        profilePath:
+          type: ["string", "null"]
+        knownForDepartment:
+          type: ["string", "null"]
+        knownFor:
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaItem"
+      required:
+        - id
+        - name
+        - knownFor
+
+    PersonSearchResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersonSummary"
+        totalResults:
+          type: integer
+        totalPages:
+          type: integer
+        page:
+          type: integer
+      required:
+        - results
+        - totalResults
+        - totalPages
+        - page
+
+    PersonDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        profilePath:
+          type: ["string", "null"]
+        biography:
+          type: ["string", "null"]
+        birthday:
+          type: ["string", "null"]
+        placeOfBirth:
+          type: ["string", "null"]
+        knownForDepartment:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+
+    PersonCredit:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        title:
+          type: string
+        originalTitle:
+          type: ["string", "null"]
+        overview:
+          type: ["string", "null"]
+        posterPath:
+          type: ["string", "null"]
+        backdropPath:
+          type: ["string", "null"]
+        releaseDate:
+          type: ["string", "null"]
+        voteAverage:
+          type: ["number", "null"]
+        voteCount:
+          type: ["integer", "null"]
+        popularity:
+          type: ["number", "null"]
+        genreIds:
+          type: array
+          items:
+            type: integer
+        adult:
+          type: ["boolean", "null"]
+        originalLanguage:
+          type: ["string", "null"]
+        character:
+          type: ["string", "null"]
+      required:
+        - tmdbId
+        - mediaType
+        - title
+
+    PersonCreditsResult:
+      type: object
+      properties:
+        person:
+          $ref: "#/components/schemas/PersonDetails"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersonCredit"
+        totalResults:
+          type: integer
+        totalPages:
+          type: integer
+        page:
+          type: integer
+      required:
+        - person
+        - results
+        - totalResults
+        - totalPages
+        - page
+
+    Keyword:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    AlternativeTitle:
+      type: object
+      properties:
+        title:
+          type: string
+        country:
+          type: ["string", "null"]
+      required:
+        - title
+
+    Writer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        job:
+          type: ["string", "null"]
+        profilePath:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+
+    MediaMetadata:
+      type: object
+      properties:
+        keywords:
+          type: array
+          items:
+            $ref: "#/components/schemas/Keyword"
+        sourceMaterial:
+          type: array
+          items:
+            $ref: "#/components/schemas/Keyword"
+        writers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Writer"
+        alternativeTitles:
+          type: array
+          items:
+            $ref: "#/components/schemas/AlternativeTitle"
+      required:
+        - keywords
+        - sourceMaterial
+        - writers
+        - alternativeTitles
+
+    TagSearchResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaItem"
+        matchedKeywords:
+          type: array
+          items:
+            $ref: "#/components/schemas/Keyword"
+        totalResults:
+          type: integer
+        totalPages:
+          type: integer
+        page:
+          type: integer
+      required:
+        - results
+        - matchedKeywords
         - totalResults
         - totalPages
         - page
@@ -1270,6 +1641,9 @@ components:
           type: string
         displayPriority:
           type: integer
+        link:
+          type: ["string", "null"]
+          description: Direct link to watch, rent, or buy on the provider
       required:
         - providerId
         - providerName

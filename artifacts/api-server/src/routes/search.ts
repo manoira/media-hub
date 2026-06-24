@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
-import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres, getPopular, getTopRated, getNowPlaying, getUpcoming, getOnAir } from "../lib/tmdb";
+import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres, getPopular, getTopRated, getNowPlaying, getUpcoming, getOnAir, searchByTag } from "../lib/tmdb";
+import { applyExcludeTracked, parseExcludeTrackedFromQuery } from "../lib/exclude-tracked";
 import {
   SearchMediaQueryParams,
   SearchMediaResponse,
@@ -10,6 +11,8 @@ import {
   GetGenresResponse,
   GetBrowseCategoryQueryParams,
   GetBrowseCategoryResponse,
+  SearchByTagQueryParams,
+  SearchByTagResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -21,15 +24,36 @@ router.get("/search", async (req, res): Promise<void> => {
     return;
   }
   const { query, type = "all", page = 1 } = parsed.data;
+  const excludeTracked = parseExcludeTrackedFromQuery(req.query);
   try {
     let result;
     if (type === "movie") result = await searchMovies(query, page);
     else if (type === "tv") result = await searchTv(query, page);
     else result = await searchMulti(query, page);
+
+    result = await applyExcludeTracked(result, excludeTracked);
     res.json(SearchMediaResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Search error");
     res.status(500).json({ error: "Failed to search" });
+  }
+});
+
+router.get("/search/by-tag", async (req, res): Promise<void> => {
+  const parsed = SearchByTagQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { query, type = "all", page = 1 } = parsed.data;
+  const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  try {
+    let result = await searchByTag(query, type, page);
+    result = await applyExcludeTracked(result, excludeTracked);
+    res.json(SearchByTagResponse.parse(result));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Tag search error");
+    res.status(500).json({ error: "Failed to search by tag" });
   }
 });
 
@@ -40,6 +64,7 @@ router.get("/discover", async (req, res): Promise<void> => {
     return;
   }
   const { type = "movie", genre, sort_by = "popularity.desc", min_rating, min_year, max_year, language, page = 1 } = parsed.data;
+  const excludeTracked = parseExcludeTrackedFromQuery(req.query);
   try {
     let result;
     const params = {
@@ -53,6 +78,8 @@ router.get("/discover", async (req, res): Promise<void> => {
     };
     if (type === "tv") result = await discoverTv(params);
     else result = await discoverMovies(params);
+
+    result = await applyExcludeTracked(result, excludeTracked);
     res.json(DiscoverMediaResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Discover error");
@@ -67,10 +94,13 @@ router.get("/trending", async (req, res): Promise<void> => {
     return;
   }
   const { type = "all", time_window = "week" } = parsed.data;
+  const excludeTracked = parseExcludeTrackedFromQuery(req.query);
   try {
     let result;
     if (type === "all") result = await getTrendingAll(time_window);
     else result = await getTrendingType(type, time_window);
+
+    result = await applyExcludeTracked(result, excludeTracked);
     res.json(GetTrendingResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Trending error");
@@ -85,6 +115,7 @@ router.get("/browse", async (req, res): Promise<void> => {
     return;
   }
   const { category, page = 1 } = parsed.data;
+  const excludeTracked = parseExcludeTrackedFromQuery(req.query);
   try {
     let result;
     switch (category) {
@@ -97,6 +128,8 @@ router.get("/browse", async (req, res): Promise<void> => {
       case "on_air":            result = await getOnAir(page); break;
       default:                  res.status(400).json({ error: "Unknown category" }); return;
     }
+
+    result = await applyExcludeTracked(result, excludeTracked);
     res.json(GetBrowseCategoryResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Browse error");

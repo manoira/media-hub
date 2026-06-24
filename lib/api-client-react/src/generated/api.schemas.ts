@@ -51,6 +51,118 @@ export interface MediaSearchResult {
   page: number;
 }
 
+export interface PersonSummary {
+  id: number;
+  name: string;
+  /** @nullable */
+  profilePath?: string | null;
+  /** @nullable */
+  knownForDepartment?: string | null;
+  knownFor: MediaItem[];
+}
+
+export interface PersonSearchResult {
+  results: PersonSummary[];
+  totalResults: number;
+  totalPages: number;
+  page: number;
+}
+
+export interface PersonDetails {
+  id: number;
+  name: string;
+  /** @nullable */
+  profilePath?: string | null;
+  /** @nullable */
+  biography?: string | null;
+  /** @nullable */
+  birthday?: string | null;
+  /** @nullable */
+  placeOfBirth?: string | null;
+  /** @nullable */
+  knownForDepartment?: string | null;
+}
+
+export type PersonCreditMediaType = typeof PersonCreditMediaType[keyof typeof PersonCreditMediaType];
+
+
+export const PersonCreditMediaType = {
+  movie: 'movie',
+  tv: 'tv',
+} as const;
+
+export interface PersonCredit {
+  tmdbId: number;
+  mediaType: PersonCreditMediaType;
+  title: string;
+  /** @nullable */
+  originalTitle?: string | null;
+  /** @nullable */
+  overview?: string | null;
+  /** @nullable */
+  posterPath?: string | null;
+  /** @nullable */
+  backdropPath?: string | null;
+  /** @nullable */
+  releaseDate?: string | null;
+  /** @nullable */
+  voteAverage?: number | null;
+  /** @nullable */
+  voteCount?: number | null;
+  /** @nullable */
+  popularity?: number | null;
+  genreIds?: number[];
+  /** @nullable */
+  adult?: boolean | null;
+  /** @nullable */
+  originalLanguage?: string | null;
+  /** @nullable */
+  character?: string | null;
+}
+
+export interface PersonCreditsResult {
+  person: PersonDetails;
+  results: PersonCredit[];
+  totalResults: number;
+  totalPages: number;
+  page: number;
+}
+
+export interface Keyword {
+  id: number;
+  name: string;
+}
+
+export interface AlternativeTitle {
+  title: string;
+  /** @nullable */
+  country?: string | null;
+}
+
+export interface Writer {
+  id: number;
+  name: string;
+  /** @nullable */
+  job?: string | null;
+  /** @nullable */
+  profilePath?: string | null;
+}
+
+export interface MediaMetadata {
+  keywords: Keyword[];
+  sourceMaterial: Keyword[];
+  writers: Writer[];
+  alternativeTitles: AlternativeTitle[];
+}
+
+export interface TagSearchResult {
+  results: MediaItem[];
+  matchedKeywords: Keyword[];
+  totalResults: number;
+  totalPages: number;
+  page: number;
+}
+
 export type MediaDetailsMediaType = typeof MediaDetailsMediaType[keyof typeof MediaDetailsMediaType];
 
 
@@ -398,6 +510,11 @@ export interface WatchProvider {
   providerName: string;
   logoPath: string;
   displayPriority: number;
+  /**
+     * Direct link to watch, rent, or buy on the provider
+     * @nullable
+     */
+  link?: string | null;
 }
 
 export interface WatchProvidersResult {
@@ -414,12 +531,55 @@ export type SearchMediaParams = {
 query: string;
 type?: SearchMediaType;
 page?: number;
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
 };
 
 export type SearchMediaType = typeof SearchMediaType[keyof typeof SearchMediaType];
 
 
 export const SearchMediaType = {
+  all: 'all',
+  movie: 'movie',
+  tv: 'tv',
+} as const;
+
+export type SearchPeopleParams = {
+query: string;
+page?: number;
+};
+
+export type SearchByTagParams = {
+query: string;
+type?: SearchByTagType;
+page?: number;
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
+};
+
+export type SearchByTagType = typeof SearchByTagType[keyof typeof SearchByTagType];
+
+
+export const SearchByTagType = {
+  all: 'all',
+  movie: 'movie',
+  tv: 'tv',
+} as const;
+
+export type GetPersonCreditsParams = {
+type?: GetPersonCreditsType;
+page?: number;
+page_size?: number;
+};
+
+export type GetPersonCreditsType = typeof GetPersonCreditsType[keyof typeof GetPersonCreditsType];
+
+
+export const GetPersonCreditsType = {
   all: 'all',
   movie: 'movie',
   tv: 'tv',
@@ -449,6 +609,10 @@ max_year?: number | null;
  */
 language?: string | null;
 page?: number;
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
 };
 
 export type DiscoverMediaType = typeof DiscoverMediaType[keyof typeof DiscoverMediaType];
@@ -475,6 +639,10 @@ export const DiscoverMediaSortBy = {
 export type GetTrendingParams = {
 type?: GetTrendingType;
 time_window?: GetTrendingTimeWindow;
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
 };
 
 export type GetTrendingType = typeof GetTrendingType[keyof typeof GetTrendingType];
@@ -497,6 +665,10 @@ export const GetTrendingTimeWindow = {
 export type GetBrowseCategoryParams = {
 category: GetBrowseCategoryCategory;
 page?: number;
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
 };
 
 export type GetBrowseCategoryCategory = typeof GetBrowseCategoryCategory[keyof typeof GetBrowseCategoryCategory];
