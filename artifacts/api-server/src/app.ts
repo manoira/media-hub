@@ -32,7 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-if (registerStaticFrontend(app)) {
+if (!process.env.VERCEL && registerStaticFrontend(app)) {
   logger.info("Serving Media Tracker frontend from static build");
 }
 
