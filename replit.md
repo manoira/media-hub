@@ -47,16 +47,21 @@ $env:DATABASE_URL="<dev-url>"; corepack pnpm --filter @workspace/db run push    
 $env:DATABASE_URL="<dev-url>"; corepack pnpm --filter @workspace/scripts run import-data
 ```
 
-## Production (Render)
+## Production (Vercel — primary)
+
+- **URL:** https://media.emmyzettergren.se/ (after DNS) · https://media-hub-one.vercel.app/ (Vercel alias)
+- **Host:** Vercel project `media-hub`, auto-deploys from `main` on GitHub
+- **Build:** `pnpm --filter @workspace/api-server run build` (see `vercel.json`)
+- **Health check:** `/api/healthz`
+- **Env on Vercel:** `DATABASE_URL` (Neon **pooled** URL), `TMDB_API_KEY`, `NODE_ENV=production`, `BASE_PATH=/`
+- **Architecture:** Vite static output + serverless Express for `/api/*` (see `docs/VERCEL.md`, `api/index.mjs`)
+- **Neon production host:** `ep-wandering-morning-apbbwjdd` (us-east-1). Set this in Vercel **Production** `DATABASE_URL`. Local `.env` uses dev DB only.
+- **DNS:** At Websupport/Loopia, add **A** record `media` → `76.76.21.21` (see Vercel → Domains for current value)
+
+## Production (Render — legacy)
 
 - **URL:** https://media-hub-05s0.onrender.com/
-- **Host:** Render free web service, auto-deploys from `main` on GitHub
-- **Build:** `pnpm install && pnpm --filter @workspace/api-server... run build` (API build also runs Vite frontend build)
-- **Start:** `pnpm --filter @workspace/api-server run start`
-- **Health check:** `/api/healthz`
-- **Env on Render:** `DATABASE_URL` (production Neon), `TMDB_API_KEY`, `NODE_ENV=production`, `BASE_PATH=/` — do not set `PORT`
-- **Architecture:** one service serves React static files + `/api/*` (see `render.yaml`, `artifacts/api-server/src/lib/static-frontend.ts`)
-- **Neon production host:** `ep-wandering-morning-apbbwjdd` (us-east-1). Local `.env` uses dev DB only.
+- Pause auto-deploy on Render once Vercel production is verified.
 
 ## Stack
 

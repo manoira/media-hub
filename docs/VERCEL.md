@@ -60,7 +60,13 @@ corepack pnpm --filter @workspace/scripts run import-data   # optional — loads
 
 1. Vercel project → **Settings → Domains**
 2. Add `media.emmyzettergren.se`
-3. At Websupport DNS, add **CNAME** `media` → Vercel's target (e.g. `cname.vercel-dns.com`)
+3. At Websupport/Loopia DNS, add **A** record:
+
+   | Name | Type | Value |
+   | ---- | ---- | ----- |
+   | `media` | A | `76.76.21.21` |
+
+   (Confirm the exact IP in Vercel → Domains if it differs.)
 4. Wait for SSL (automatic)
 
 This does not affect `emmyzettergren.se` (Notes Hub) — separate Vercel project.
