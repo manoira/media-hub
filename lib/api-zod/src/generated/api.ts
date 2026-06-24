@@ -403,6 +403,7 @@ export const GetMediaDetailsResponse = zod.object({
   "posterPath": zod.string().nullish(),
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
+  "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
@@ -573,9 +574,12 @@ export const GetWatchProvidersResponse = zod.object({
 export const getWatchlistQuerySortByDefault = `added_at`;
 
 export const GetWatchlistQueryParams = zod.object({
-  "status": zod.enum(['watching', 'watched', 'want_to_watch']).optional(),
-  "type": zod.enum(['movie', 'tv']).optional(),
-  "genre": zod.coerce.number().nullish(),
+  "status": zod.array(zod.enum(['watching', 'watched', 'want_to_watch'])).optional(),
+  "type": zod.array(zod.enum(['movie', 'tv'])).optional(),
+  "genre": zod.array(zod.coerce.number()).optional(),
+  "min_rating": zod.array(zod.coerce.number()).optional(),
+  "year_range": zod.array(zod.coerce.string()).optional().describe('Year range as min-max (e.g. 2020-2029, 2023, -1979 for max only)'),
+  "language": zod.array(zod.coerce.string()).optional(),
   "sort_by": zod.enum(['added_at', 'title', 'rating', 'release_date']).default(getWatchlistQuerySortByDefault)
 })
 
@@ -592,6 +596,7 @@ export const GetWatchlistResponseItem = zod.object({
   "posterPath": zod.string().nullish(),
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
+  "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
@@ -637,6 +642,7 @@ export const UpdateWatchlistItemResponse = zod.object({
   "posterPath": zod.string().nullish(),
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
+  "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
@@ -674,6 +680,7 @@ export const GetWatchStatusResponse = zod.object({
   "posterPath": zod.string().nullish(),
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
+  "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
@@ -864,6 +871,7 @@ export const GetRecentlyWatchedResponseItem = zod.object({
   "posterPath": zod.string().nullish(),
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
+  "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()

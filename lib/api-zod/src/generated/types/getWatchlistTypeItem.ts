@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetWatchlistType = typeof GetWatchlistType[keyof typeof GetWatchlistType];
+export type GetWatchlistTypeItem = typeof GetWatchlistTypeItem[keyof typeof GetWatchlistTypeItem];
 
 
-export const GetWatchlistType = {
+export const GetWatchlistTypeItem = {
   movie: 'movie',
   tv: 'tv',
 } as const;

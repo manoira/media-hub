@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, watchlistTable } from "@workspace/db";
-import { eq, and, desc, asc } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, gte, or, sql, type SQL } from "drizzle-orm";
 import {
   GetWatchlistQueryParams,
   GetWatchlistResponse,
@@ -15,6 +15,78 @@ import {
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
+const ARRAY_QUERY_KEYS = [
+  "status",
+  "type",
+  "genre",
+  "min_rating",
+  "year_range",
+  "language",
+] as const;
+
+function normalizeArrayQuery(query: Record<string, unknown>) {
+  const normalized: Record<string, unknown> = { ...query };
+  for (const key of ARRAY_QUERY_KEYS) {
+    const value = normalized[key];
+    if (value === undefined) continue;
+    const values = Array.isArray(value) ? value : [value];
+    normalized[key] = values.flatMap((entry) => {
+      if (typeof entry !== "string" || !entry.includes(",")) return [entry];
+      return entry.split(",").map(part => part.trim()).filter(Boolean);
+    });
+  }
+  return normalized;
+}
+
+type YearRange = { min?: number; max?: number };
+
+function parseYearRangeParam(raw: string): YearRange | null {
+  if (!raw) return null;
+  if (raw.includes("-")) {
+    const [minStr, maxStr] = raw.split("-");
+    const min = minStr ? parseInt(minStr, 10) : undefined;
+    const max = maxStr ? parseInt(maxStr, 10) : undefined;
+    return {
+      min: min !== undefined && !Number.isNaN(min) ? min : undefined,
+      max: max !== undefined && !Number.isNaN(max) ? max : undefined,
+    };
+  }
+  const year = parseInt(raw, 10);
+  if (Number.isNaN(year)) return null;
+  return { min: year, max: year };
+}
+
+function buildYearRangeCondition(ranges: YearRange[]): SQL | undefined {
+  if (ranges.length === 0) return undefined;
+
+  const yearExpr = sql`CAST(SUBSTRING(${watchlistTable.releaseDate} FROM 1 FOR 4) AS INTEGER)`;
+  const rangeConditions = ranges.map((range) => {
+    const parts: SQL[] = [];
+    if (range.min !== undefined) parts.push(sql`${yearExpr} >= ${range.min}`);
+    if (range.max !== undefined) parts.push(sql`${yearExpr} <= ${range.max}`);
+    if (parts.length === 0) return sql`false`;
+    if (parts.length === 1) return parts[0];
+    return sql`${parts[0]} AND ${parts[1]}`;
+  });
+
+  return sql`(${sql.join(rangeConditions, sql` OR `)})`;
+}
+
+function buildGenreOverlapCondition(genreIds: number[]): SQL | undefined {
+  if (genreIds.length === 0) return undefined;
+  const genreStrings = genreIds.map(String);
+  return sql`${watchlistTable.genreIds} && ARRAY[${sql.join(
+    genreStrings.map((id) => sql`${id}`),
+    sql`, `,
+  )}]::text[]`;
+}
+
+function buildRatingCondition(minRatings: number[]): SQL | undefined {
+  if (minRatings.length === 0) return undefined;
+  const threshold = Math.min(...minRatings);
+  return gte(watchlistTable.voteAverage, threshold);
+}
+
 async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
   const apiKey = process.env.TMDB_API_KEY;
   const endpoint = mediaType === "tv" ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
@@ -28,6 +100,7 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
       posterPath: (data.poster_path as string | null) ?? null,
       backdropPath: (data.backdrop_path as string | null) ?? null,
       releaseDate: (data.first_air_date as string | null) ?? null,
+      originalLanguage: (data.original_language as string | null) ?? null,
       voteAverage: (data.vote_average as number | null) ?? null,
       overview: (data.overview as string | null) ?? null,
       genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
@@ -38,6 +111,7 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
     posterPath: (data.poster_path as string | null) ?? null,
     backdropPath: (data.backdrop_path as string | null) ?? null,
     releaseDate: (data.release_date as string | null) ?? null,
+    originalLanguage: (data.original_language as string | null) ?? null,
     voteAverage: (data.vote_average as number | null) ?? null,
     overview: (data.overview as string | null) ?? null,
     genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
@@ -58,6 +132,7 @@ function serializeItem(item: typeof watchlistTable.$inferSelect) {
     posterPath: item.posterPath ?? null,
     backdropPath: item.backdropPath ?? null,
     releaseDate: item.releaseDate ?? null,
+    originalLanguage: item.originalLanguage ?? null,
     voteAverage: item.voteAverage ?? null,
     genreIds: (item.genreIds ?? []).map(Number),
     overview: item.overview ?? null,
@@ -67,16 +142,52 @@ function serializeItem(item: typeof watchlistTable.$inferSelect) {
 const router: IRouter = Router();
 
 router.get("/watchlist", async (req, res): Promise<void> => {
-  const parsed = GetWatchlistQueryParams.safeParse(req.query);
+  const parsed = GetWatchlistQueryParams.safeParse(normalizeArrayQuery(req.query as Record<string, unknown>));
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { status, type, sort_by = "added_at" } = parsed.data;
+  const {
+    status,
+    type,
+    genre,
+    min_rating,
+    year_range,
+    language,
+    sort_by = "added_at",
+  } = parsed.data;
 
-  const conditions = [];
-  if (status) conditions.push(eq(watchlistTable.status, status));
-  if (type) conditions.push(eq(watchlistTable.mediaType, type));
+  const conditions: SQL[] = [];
+
+  if (status?.length) {
+    conditions.push(inArray(watchlistTable.status, status));
+  }
+  if (type?.length) {
+    conditions.push(inArray(watchlistTable.mediaType, type));
+  }
+  if (genre?.length) {
+    const genreCondition = buildGenreOverlapCondition(genre);
+    if (genreCondition) conditions.push(genreCondition);
+  }
+  if (min_rating?.length) {
+    const ratingCondition = buildRatingCondition(min_rating);
+    if (ratingCondition) conditions.push(ratingCondition);
+  }
+  if (year_range?.length) {
+    const ranges = year_range
+      .map(parseYearRangeParam)
+      .filter((range): range is YearRange => range !== null);
+    const yearCondition = buildYearRangeCondition(ranges);
+    if (yearCondition) conditions.push(yearCondition);
+  }
+  if (language?.length) {
+    conditions.push(
+      or(
+        inArray(watchlistTable.originalLanguage, language),
+        sql`${watchlistTable.originalLanguage} IS NULL`,
+      )!,
+    );
+  }
 
   const orderBy = sort_by === "title"
     ? asc(watchlistTable.title)
@@ -86,8 +197,10 @@ router.get("/watchlist", async (req, res): Promise<void> => {
     ? desc(watchlistTable.releaseDate)
     : desc(watchlistTable.addedAt);
 
-  const items = conditions.length > 0
-    ? await db.select().from(watchlistTable).where(and(...conditions)).orderBy(orderBy)
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const items = whereClause
+    ? await db.select().from(watchlistTable).where(whereClause).orderBy(orderBy)
     : await db.select().from(watchlistTable).orderBy(orderBy);
 
   res.json(GetWatchlistResponse.parse(items.map(serializeItem)));
@@ -128,6 +241,7 @@ router.post("/watchlist", async (req, res): Promise<void> => {
     posterPath: tmdbData?.posterPath ?? null,
     backdropPath: tmdbData?.backdropPath ?? null,
     releaseDate: tmdbData?.releaseDate ?? null,
+    originalLanguage: tmdbData?.originalLanguage ?? null,
     voteAverage: tmdbData?.voteAverage ?? null,
     overview: tmdbData?.overview ?? null,
     genreIds: tmdbData?.genreIds ?? [],

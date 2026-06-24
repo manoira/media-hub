@@ -242,6 +242,8 @@ export interface WatchlistItem {
   /** @nullable */
   releaseDate?: string | null;
   /** @nullable */
+  originalLanguage?: string | null;
+  /** @nullable */
   voteAverage?: number | null;
   genreIds?: number[];
   /** @nullable */
@@ -685,28 +687,31 @@ export const GetBrowseCategoryCategory = {
 } as const;
 
 export type GetWatchlistParams = {
-status?: GetWatchlistStatus;
-type?: GetWatchlistType;
+status?: GetWatchlistStatusItem[];
+type?: GetWatchlistTypeItem[];
+genre?: number[];
+min_rating?: number[];
 /**
- * @nullable
+ * Year range as min-max (e.g. 2020-2029, 2023, -1979 for max only)
  */
-genre?: number | null;
+year_range?: string[];
+language?: string[];
 sort_by?: GetWatchlistSortBy;
 };
 
-export type GetWatchlistStatus = typeof GetWatchlistStatus[keyof typeof GetWatchlistStatus];
+export type GetWatchlistStatusItem = typeof GetWatchlistStatusItem[keyof typeof GetWatchlistStatusItem];
 
 
-export const GetWatchlistStatus = {
+export const GetWatchlistStatusItem = {
   watching: 'watching',
   watched: 'watched',
   want_to_watch: 'want_to_watch',
 } as const;
 
-export type GetWatchlistType = typeof GetWatchlistType[keyof typeof GetWatchlistType];
+export type GetWatchlistTypeItem = typeof GetWatchlistTypeItem[keyof typeof GetWatchlistTypeItem];
 
 
-export const GetWatchlistType = {
+export const GetWatchlistTypeItem = {
   movie: 'movie',
   tv: 'tv',
 } as const;

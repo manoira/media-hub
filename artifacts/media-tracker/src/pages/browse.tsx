@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { withExcludeTracked } from "@/lib/exclude-tracked";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
+import {
+  YEAR_OPTIONS,
+  RATING_OPTIONS,
+  LANGUAGE_OPTIONS,
+  type YearRange,
+} from "@/lib/browse-filters";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,48 +40,6 @@ const SORT_OPTIONS: { value: SortValue; label: string; movieOnly?: boolean }[] =
   { value: "release_date.asc", label: "Oldest" },
   { value: "revenue.desc", label: "Highest Grossing", movieOnly: true },
   { value: "title.asc", label: "Title (A–Z)" },
-];
-
-type YearRange = { label: string; min?: number; max?: number };
-
-const CURRENT_YEAR = new Date().getFullYear();
-
-const YEAR_OPTIONS: YearRange[] = [
-  { label: "Any year" },
-  ...Array.from({ length: 8 }, (_, i) => {
-    const y = CURRENT_YEAR - i;
-    return { label: String(y), min: y, max: y };
-  }),
-  { label: "2020s", min: 2020, max: 2029 },
-  { label: "2010s", min: 2010, max: 2019 },
-  { label: "2000s", min: 2000, max: 2009 },
-  { label: "1990s", min: 1990, max: 1999 },
-  { label: "1980s", min: 1980, max: 1989 },
-  { label: "Before 1980", max: 1979 },
-];
-
-const RATING_OPTIONS: { label: string; value?: number }[] = [
-  { label: "Any rating" },
-  { label: "9+", value: 9 },
-  { label: "8+", value: 8 },
-  { label: "7+", value: 7 },
-  { label: "6+", value: 6 },
-  { label: "5+", value: 5 },
-];
-
-const LANGUAGE_OPTIONS: { label: string; value?: string }[] = [
-  { label: "Any language" },
-  { label: "English", value: "en" },
-  { label: "Spanish", value: "es" },
-  { label: "French", value: "fr" },
-  { label: "German", value: "de" },
-  { label: "Italian", value: "it" },
-  { label: "Japanese", value: "ja" },
-  { label: "Korean", value: "ko" },
-  { label: "Chinese", value: "zh" },
-  { label: "Hindi", value: "hi" },
-  { label: "Portuguese", value: "pt" },
-  { label: "Swedish", value: "sv" },
 ];
 
 function FilterMenu({

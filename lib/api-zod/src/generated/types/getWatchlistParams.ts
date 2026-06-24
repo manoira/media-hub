@@ -6,15 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GetWatchlistSortBy } from './getWatchlistSortBy';
-import type { GetWatchlistStatus } from './getWatchlistStatus';
-import type { GetWatchlistType } from './getWatchlistType';
+import type { GetWatchlistStatusItem } from './getWatchlistStatusItem';
+import type { GetWatchlistTypeItem } from './getWatchlistTypeItem';
 
 export type GetWatchlistParams = {
-status?: GetWatchlistStatus;
-type?: GetWatchlistType;
+status?: GetWatchlistStatusItem[];
+type?: GetWatchlistTypeItem[];
+genre?: number[];
+min_rating?: number[];
 /**
- * @nullable
+ * Year range as min-max (e.g. 2020-2029, 2023, -1979 for max only)
  */
-genre?: number | null;
+year_range?: string[];
+language?: string[];
 sort_by?: GetWatchlistSortBy;
 };

@@ -485,17 +485,54 @@ paths:
         - name: status
           in: query
           schema:
-            type: string
-            enum: [watching, watched, want_to_watch]
+            type: array
+            items:
+              type: string
+              enum: [watching, watched, want_to_watch]
+          style: form
+          explode: true
         - name: type
           in: query
           schema:
-            type: string
-            enum: [movie, tv]
+            type: array
+            items:
+              type: string
+              enum: [movie, tv]
+          style: form
+          explode: true
         - name: genre
           in: query
           schema:
-            type: ["integer", "null"]
+            type: array
+            items:
+              type: integer
+          style: form
+          explode: true
+        - name: min_rating
+          in: query
+          schema:
+            type: array
+            items:
+              type: number
+          style: form
+          explode: true
+        - name: year_range
+          in: query
+          description: Year range as min-max (e.g. 2020-2029, 2023, -1979 for max only)
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: language
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
         - name: sort_by
           in: query
           schema:
@@ -1349,6 +1386,8 @@ components:
         backdropPath:
           type: ["string", "null"]
         releaseDate:
+          type: ["string", "null"]
+        originalLanguage:
           type: ["string", "null"]
         voteAverage:
           type: ["number", "null"]

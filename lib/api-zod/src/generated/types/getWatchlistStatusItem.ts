@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetWatchlistStatus = typeof GetWatchlistStatus[keyof typeof GetWatchlistStatus];
+export type GetWatchlistStatusItem = typeof GetWatchlistStatusItem[keyof typeof GetWatchlistStatusItem];
 
 
-export const GetWatchlistStatus = {
+export const GetWatchlistStatusItem = {
   watching: 'watching',
   watched: 'watched',
   want_to_watch: 'want_to_watch',

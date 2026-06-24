@@ -1,41 +1,198 @@
-import { useGetWatchlist, getGetWatchlistQueryKey, WatchlistItemStatus } from "@workspace/api-client-react";
+import { useMemo, useCallback } from "react";
+import {
+  useGetWatchlist,
+  getGetWatchlistQueryKey,
+  useGetGenres,
+  getGetGenresQueryKey,
+} from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
+import { MultiFilterMenu } from "@/components/media/multi-filter-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSearch, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useSearchParams } from "wouter";
+import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  YEAR_OPTIONS,
+  RATING_OPTIONS,
+  LANGUAGE_OPTIONS,
+  STATUS_OPTIONS,
+  WATCHLIST_SORT_OPTIONS,
+  encodeYearRange,
+  decodeYearRange,
+  isYearRangeActive,
+} from "@/lib/browse-filters";
+import {
+  parseWatchlistSearch,
+  buildWatchlistSearchParams,
+  filterWatchlistItems,
+  hasActiveWatchlistFilters,
+  type WatchlistFilterState,
+} from "@/lib/watchlist-filters";
+
+const YEAR_FILTER_OPTIONS = YEAR_OPTIONS.filter(isYearRangeActive).map(opt => ({
+  label: opt.label,
+  value: encodeYearRange(opt)!,
+}));
+
+const RATING_FILTER_OPTIONS = RATING_OPTIONS.filter(
+  (opt): opt is { label: string; value: number } => opt.value !== undefined,
+);
+
+const LANGUAGE_FILTER_OPTIONS = LANGUAGE_OPTIONS.filter(
+  (opt): opt is { label: string; value: string } => opt.value !== undefined,
+);
 
 export function Watchlist() {
-  const search = useSearch();
-  const [, setLocation] = useLocation();
-  const params = new URLSearchParams(search);
-  const rawStatus = params.get("status");
-  const status = (rawStatus === "watched" || rawStatus === "watching" || rawStatus === "want_to_watch")
-    ? rawStatus as WatchlistItemStatus
-    : undefined;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => parseWatchlistSearch(searchParams), [searchParams]);
 
-  const setStatus = (v: string) => {
-    if (v === "all") setLocation("/watchlist");
-    else setLocation(`/watchlist?status=${v}`);
-  };
-
-  const { data: watchlist, isLoading } = useGetWatchlist(
-    { status },
-    { query: { queryKey: getGetWatchlistQueryKey({ status }) } }
+  const updateFilters = useCallback(
+    (patch: Partial<WatchlistFilterState>) => {
+      const next = { ...filters, ...patch };
+      setSearchParams(buildWatchlistSearchParams(next), { replace: true });
+    },
+    [filters, setSearchParams],
   );
+
+  const sortParams = useMemo(
+    () => ({ sort_by: filters.sortBy }),
+    [filters.sortBy],
+  );
+  const { data: watchlist, isLoading } = useGetWatchlist(sortParams, {
+    query: { queryKey: getGetWatchlistQueryKey(sortParams) },
+  });
+
+  const displayItems = useMemo(
+    () => filterWatchlistItems(watchlist ?? [], filters),
+    [watchlist, filters],
+  );
+
+  const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
+
+  const activeGenres = useMemo(() => {
+    if (filters.mediaType === "movie") return genres?.movieGenres ?? [];
+    if (filters.mediaType === "tv") return genres?.tvGenres ?? [];
+    const merged = new Map<number, { id: number; name: string }>();
+    for (const genre of genres?.movieGenres ?? []) merged.set(genre.id, genre);
+    for (const genre of genres?.tvGenres ?? []) merged.set(genre.id, genre);
+    return Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [filters.mediaType, genres]);
+
+  const genreOptions = activeGenres.map(genre => ({ label: genre.name, value: genre.id }));
+  const selectedYearKeys = filters.yearRanges
+    .map(encodeYearRange)
+    .filter((value): value is string => value !== null);
+  const currentSort = WATCHLIST_SORT_OPTIONS.find(opt => opt.value === filters.sortBy)!;
+  const filtersActive = hasActiveWatchlistFilters(filters);
+  const listIsEmpty = !watchlist?.length;
+  const hasNoMatches = !listIsEmpty && displayItems.length === 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">My List</h1>
-        
-        <Tabs value={status || "all"} onValueChange={setStatus}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="watching">Watching</TabsTrigger>
-            <TabsTrigger value="want_to_watch">Want to Watch</TabsTrigger>
-            <TabsTrigger value="watched">Watched</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">My List</h1>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <SlidersHorizontal className="w-4 h-4" />
+                {currentSort.label}
+                <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {WATCHLIST_SORT_OPTIONS.map(opt => (
+                <DropdownMenuItem
+                  key={opt.value}
+                  className={cn("cursor-pointer", filters.sortBy === opt.value && "bg-muted")}
+                  onClick={() => updateFilters({ sortBy: opt.value })}
+                >
+                  {opt.label}
+                  {filters.sortBy === opt.value && (
+                    <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="flex bg-muted rounded-lg p-1 w-fit">
+          <Button
+            variant={filters.mediaType === "movie" ? "default" : "ghost"}
+            size="sm"
+            onClick={() =>
+              updateFilters({
+                mediaType: filters.mediaType === "movie" ? undefined : "movie",
+                genres: [],
+              })
+            }
+          >
+            Movies
+          </Button>
+          <Button
+            variant={filters.mediaType === "tv" ? "default" : "ghost"}
+            size="sm"
+            onClick={() =>
+              updateFilters({
+                mediaType: filters.mediaType === "tv" ? undefined : "tv",
+                genres: [],
+              })
+            }
+          >
+            TV Shows
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <MultiFilterMenu
+            label="Status"
+            options={STATUS_OPTIONS}
+            selected={filters.statuses}
+            onChange={(statuses) => updateFilters({ statuses })}
+          />
+
+          <MultiFilterMenu
+            label="Year"
+            options={YEAR_FILTER_OPTIONS}
+            selected={selectedYearKeys}
+            onChange={(keys) =>
+              updateFilters({
+                yearRanges: keys
+                  .map(key => decodeYearRange(key))
+                  .filter((range): range is NonNullable<typeof range> => range !== null),
+              })
+            }
+          />
+
+          <MultiFilterMenu
+            label="Rating"
+            options={RATING_FILTER_OPTIONS}
+            selected={filters.minRatings}
+            onChange={(minRatings) => updateFilters({ minRatings })}
+          />
+
+          <MultiFilterMenu
+            label="Language"
+            options={LANGUAGE_FILTER_OPTIONS}
+            selected={filters.languages}
+            onChange={(languages) => updateFilters({ languages })}
+          />
+
+          <MultiFilterMenu
+            label="Genre"
+            options={genreOptions}
+            selected={filters.genres}
+            onChange={(genres) => updateFilters({ genres })}
+          />
+        </div>
       </div>
 
       {isLoading ? (
@@ -48,15 +205,19 @@ export function Watchlist() {
             </div>
           ))}
         </div>
-      ) : watchlist?.length ? (
+      ) : displayItems.length ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {watchlist.map(item => (
+          {displayItems.map(item => (
             <MediaCard key={item.id} item={item} showProgress={item.mediaType === "tv"} />
           ))}
         </div>
       ) : (
         <div className="text-center py-20 bg-card rounded-xl border border-border/50">
-          <p className="text-muted-foreground text-lg">Your list is empty.</p>
+          <p className="text-muted-foreground text-lg">
+            {hasNoMatches || filtersActive
+              ? "No items match these filters."
+              : "Your list is empty."}
+          </p>
         </div>
       )}
     </div>
