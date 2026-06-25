@@ -112,4 +112,5 @@ $env:PORT="5174"; $env:BASE_PATH="/"; corepack pnpm --filter @workspace/media-tr
 
 ## Pointers
 
+- **Dev + push workflow:** `docs/DEV-WORKFLOW.md` — use **`/push`** in Cursor for guided deploy
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details

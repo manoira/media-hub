@@ -1,0 +1,61 @@
+---
+description: When user asks to push, commit to remote, or deploy — analyze changes and ask how to push with a recommendation.
+alwaysApply: false
+---
+
+# Push workflow
+
+Trigger when the user says **push**, **deploy**, **go live**, **commit and push**, or uses **`/push`**.
+
+Do **not** commit or push until the user confirms via **AskQuestion** (unless they already chose an option in the same message).
+
+## 1. Analyze (always run in parallel)
+
+- `git status`
+- `git diff` and `git diff --staged`
+- `git log -3 --oneline`
+- `git status -sb` (tracking branch)
+
+Classify changes:
+
+| Signal | Paths |
+| ------ | ----- |
+| Frontend only | `artifacts/media-tracker/` |
+| API | `artifacts/api-server/` |
+| OpenAPI / codegen | `lib/api-spec/`, `lib/api-client-react/`, `lib/api-zod/` |
+| DB schema | `lib/db/src/schema/` |
+| Deploy config | `vercel.json`, `api/` |
+
+Note blockers: failing typecheck, OpenAPI changed without codegen, schema changed without migration plan.
+
+## 2. Recommend one option
+
+Pick the **single best** push strategy from the diff. Examples:
+
+- UI-only → **Push direkt till main**
+- `lib/db/schema` touched → **Push + prod schema migrering först** (warn: prod 500 om kolumn saknas)
+- Large/risky API → **Skapa PR istället**
+- Blockers found → **Avvakta — fixa först**
+
+Write 2–4 sentences in Swedish: what changed, recommended option, and any post-deploy check (e.g. `/api/watchlist`).
+
+## 3. AskQuestion (required)
+
+Use **AskQuestion** with these options (mark recommendation first with "(Rekommenderat)"):
+
+1. Push direkt till main
+2. Push till main + kör prod schema-migrering först
+3. Push till main + verifiera prod efter deploy (agent kollar endpoints)
+4. Skapa PR istället för direkt push
+5. Bara commit lokalt — ingen push
+6. Avvakta — fixa blockerare först
+
+If the user picked an option in their message, skip AskQuestion and execute that option.
+
+## 4. Execute chosen path
+
+Follow the repo **Git Safety Protocol** (no git config changes, no force push to main).
+
+After push to main, remind: Vercel deploys automatically; verify `/api/healthz` and `/api/watchlist`.
+
+Full reference: `docs/DEV-WORKFLOW.md`
