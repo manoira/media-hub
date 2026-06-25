@@ -394,7 +394,7 @@ export const GetMediaDetailsResponse = zod.object({
   "id": zod.number(),
   "tmdbId": zod.number(),
   "mediaType": zod.enum(['movie', 'tv']),
-  "status": zod.enum(['watching', 'watched', 'want_to_watch']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']),
   "userRating": zod.number().nullish(),
   "notes": zod.string().nullish(),
   "addedAt": zod.string(),
@@ -574,7 +574,7 @@ export const GetWatchProvidersResponse = zod.object({
 export const getWatchlistQuerySortByDefault = `added_at`;
 
 export const GetWatchlistQueryParams = zod.object({
-  "status": zod.array(zod.enum(['watching', 'watched', 'want_to_watch'])).optional(),
+  "status": zod.array(zod.enum(['watching', 'watched', 'want_to_watch', 'unsure'])).optional(),
   "type": zod.array(zod.enum(['movie', 'tv'])).optional(),
   "genre": zod.array(zod.coerce.number()).optional(),
   "min_rating": zod.array(zod.coerce.number()).optional(),
@@ -587,7 +587,7 @@ export const GetWatchlistResponseItem = zod.object({
   "id": zod.number(),
   "tmdbId": zod.number(),
   "mediaType": zod.enum(['movie', 'tv']),
-  "status": zod.enum(['watching', 'watched', 'want_to_watch']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']),
   "userRating": zod.number().nullish(),
   "notes": zod.string().nullish(),
   "addedAt": zod.string(),
@@ -610,7 +610,7 @@ export const GetWatchlistResponse = zod.array(GetWatchlistResponseItem)
 export const AddToWatchlistBody = zod.object({
   "tmdbId": zod.number(),
   "mediaType": zod.enum(['movie', 'tv']),
-  "status": zod.enum(['watching', 'watched', 'want_to_watch']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']),
   "userRating": zod.number().nullish(),
   "notes": zod.string().nullish()
 })
@@ -624,7 +624,7 @@ export const UpdateWatchlistItemParams = zod.object({
 })
 
 export const UpdateWatchlistItemBody = zod.object({
-  "status": zod.enum(['watching', 'watched', 'want_to_watch']).optional(),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']).optional(),
   "userRating": zod.number().nullish(),
   "notes": zod.string().nullish()
 })
@@ -633,7 +633,7 @@ export const UpdateWatchlistItemResponse = zod.object({
   "id": zod.number(),
   "tmdbId": zod.number(),
   "mediaType": zod.enum(['movie', 'tv']),
-  "status": zod.enum(['watching', 'watched', 'want_to_watch']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']),
   "userRating": zod.number().nullish(),
   "notes": zod.string().nullish(),
   "addedAt": zod.string(),
@@ -671,7 +671,7 @@ export const GetWatchStatusResponse = zod.object({
   "id": zod.number(),
   "tmdbId": zod.number(),
   "mediaType": zod.enum(['movie', 'tv']),
-  "status": zod.enum(['watching', 'watched', 'want_to_watch']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']),
   "userRating": zod.number().nullish(),
   "notes": zod.string().nullish(),
   "addedAt": zod.string(),
@@ -831,6 +831,7 @@ export const GetStatsSummaryResponse = zod.object({
   "totalWatched": zod.number(),
   "totalWatching": zod.number(),
   "totalWantToWatch": zod.number(),
+  "totalUnsure": zod.number(),
   "totalMovies": zod.number(),
   "totalTvShows": zod.number(),
   "averageRating": zod.number().nullish(),
@@ -862,7 +863,7 @@ export const GetRecentlyWatchedResponseItem = zod.object({
   "id": zod.number(),
   "tmdbId": zod.number(),
   "mediaType": zod.enum(['movie', 'tv']),
-  "status": zod.enum(['watching', 'watched', 'want_to_watch']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']),
   "userRating": zod.number().nullish(),
   "notes": zod.string().nullish(),
   "addedAt": zod.string(),

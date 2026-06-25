@@ -6,6 +6,7 @@ import { MediaItem, WatchlistItem, Genre } from "@workspace/api-client-react";
 import { TvProgressBar } from "./tv-progress-bar";
 import { WatchStatusBadge } from "./watch-status-badge";
 import { QuickAddButton } from "./quick-add-button";
+import { WATCHLIST_STATUS_BY_VALUE } from "@/lib/watchlist-status";
 
 interface MediaCardProps {
   item: MediaItem | WatchlistItem;
@@ -21,18 +22,7 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
   const rating = isWatchlistItem ? item.userRating : item.voteAverage;
 
   const imageUrl = getTmdbImageUrl(item.posterPath, "poster");
-  
-  const statusColors = {
-    watching: "bg-blue-500 hover:bg-blue-600",
-    watched: "bg-green-500 hover:bg-green-600",
-    want_to_watch: "bg-amber-500 hover:bg-amber-600",
-  };
-
-  const statusLabels = {
-    watching: "Watching",
-    watched: "Watched",
-    want_to_watch: "Want to Watch",
-  };
+  const statusConfig = status ? WATCHLIST_STATUS_BY_VALUE[status] : null;
 
   return (
     <Link href={`/media/${item.mediaType}/${item.tmdbId}`} className={cn("group flex flex-col gap-2 relative", className)}>
@@ -45,9 +35,9 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
           </div>
         )}
         
-        {isWatchlistItem && status && showStatus && (
-          <Badge className={cn("absolute top-2 left-2 shadow-md", statusColors[status])}>
-            {statusLabels[status]}
+        {isWatchlistItem && statusConfig && showStatus && (
+          <Badge className={cn("absolute top-2 left-2 shadow-md", statusConfig.badgeClass)}>
+            {statusConfig.label}
           </Badge>
         )}
         {!isWatchlistItem && (

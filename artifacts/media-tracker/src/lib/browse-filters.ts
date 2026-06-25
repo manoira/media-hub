@@ -1,3 +1,5 @@
+import { WATCHLIST_FILTER_STATUS_OPTIONS } from "./watchlist-status";
+
 export type YearRange = { label: string; min?: number; max?: number };
 
 export const CURRENT_YEAR = new Date().getFullYear();
@@ -40,11 +42,7 @@ export const LANGUAGE_OPTIONS: { label: string; value?: string }[] = [
   { label: "Swedish", value: "sv" },
 ];
 
-export const STATUS_OPTIONS = [
-  { label: "Watching", value: "watching" as const },
-  { label: "Want to Watch", value: "want_to_watch" as const },
-  { label: "Watched", value: "watched" as const },
-];
+export const STATUS_OPTIONS = WATCHLIST_FILTER_STATUS_OPTIONS;
 
 export type WatchlistSortBy = "added_at" | "release_date" | "rating" | "title";
 

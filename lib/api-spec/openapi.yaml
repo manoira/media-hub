@@ -488,7 +488,7 @@ paths:
             type: array
             items:
               type: string
-              enum: [watching, watched, want_to_watch]
+              enum: [watching, watched, want_to_watch, unsure]
           style: form
           explode: true
         - name: type
@@ -1370,7 +1370,7 @@ components:
           enum: [movie, tv]
         status:
           type: string
-          enum: [watching, watched, want_to_watch]
+          enum: [watching, watched, want_to_watch, unsure]
         userRating:
           type: ["number", "null"]
         notes:
@@ -1416,7 +1416,7 @@ components:
           enum: [movie, tv]
         status:
           type: string
-          enum: [watching, watched, want_to_watch]
+          enum: [watching, watched, want_to_watch, unsure]
         userRating:
           type: ["number", "null"]
         notes:
@@ -1431,7 +1431,7 @@ components:
       properties:
         status:
           type: string
-          enum: [watching, watched, want_to_watch]
+          enum: [watching, watched, want_to_watch, unsure]
         userRating:
           type: ["number", "null"]
         notes:
@@ -1458,6 +1458,8 @@ components:
           type: integer
         totalWantToWatch:
           type: integer
+        totalUnsure:
+          type: integer
         totalMovies:
           type: integer
         totalTvShows:
@@ -1470,6 +1472,7 @@ components:
         - totalWatched
         - totalWatching
         - totalWantToWatch
+        - totalUnsure
         - totalMovies
         - totalTvShows
         - totalItems

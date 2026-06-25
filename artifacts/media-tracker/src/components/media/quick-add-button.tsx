@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookmarkPlus, BookmarkCheck, Eye, EyeOff, Loader2, ChevronDown } from "lucide-react";
+import { BookmarkPlus, EyeOff, Loader2, ChevronDown } from "lucide-react";
 import {
   useGetWatchStatus,
   useAddToWatchlist,
@@ -19,29 +19,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { WATCHLIST_STATUS_BY_VALUE, WATCHLIST_STATUS_OPTIONS } from "@/lib/watchlist-status";
 
 interface QuickAddButtonProps {
   mediaType: "movie" | "tv";
   tmdbId: number;
 }
-
-const STATUS_OPTIONS: { value: WatchlistInputStatus; label: string; color: string }[] = [
-  { value: "want_to_watch", label: "Want to Watch", color: "text-amber-400" },
-  { value: "watching", label: "Watching", color: "text-blue-400" },
-  { value: "watched", label: "Watched", color: "text-green-400" },
-];
-
-const STATUS_ICONS = {
-  watching: Eye,
-  watched: BookmarkCheck,
-  want_to_watch: BookmarkPlus,
-} as const;
-
-const STATUS_COLORS = {
-  watching: "text-blue-400",
-  watched: "text-green-400",
-  want_to_watch: "text-amber-400",
-} as const;
 
 export function QuickAddButton({ mediaType, tmdbId }: QuickAddButtonProps) {
   const [open, setOpen] = useState(false);
@@ -84,8 +67,9 @@ export function QuickAddButton({ mediaType, tmdbId }: QuickAddButtonProps) {
   };
 
   const currentStatus = statusData?.entry?.status;
-  const Icon = currentStatus ? STATUS_ICONS[currentStatus] : BookmarkPlus;
-  const iconColor = currentStatus ? STATUS_COLORS[currentStatus] : "text-white";
+  const activeConfig = currentStatus ? WATCHLIST_STATUS_BY_VALUE[currentStatus] : null;
+  const Icon = activeConfig?.icon ?? BookmarkPlus;
+  const iconColor = activeConfig?.color ?? "text-white";
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -115,19 +99,20 @@ export function QuickAddButton({ mediaType, tmdbId }: QuickAddButtonProps) {
         className="w-44 z-50"
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {STATUS_OPTIONS.map((opt) => (
-          <DropdownMenuItem
-            key={opt.value}
-            onSelect={() => handleSelect(opt.value)}
-            className={cn("cursor-pointer", currentStatus === opt.value && "bg-muted")}
-          >
-            {opt.value === "want_to_watch" && <BookmarkPlus className={cn("w-4 h-4 mr-2", opt.color)} />}
-            {opt.value === "watching" && <Eye className={cn("w-4 h-4 mr-2", opt.color)} />}
-            {opt.value === "watched" && <BookmarkCheck className={cn("w-4 h-4 mr-2", opt.color)} />}
-            {opt.label}
-            {currentStatus === opt.value && <span className="ml-auto text-[10px] text-muted-foreground">✓</span>}
-          </DropdownMenuItem>
-        ))}
+        {WATCHLIST_STATUS_OPTIONS.map((opt) => {
+          const OptionIcon = opt.icon;
+          return (
+            <DropdownMenuItem
+              key={opt.value}
+              onSelect={() => handleSelect(opt.value)}
+              className={cn("cursor-pointer", currentStatus === opt.value && "bg-muted")}
+            >
+              <OptionIcon className={cn("w-4 h-4 mr-2", opt.color)} />
+              {opt.label}
+              {currentStatus === opt.value && <span className="ml-auto text-[10px] text-muted-foreground">✓</span>}
+            </DropdownMenuItem>
+          );
+        })}
         {currentStatus && (
           <>
             <DropdownMenuSeparator />

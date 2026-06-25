@@ -16,8 +16,8 @@ export function Stats() {
     return (
       <div className="space-y-8">
         <Skeleton className="h-10 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
         </div>
         <Skeleton className="h-[400px] rounded-xl" />
       </div>
@@ -29,7 +29,7 @@ export function Stats() {
       <h1 className="text-3xl font-bold tracking-tight">Your Stats</h1>
       
       {stats && (
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Link href="/watchlist" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-primary/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-primary mb-2">{stats.totalItems}</span>
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Tracked</span>
@@ -45,6 +45,10 @@ export function Stats() {
           <Link href="/watchlist?status=want_to_watch" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-amber-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-amber-500 mb-2">{stats.totalWantToWatch}</span>
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Want to Watch</span>
+          </Link>
+          <Link href="/watchlist?status=unsure" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-purple-500/50 hover:bg-card/80 transition-colors cursor-pointer">
+            <span className="text-4xl font-bold text-purple-500 mb-2">{stats.totalUnsure}</span>
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Unsure</span>
           </Link>
         </section>
       )}

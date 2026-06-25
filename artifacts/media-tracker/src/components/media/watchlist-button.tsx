@@ -5,19 +5,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BookmarkPlus, BookmarkCheck, Eye, EyeOff, Loader2 } from "lucide-react";
+import { BookmarkPlus, EyeOff, Loader2 } from "lucide-react";
 import { 
   useGetWatchStatus, 
   useAddToWatchlist, 
   useUpdateWatchlistItem, 
   useRemoveFromWatchlist,
   getGetWatchStatusQueryKey,
-  getGetWatchlistQueryKey,
   getGetStatsSummaryQueryKey,
   WatchlistInputStatus
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { WATCHLIST_STATUS_BY_VALUE, WATCHLIST_STATUS_OPTIONS } from "@/lib/watchlist-status";
 
 interface WatchlistButtonProps {
   mediaType: "movie" | "tv";
@@ -81,15 +81,8 @@ export function WatchlistButton({ mediaType, tmdbId, className }: WatchlistButto
   }
 
   const currentStatus = statusData?.entry?.status;
-
-  const statusConfig = {
-    watching: { icon: Eye, label: "Watching", color: "text-blue-500", bg: "bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30" },
-    watched: { icon: BookmarkCheck, label: "Watched", color: "text-green-500", bg: "bg-green-500/10 hover:bg-green-500/20 border-green-500/30" },
-    want_to_watch: { icon: BookmarkPlus, label: "Want to Watch", color: "text-amber-500", bg: "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30" },
-  };
-
-  const activeConfig = currentStatus ? statusConfig[currentStatus] : null;
-  const ActiveIcon = activeConfig ? activeConfig.icon : BookmarkPlus;
+  const activeConfig = currentStatus ? WATCHLIST_STATUS_BY_VALUE[currentStatus] : null;
+  const ActiveIcon = activeConfig?.icon ?? BookmarkPlus;
 
   return (
     <DropdownMenu>
@@ -98,7 +91,7 @@ export function WatchlistButton({ mediaType, tmdbId, className }: WatchlistButto
           variant={currentStatus ? "outline" : "default"} 
           size="sm" 
           disabled={isPending}
-          className={cn(className, currentStatus ? activeConfig?.bg : "")}
+          className={cn(className, currentStatus ? activeConfig?.buttonBg : "")}
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -109,18 +102,15 @@ export function WatchlistButton({ mediaType, tmdbId, className }: WatchlistButto
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={() => handleStatusChange("want_to_watch")}>
-          <BookmarkPlus className="w-4 h-4 mr-2 text-amber-500" />
-          Want to Watch
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("watching")}>
-          <Eye className="w-4 h-4 mr-2 text-blue-500" />
-          Watching
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleStatusChange("watched")}>
-          <BookmarkCheck className="w-4 h-4 mr-2 text-green-500" />
-          Watched
-        </DropdownMenuItem>
+        {WATCHLIST_STATUS_OPTIONS.map((opt) => {
+          const OptionIcon = opt.icon;
+          return (
+            <DropdownMenuItem key={opt.value} onClick={() => handleStatusChange(opt.value)}>
+              <OptionIcon className={cn("w-4 h-4 mr-2", opt.color)} />
+              {opt.label}
+            </DropdownMenuItem>
+          );
+        })}
         {currentStatus && (
           <DropdownMenuItem onClick={() => handleStatusChange(null)} className="text-destructive focus:text-destructive">
             <EyeOff className="w-4 h-4 mr-2" />

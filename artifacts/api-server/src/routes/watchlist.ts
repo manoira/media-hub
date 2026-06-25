@@ -121,7 +121,7 @@ function serializeItem(item: typeof watchlistTable.$inferSelect) {
     id: item.id,
     tmdbId: item.tmdbId,
     mediaType: item.mediaType as "movie" | "tv",
-    status: item.status as "watching" | "watched" | "want_to_watch",
+    status: item.status as "watching" | "watched" | "want_to_watch" | "unsure",
     userRating: item.userRating ?? null,
     notes: item.notes ?? null,
     addedAt: item.addedAt.toISOString(),

@@ -43,7 +43,7 @@ router.get("/media/:mediaType/:tmdbId", async (req, res): Promise<void> => {
             id: watchlistEntry.id,
             tmdbId: watchlistEntry.tmdbId,
             mediaType: watchlistEntry.mediaType as "movie" | "tv",
-            status: watchlistEntry.status as "watching" | "watched" | "want_to_watch",
+            status: watchlistEntry.status as "watching" | "watched" | "want_to_watch" | "unsure",
             userRating: watchlistEntry.userRating ?? null,
             notes: watchlistEntry.notes ?? null,
             addedAt: watchlistEntry.addedAt.toISOString(),

@@ -10,6 +10,7 @@ export interface StatsSummary {
   totalWatched: number;
   totalWatching: number;
   totalWantToWatch: number;
+  totalUnsure: number;
   totalMovies: number;
   totalTvShows: number;
   /** @nullable */

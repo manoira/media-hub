@@ -15,6 +15,7 @@ router.get("/stats/summary", async (_req, res): Promise<void> => {
   const totalWatched = all.filter(i => i.status === "watched").length;
   const totalWatching = all.filter(i => i.status === "watching").length;
   const totalWantToWatch = all.filter(i => i.status === "want_to_watch").length;
+  const totalUnsure = all.filter(i => i.status === "unsure").length;
   const totalMovies = all.filter(i => i.mediaType === "movie").length;
   const totalTvShows = all.filter(i => i.mediaType === "tv").length;
   const rated = all.filter(i => i.userRating !== null && i.userRating !== undefined);
@@ -26,6 +27,7 @@ router.get("/stats/summary", async (_req, res): Promise<void> => {
     totalWatched,
     totalWatching,
     totalWantToWatch,
+    totalUnsure,
     totalMovies,
     totalTvShows,
     averageRating: averageRating !== null ? Math.round(averageRating * 10) / 10 : null,
@@ -85,7 +87,7 @@ router.get("/stats/recently-watched", async (req, res): Promise<void> => {
       id: item.id,
       tmdbId: item.tmdbId,
       mediaType: item.mediaType as "movie" | "tv",
-      status: item.status as "watching" | "watched" | "want_to_watch",
+      status: item.status as "watching" | "watched" | "want_to_watch" | "unsure",
       userRating: item.userRating ?? null,
       notes: item.notes ?? null,
       addedAt: item.addedAt.toISOString(),

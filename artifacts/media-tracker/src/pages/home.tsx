@@ -45,7 +45,7 @@ export function Home() {
   return (
     <div className="space-y-10 pb-20">
       {stats && (
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Link href="/watchlist" className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-primary/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-3xl font-bold text-primary">{stats.totalItems}</span>
             <span className="text-sm text-muted-foreground">Total Tracked</span>
@@ -61,6 +61,10 @@ export function Home() {
           <Link href="/watchlist?status=want_to_watch" className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-amber-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-3xl font-bold text-amber-500">{stats.totalWantToWatch}</span>
             <span className="text-sm text-muted-foreground">Want to Watch</span>
+          </Link>
+          <Link href="/watchlist?status=unsure" className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center hover:border-purple-500/50 hover:bg-card/80 transition-colors cursor-pointer">
+            <span className="text-3xl font-bold text-purple-500">{stats.totalUnsure}</span>
+            <span className="text-sm text-muted-foreground">Unsure</span>
           </Link>
         </section>
       )}
