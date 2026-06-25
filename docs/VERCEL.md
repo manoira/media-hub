@@ -102,6 +102,7 @@ For day-to-day dev, the two-terminal setup in `replit.md` is still recommended (
 | Symptom | Fix |
 | ------- | --- |
 | `/api/healthz` 404 | Redeploy after build; check `vercel.json` rewrites |
-| Watchlist empty / DB errors | Run `db push`; verify pooled `DATABASE_URL` |
+| Watchlist empty / DB errors | Run `db push` against production Neon (see below); verify pooled `DATABASE_URL` on Vercel |
+| `/api/watchlist` returns 500 | Check Vercel function logs. Often a schema/code mismatch — ensure deployed code matches the production Postgres schema. Optional: run `lib/db/migrations/001_add_original_language.sql` in Neon if enabling language storage later. |
 | TMDB search fails | Set `TMDB_API_KEY` and redeploy |
 | Cold start slow | Normal on Hobby tier — first request may take a few seconds |

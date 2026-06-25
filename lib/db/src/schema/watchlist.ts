@@ -13,7 +13,6 @@ export const watchlistTable = pgTable("watchlist", {
   posterPath: text("poster_path"),
   backdropPath: text("backdrop_path"),
   releaseDate: text("release_date"),
-  originalLanguage: text("original_language"),
   voteAverage: real("vote_average"),
   overview: text("overview"),
   genreIds: text("genre_ids").array(),

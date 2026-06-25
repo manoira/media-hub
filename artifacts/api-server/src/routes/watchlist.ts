@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, watchlistTable } from "@workspace/db";
-import { eq, and, desc, asc, inArray, gte, or, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, gte, sql, type SQL } from "drizzle-orm";
 import {
   GetWatchlistQueryParams,
   GetWatchlistResponse,
@@ -100,7 +100,6 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
       posterPath: (data.poster_path as string | null) ?? null,
       backdropPath: (data.backdrop_path as string | null) ?? null,
       releaseDate: (data.first_air_date as string | null) ?? null,
-      originalLanguage: (data.original_language as string | null) ?? null,
       voteAverage: (data.vote_average as number | null) ?? null,
       overview: (data.overview as string | null) ?? null,
       genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
@@ -111,7 +110,6 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
     posterPath: (data.poster_path as string | null) ?? null,
     backdropPath: (data.backdrop_path as string | null) ?? null,
     releaseDate: (data.release_date as string | null) ?? null,
-    originalLanguage: (data.original_language as string | null) ?? null,
     voteAverage: (data.vote_average as number | null) ?? null,
     overview: (data.overview as string | null) ?? null,
     genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
@@ -132,7 +130,7 @@ function serializeItem(item: typeof watchlistTable.$inferSelect) {
     posterPath: item.posterPath ?? null,
     backdropPath: item.backdropPath ?? null,
     releaseDate: item.releaseDate ?? null,
-    originalLanguage: item.originalLanguage ?? null,
+    originalLanguage: null,
     voteAverage: item.voteAverage ?? null,
     genreIds: (item.genreIds ?? []).map(Number),
     overview: item.overview ?? null,
@@ -142,6 +140,7 @@ function serializeItem(item: typeof watchlistTable.$inferSelect) {
 const router: IRouter = Router();
 
 router.get("/watchlist", async (req, res): Promise<void> => {
+  try {
   const parsed = GetWatchlistQueryParams.safeParse(normalizeArrayQuery(req.query as Record<string, unknown>));
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -153,9 +152,9 @@ router.get("/watchlist", async (req, res): Promise<void> => {
     genre,
     min_rating,
     year_range,
-    language,
     sort_by = "added_at",
   } = parsed.data;
+  // language filter is applied client-side until original_language exists in prod DB
 
   const conditions: SQL[] = [];
 
@@ -180,14 +179,6 @@ router.get("/watchlist", async (req, res): Promise<void> => {
     const yearCondition = buildYearRangeCondition(ranges);
     if (yearCondition) conditions.push(yearCondition);
   }
-  if (language?.length) {
-    conditions.push(
-      or(
-        inArray(watchlistTable.originalLanguage, language),
-        sql`${watchlistTable.originalLanguage} IS NULL`,
-      )!,
-    );
-  }
 
   const orderBy = sort_by === "title"
     ? asc(watchlistTable.title)
@@ -204,6 +195,10 @@ router.get("/watchlist", async (req, res): Promise<void> => {
     : await db.select().from(watchlistTable).orderBy(orderBy);
 
   res.json(GetWatchlistResponse.parse(items.map(serializeItem)));
+  } catch (err: unknown) {
+    req.log.error({ err }, "GET /watchlist failed");
+    res.status(500).json({ error: "Failed to load watchlist" });
+  }
 });
 
 router.post("/watchlist", async (req, res): Promise<void> => {
@@ -241,7 +236,6 @@ router.post("/watchlist", async (req, res): Promise<void> => {
     posterPath: tmdbData?.posterPath ?? null,
     backdropPath: tmdbData?.backdropPath ?? null,
     releaseDate: tmdbData?.releaseDate ?? null,
-    originalLanguage: tmdbData?.originalLanguage ?? null,
     voteAverage: tmdbData?.voteAverage ?? null,
     overview: tmdbData?.overview ?? null,
     genreIds: tmdbData?.genreIds ?? [],
