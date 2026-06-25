@@ -174,10 +174,7 @@ export function filterWatchlistItems(
     }
 
     if (state.languages.length > 0) {
-      if (
-        item.originalLanguage &&
-        !state.languages.includes(item.originalLanguage)
-      ) {
+      if (!item.originalLanguage || !state.languages.includes(item.originalLanguage)) {
         return false;
       }
     }

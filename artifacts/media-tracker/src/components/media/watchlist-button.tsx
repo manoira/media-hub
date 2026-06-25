@@ -6,18 +6,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BookmarkPlus, EyeOff, Loader2 } from "lucide-react";
-import { 
-  useGetWatchStatus, 
-  useAddToWatchlist, 
-  useUpdateWatchlistItem, 
+import {
+  useAddToWatchlist,
+  useUpdateWatchlistItem,
   useRemoveFromWatchlist,
   getGetWatchStatusQueryKey,
+  getGetWatchlistQueryKey,
   getGetStatsSummaryQueryKey,
-  WatchlistInputStatus
+  WatchlistInputStatus,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { WATCHLIST_STATUS_BY_VALUE, WATCHLIST_STATUS_OPTIONS } from "@/lib/watchlist-status";
+import { useWatchlistIndex } from "@/hooks/use-watchlist-index";
+import {
+  WATCHLIST_STATUS_BY_VALUE,
+  WATCHLIST_STATUS_OPTIONS,
+  WATCHLIST_BUTTON_DEFAULT_HOVER,
+} from "@/lib/watchlist-status";
 
 interface WatchlistButtonProps {
   mediaType: "movie" | "tv";
@@ -27,13 +32,8 @@ interface WatchlistButtonProps {
 
 export function WatchlistButton({ mediaType, tmdbId, className }: WatchlistButtonProps) {
   const queryClient = useQueryClient();
-  
-  const { data: statusData, isLoading } = useGetWatchStatus(mediaType, tmdbId, {
-    query: {
-      enabled: !!tmdbId,
-      queryKey: getGetWatchStatusQueryKey(mediaType, tmdbId)
-    }
-  });
+  const { getEntry, isLoading } = useWatchlistIndex();
+  const entry = getEntry(mediaType, tmdbId);
 
   const addToWatchlist = useAddToWatchlist();
   const updateWatchlistItem = useUpdateWatchlistItem();
@@ -43,30 +43,27 @@ export function WatchlistButton({ mediaType, tmdbId, className }: WatchlistButto
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ queryKey: getGetWatchStatusQueryKey(mediaType, tmdbId) });
-    queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+    queryClient.invalidateQueries({ queryKey: getGetWatchlistQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetStatsSummaryQueryKey() });
   };
 
   const handleStatusChange = (newStatus: WatchlistInputStatus | null) => {
     if (!newStatus) {
-      if (statusData?.entry) {
-        removeFromWatchlist.mutate(
-          { id: statusData.entry.id },
-          { onSuccess: invalidateQueries }
-        );
+      if (entry) {
+        removeFromWatchlist.mutate({ id: entry.id }, { onSuccess: invalidateQueries });
       }
       return;
     }
 
-    if (statusData?.entry) {
+    if (entry) {
       updateWatchlistItem.mutate(
-        { id: statusData.entry.id, data: { status: newStatus } },
-        { onSuccess: invalidateQueries }
+        { id: entry.id, data: { status: newStatus } },
+        { onSuccess: invalidateQueries },
       );
     } else {
       addToWatchlist.mutate(
         { data: { tmdbId, mediaType, status: newStatus } },
-        { onSuccess: invalidateQueries }
+        { onSuccess: invalidateQueries },
       );
     }
   };
@@ -80,18 +77,24 @@ export function WatchlistButton({ mediaType, tmdbId, className }: WatchlistButto
     );
   }
 
-  const currentStatus = statusData?.entry?.status;
+  const currentStatus = entry?.status;
   const activeConfig = currentStatus ? WATCHLIST_STATUS_BY_VALUE[currentStatus] : null;
   const ActiveIcon = activeConfig?.icon ?? BookmarkPlus;
+  const hoverClass = activeConfig?.buttonHoverClass ?? WATCHLIST_BUTTON_DEFAULT_HOVER;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant={currentStatus ? "outline" : "default"} 
-          size="sm" 
+        <Button
+          variant={currentStatus ? "outline" : "default"}
+          size="sm"
           disabled={isPending}
-          className={cn(className, currentStatus ? activeConfig?.buttonBg : "")}
+          className={cn(
+            className,
+            "transition-all",
+            hoverClass,
+            currentStatus ? activeConfig?.buttonBg : "",
+          )}
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -112,7 +115,10 @@ export function WatchlistButton({ mediaType, tmdbId, className }: WatchlistButto
           );
         })}
         {currentStatus && (
-          <DropdownMenuItem onClick={() => handleStatusChange(null)} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem
+            onClick={() => handleStatusChange(null)}
+            className="text-destructive focus:text-destructive"
+          >
             <EyeOff className="w-4 h-4 mr-2" />
             Remove from List
           </DropdownMenuItem>

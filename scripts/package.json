@@ -8,10 +8,12 @@
     "export-data": "tsx ./src/export-data.ts",
     "import-data": "tsx ./src/import-data.ts",
     "import-notion": "tsx ./src/import-notion-csv.ts",
+    "backfill-watchlist-language": "tsx ./src/backfill-watchlist-language.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@workspace/db": "workspace:*"
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

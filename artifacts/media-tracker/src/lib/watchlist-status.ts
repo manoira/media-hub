@@ -15,8 +15,15 @@ export type WatchlistStatusConfig = {
   cardBorderClass: string;
   cardTextClass: string;
   buttonBg: string;
+  quickAddHoverClass: string;
+  buttonHoverClass: string;
   icon: LucideIcon;
 };
+
+export const QUICK_ADD_DEFAULT_HOVER =
+  "hover:scale-105 hover:border-white/40 hover:bg-black/90 hover:shadow-lg";
+
+export const WATCHLIST_BUTTON_DEFAULT_HOVER = "hover:scale-[1.02] hover:brightness-110";
 
 export const WATCHLIST_STATUS_OPTIONS: WatchlistStatusConfig[] = [
   {
@@ -27,6 +34,8 @@ export const WATCHLIST_STATUS_OPTIONS: WatchlistStatusConfig[] = [
     cardBorderClass: "hover:border-amber-500/50",
     cardTextClass: "text-amber-500",
     buttonBg: "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30",
+    quickAddHoverClass: "hover:scale-105 hover:border-amber-400/60 hover:shadow-md hover:bg-black/90",
+    buttonHoverClass: "hover:scale-[1.02] hover:bg-amber-500/25 hover:border-amber-500/50",
     icon: BookmarkPlus,
   },
   {
@@ -37,6 +46,8 @@ export const WATCHLIST_STATUS_OPTIONS: WatchlistStatusConfig[] = [
     cardBorderClass: "hover:border-blue-500/50",
     cardTextClass: "text-blue-500",
     buttonBg: "bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30",
+    quickAddHoverClass: "hover:scale-105 hover:border-blue-400/60 hover:shadow-md hover:bg-black/90",
+    buttonHoverClass: "hover:scale-[1.02] hover:bg-blue-500/25 hover:border-blue-500/50",
     icon: Eye,
   },
   {
@@ -47,6 +58,8 @@ export const WATCHLIST_STATUS_OPTIONS: WatchlistStatusConfig[] = [
     cardBorderClass: "hover:border-green-500/50",
     cardTextClass: "text-green-500",
     buttonBg: "bg-green-500/10 hover:bg-green-500/20 border-green-500/30",
+    quickAddHoverClass: "hover:scale-105 hover:border-green-400/60 hover:shadow-md hover:bg-black/90",
+    buttonHoverClass: "hover:scale-[1.02] hover:bg-green-500/25 hover:border-green-500/50",
     icon: BookmarkCheck,
   },
   {
@@ -57,6 +70,8 @@ export const WATCHLIST_STATUS_OPTIONS: WatchlistStatusConfig[] = [
     cardBorderClass: "hover:border-purple-500/50",
     cardTextClass: "text-purple-500",
     buttonBg: "bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30",
+    quickAddHoverClass: "hover:scale-105 hover:border-purple-400/60 hover:shadow-md hover:bg-black/90",
+    buttonHoverClass: "hover:scale-[1.02] hover:bg-purple-500/25 hover:border-purple-500/50",
     icon: CircleHelp,
   },
 ];

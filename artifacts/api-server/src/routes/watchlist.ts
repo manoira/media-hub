@@ -100,6 +100,7 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
       posterPath: (data.poster_path as string | null) ?? null,
       backdropPath: (data.backdrop_path as string | null) ?? null,
       releaseDate: (data.first_air_date as string | null) ?? null,
+      originalLanguage: (data.original_language as string | null) ?? null,
       voteAverage: (data.vote_average as number | null) ?? null,
       overview: (data.overview as string | null) ?? null,
       genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
@@ -110,6 +111,7 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
     posterPath: (data.poster_path as string | null) ?? null,
     backdropPath: (data.backdrop_path as string | null) ?? null,
     releaseDate: (data.release_date as string | null) ?? null,
+    originalLanguage: (data.original_language as string | null) ?? null,
     voteAverage: (data.vote_average as number | null) ?? null,
     overview: (data.overview as string | null) ?? null,
     genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
@@ -130,7 +132,7 @@ function serializeItem(item: typeof watchlistTable.$inferSelect) {
     posterPath: item.posterPath ?? null,
     backdropPath: item.backdropPath ?? null,
     releaseDate: item.releaseDate ?? null,
-    originalLanguage: null,
+    originalLanguage: item.originalLanguage ?? null,
     voteAverage: item.voteAverage ?? null,
     genreIds: (item.genreIds ?? []).map(Number),
     overview: item.overview ?? null,
@@ -152,9 +154,9 @@ router.get("/watchlist", async (req, res): Promise<void> => {
     genre,
     min_rating,
     year_range,
+    language,
     sort_by = "added_at",
   } = parsed.data;
-  // language filter is applied client-side until original_language exists in prod DB
 
   const conditions: SQL[] = [];
 
@@ -178,6 +180,9 @@ router.get("/watchlist", async (req, res): Promise<void> => {
       .filter((range): range is YearRange => range !== null);
     const yearCondition = buildYearRangeCondition(ranges);
     if (yearCondition) conditions.push(yearCondition);
+  }
+  if (language?.length) {
+    conditions.push(inArray(watchlistTable.originalLanguage, language));
   }
 
   const orderBy = sort_by === "title"
@@ -236,6 +241,7 @@ router.post("/watchlist", async (req, res): Promise<void> => {
     posterPath: tmdbData?.posterPath ?? null,
     backdropPath: tmdbData?.backdropPath ?? null,
     releaseDate: tmdbData?.releaseDate ?? null,
+    originalLanguage: tmdbData?.originalLanguage ?? null,
     voteAverage: tmdbData?.voteAverage ?? null,
     overview: tmdbData?.overview ?? null,
     genreIds: tmdbData?.genreIds ?? [],

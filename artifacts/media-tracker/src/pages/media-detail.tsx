@@ -1,13 +1,17 @@
 import { useGetMediaDetails, useGetMediaCredits, useGetMediaVideos, useGetSimilarMedia, getGetMediaDetailsQueryKey, getGetMediaCreditsQueryKey, getGetMediaVideosQueryKey, getGetSimilarMediaQueryKey } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
+import { useMemo } from "react";
 import { getTmdbImageUrl, getYoutubeEmbedUrl, formatRuntime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { WatchlistButton } from "@/components/media/watchlist-button";
+import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard } from "@/components/media/media-card";
 import { SeasonsPanel } from "@/components/media/seasons-panel";
 import { WatchProviders } from "@/components/media/watch-providers";
 import { MediaMetadataPanel } from "@/components/media/media-metadata-panel";
+import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
+import { filterUntracked, useWatchlistIndex } from "@/hooks/use-watchlist-index";
 
 export function MediaDetail() {
   const { mediaType, tmdbId } = useParams();
@@ -29,6 +33,13 @@ export function MediaDetail() {
   const { data: similar } = useGetSimilarMedia(type, id, {
     query: { enabled: !!id && !!type, queryKey: getGetSimilarMediaQueryKey(type, id) }
   });
+
+  const { hideTracked, setHideTracked } = useHideTrackedPreference();
+  const { index } = useWatchlistIndex();
+  const similarItems = useMemo(
+    () => filterUntracked(similar?.results ?? [], index, hideTracked).slice(0, 10),
+    [similar?.results, index, hideTracked],
+  );
 
   if (isLoadingDetails) {
     return <div className="space-y-4">
@@ -192,12 +203,25 @@ export function MediaDetail() {
 
       {similar?.results && similar.results.length > 0 && (
         <section className="pt-8">
-          <h2 className="text-2xl font-semibold mb-6">Similar {type === 'movie' ? 'Movies' : 'Shows'}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {similar.results.slice(0, 10).map(item => (
-              <MediaCard key={item.tmdbId} item={item} />
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <h2 className="text-2xl font-semibold">Similar {type === 'movie' ? 'Movies' : 'Shows'}</h2>
+            <HideTrackedToggle
+              id="hide-tracked-similar"
+              checked={hideTracked}
+              onCheckedChange={setHideTracked}
+            />
           </div>
+          {similarItems.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {similarItems.map(item => (
+                <MediaCard key={item.tmdbId} item={item} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">
+              No untracked similar titles. Turn off &quot;Hide items already on my watchlist&quot; to see them.
+            </p>
+          )}
         </section>
       )}
     </div>

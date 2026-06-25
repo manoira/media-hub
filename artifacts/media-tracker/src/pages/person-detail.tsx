@@ -1,11 +1,14 @@
 import { useGetPersonCredits, getGetPersonCreditsQueryKey } from "@workspace/api-client-react";
 import { keepPreviousData } from "@tanstack/react-query";
 import { useParams } from "wouter";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PersonCreditCard } from "@/components/media/person-credit-card";
+import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
 import { getTmdbImageUrl } from "@/lib/utils";
+import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
+import { filterUntracked, useWatchlistIndex } from "@/hooks/use-watchlist-index";
 import type { GetPersonCreditsType, PersonCredit, PersonDetails } from "@workspace/api-client-react";
 
 type CreditFilter = GetPersonCreditsType;
@@ -63,6 +66,13 @@ export function PersonDetail() {
     scrollYRef.current = window.scrollY;
     setPage(p => p + 1);
   }, []);
+
+  const { hideTracked, setHideTracked } = useHideTrackedPreference();
+  const { index } = useWatchlistIndex();
+  const visibleCredits = useMemo(
+    () => filterUntracked(allCredits, index, hideTracked),
+    [allCredits, index, hideTracked],
+  );
 
   const hasMore = data ? page < data.totalPages : false;
   const profileUrl = getTmdbImageUrl(person?.profilePath, "profile");
@@ -127,17 +137,24 @@ export function PersonDetail() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold">Filmography</h2>
-          <div className="flex gap-2">
-            {filters.map(({ value, label }) => (
-              <Button
-                key={value}
-                variant={filter === value ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleFilterChange(value)}
-              >
-                {label}
-              </Button>
-            ))}
+          <div className="flex flex-wrap items-center gap-4">
+            <HideTrackedToggle
+              id="hide-tracked-person"
+              checked={hideTracked}
+              onCheckedChange={setHideTracked}
+            />
+            <div className="flex gap-2">
+              {filters.map(({ value, label }) => (
+                <Button
+                  key={value}
+                  variant={filter === value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFilterChange(value)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -149,11 +166,17 @@ export function PersonDetail() {
         )}
 
         {allCredits.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {allCredits.map(credit => (
-              <PersonCreditCard key={`${credit.mediaType}-${credit.tmdbId}`} credit={credit} />
-            ))}
-          </div>
+          visibleCredits.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {visibleCredits.map(credit => (
+                <PersonCreditCard key={`${credit.mediaType}-${credit.tmdbId}`} credit={credit} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center py-12 text-muted-foreground">
+              All loaded credits are already on your watchlist. Turn off &quot;Hide items already on my watchlist&quot; to see them.
+            </p>
+          )
         ) : (
           !isFetching && (
             <p className="text-center py-12 text-muted-foreground">
