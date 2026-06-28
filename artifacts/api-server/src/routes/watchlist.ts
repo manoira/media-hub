@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db, watchlistTable } from "@workspace/db";
 import { eq, and, desc, asc, inArray, gte, sql, type SQL } from "drizzle-orm";
+import { serializeWatchlistItem } from "../lib/watchlist-item";
+import { fetchKeywords } from "../lib/tmdb";
 import {
   GetWatchlistQueryParams,
   GetWatchlistResponse,
@@ -92,7 +94,9 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
   const endpoint = mediaType === "tv" ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
   const url = `${TMDB_BASE}${endpoint}?api_key=${apiKey}`;
   const res = await globalThis.fetch(url);
-  if (!res.ok) return null;
+  const keywords = await fetchKeywords(mediaType, tmdbId).catch(() => []);
+  const keywordIds = keywords.map(k => k.id);
+  if (!res.ok) return { keywordIds };
   const data = await res.json() as Record<string, unknown>;
   if (mediaType === "tv") {
     return {
@@ -104,6 +108,7 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
       voteAverage: (data.vote_average as number | null) ?? null,
       overview: (data.overview as string | null) ?? null,
       genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
+      keywordIds,
     };
   }
   return {
@@ -115,29 +120,11 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
     voteAverage: (data.vote_average as number | null) ?? null,
     overview: (data.overview as string | null) ?? null,
     genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
+    keywordIds,
   };
 }
 
-function serializeItem(item: typeof watchlistTable.$inferSelect) {
-  return {
-    id: item.id,
-    tmdbId: item.tmdbId,
-    mediaType: item.mediaType as "movie" | "tv",
-    status: item.status as "watching" | "watched" | "want_to_watch" | "unsure",
-    userRating: item.userRating ?? null,
-    notes: item.notes ?? null,
-    addedAt: item.addedAt.toISOString(),
-    updatedAt: item.updatedAt.toISOString(),
-    title: item.title,
-    posterPath: item.posterPath ?? null,
-    backdropPath: item.backdropPath ?? null,
-    releaseDate: item.releaseDate ?? null,
-    originalLanguage: item.originalLanguage ?? null,
-    voteAverage: item.voteAverage ?? null,
-    genreIds: (item.genreIds ?? []).map(Number),
-    overview: item.overview ?? null,
-  };
-}
+const serializeItem = serializeWatchlistItem;
 
 const router: IRouter = Router();
 
@@ -245,6 +232,7 @@ router.post("/watchlist", async (req, res): Promise<void> => {
     voteAverage: tmdbData?.voteAverage ?? null,
     overview: tmdbData?.overview ?? null,
     genreIds: tmdbData?.genreIds ?? [],
+    keywordIds: tmdbData?.keywordIds ?? [],
   }).returning();
 
   res.status(201).json(serializeItem(inserted));

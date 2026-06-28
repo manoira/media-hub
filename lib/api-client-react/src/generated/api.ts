@@ -21,6 +21,11 @@ import type {
 
 import type {
   Credits,
+  CustomListDetail,
+  CustomListInput,
+  CustomListItemInput,
+  CustomListSummary,
+  CustomListUpdate,
   DiscoverMediaParams,
   EpisodeWatchInput,
   EpisodeWatchResult,
@@ -1771,6 +1776,587 @@ export function useGetWatchStatus<TData = Awaited<ReturnType<typeof getWatchStat
 
 
 
+
+export const getGetCustomListsUrl = () => {
+
+
+
+
+  return `/api/lists`
+}
+
+/**
+ * @summary Get all custom lists
+ */
+export const getCustomLists = async ( options?: RequestInit): Promise<CustomListSummary[]> => {
+
+  return customFetch<CustomListSummary[]>(getGetCustomListsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCustomListsQueryKey = () => {
+    return [
+    `/api/lists`
+    ] as const;
+    }
+
+
+export const getGetCustomListsQueryOptions = <TData = Awaited<ReturnType<typeof getCustomLists>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomLists>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCustomListsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCustomLists>>> = ({ signal }) => getCustomLists({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCustomLists>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCustomListsQueryResult = NonNullable<Awaited<ReturnType<typeof getCustomLists>>>
+export type GetCustomListsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all custom lists
+ */
+
+export function useGetCustomLists<TData = Awaited<ReturnType<typeof getCustomLists>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomLists>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCustomListsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCustomListUrl = () => {
+
+
+
+
+  return `/api/lists`
+}
+
+/**
+ * @summary Create a custom list
+ */
+export const createCustomList = async (customListInput: CustomListInput, options?: RequestInit): Promise<CustomListDetail> => {
+
+  return customFetch<CustomListDetail>(getCreateCustomListUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      customListInput,)
+  }
+);}
+
+
+
+
+export const getCreateCustomListMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomList>>, TError,{data: BodyType<CustomListInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCustomList>>, TError,{data: BodyType<CustomListInput>}, TContext> => {
+
+const mutationKey = ['createCustomList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCustomList>>, {data: BodyType<CustomListInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCustomList(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCustomListMutationResult = NonNullable<Awaited<ReturnType<typeof createCustomList>>>
+    export type CreateCustomListMutationBody = BodyType<CustomListInput>
+    export type CreateCustomListMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a custom list
+ */
+export const useCreateCustomList = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomList>>, TError,{data: BodyType<CustomListInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCustomList>>,
+        TError,
+        {data: BodyType<CustomListInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCustomListMutationOptions(options));
+    }
+
+export const getGetCustomListUrl = (id: number,) => {
+
+
+
+
+  return `/api/lists/${id}`
+}
+
+/**
+ * @summary Get custom list with items
+ */
+export const getCustomList = async (id: number, options?: RequestInit): Promise<CustomListDetail> => {
+
+  return customFetch<CustomListDetail>(getGetCustomListUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCustomListQueryKey = (id: number,) => {
+    return [
+    `/api/lists/${id}`
+    ] as const;
+    }
+
+
+export const getGetCustomListQueryOptions = <TData = Awaited<ReturnType<typeof getCustomList>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCustomListQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCustomList>>> = ({ signal }) => getCustomList(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCustomList>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCustomListQueryResult = NonNullable<Awaited<ReturnType<typeof getCustomList>>>
+export type GetCustomListQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get custom list with items
+ */
+
+export function useGetCustomList<TData = Awaited<ReturnType<typeof getCustomList>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCustomListQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateCustomListUrl = (id: number,) => {
+
+
+
+
+  return `/api/lists/${id}`
+}
+
+/**
+ * @summary Update custom list metadata or rules
+ */
+export const updateCustomList = async (id: number,
+    customListUpdate: CustomListUpdate, options?: RequestInit): Promise<CustomListDetail> => {
+
+  return customFetch<CustomListDetail>(getUpdateCustomListUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      customListUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCustomListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCustomList>>, TError,{id: number;data: BodyType<CustomListUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCustomList>>, TError,{id: number;data: BodyType<CustomListUpdate>}, TContext> => {
+
+const mutationKey = ['updateCustomList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCustomList>>, {id: number;data: BodyType<CustomListUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCustomList(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCustomListMutationResult = NonNullable<Awaited<ReturnType<typeof updateCustomList>>>
+    export type UpdateCustomListMutationBody = BodyType<CustomListUpdate>
+    export type UpdateCustomListMutationError = ErrorType<void>
+
+    /**
+ * @summary Update custom list metadata or rules
+ */
+export const useUpdateCustomList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCustomList>>, TError,{id: number;data: BodyType<CustomListUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCustomList>>,
+        TError,
+        {id: number;data: BodyType<CustomListUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCustomListMutationOptions(options));
+    }
+
+export const getDeleteCustomListUrl = (id: number,) => {
+
+
+
+
+  return `/api/lists/${id}`
+}
+
+/**
+ * @summary Delete a custom list
+ */
+export const deleteCustomList = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCustomListUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCustomListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCustomList>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCustomList>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCustomList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCustomList>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCustomList(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCustomListMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCustomList>>>
+
+    export type DeleteCustomListMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a custom list
+ */
+export const useDeleteCustomList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCustomList>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCustomList>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCustomListMutationOptions(options));
+    }
+
+export const getAddCustomListItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/lists/${id}/items`
+}
+
+/**
+ * @summary Add watchlist item to a manual list
+ */
+export const addCustomListItem = async (id: number,
+    customListItemInput: CustomListItemInput, options?: RequestInit): Promise<CustomListDetail> => {
+
+  return customFetch<CustomListDetail>(getAddCustomListItemUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      customListItemInput,)
+  }
+);}
+
+
+
+
+export const getAddCustomListItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addCustomListItem>>, TError,{id: number;data: BodyType<CustomListItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addCustomListItem>>, TError,{id: number;data: BodyType<CustomListItemInput>}, TContext> => {
+
+const mutationKey = ['addCustomListItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addCustomListItem>>, {id: number;data: BodyType<CustomListItemInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addCustomListItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddCustomListItemMutationResult = NonNullable<Awaited<ReturnType<typeof addCustomListItem>>>
+    export type AddCustomListItemMutationBody = BodyType<CustomListItemInput>
+    export type AddCustomListItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Add watchlist item to a manual list
+ */
+export const useAddCustomListItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addCustomListItem>>, TError,{id: number;data: BodyType<CustomListItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addCustomListItem>>,
+        TError,
+        {id: number;data: BodyType<CustomListItemInput>},
+        TContext
+      > => {
+      return useMutation(getAddCustomListItemMutationOptions(options));
+    }
+
+export const getRemoveCustomListItemUrl = (id: number,
+    listItemId: number,) => {
+
+
+
+
+  return `/api/lists/${id}/items/${listItemId}`
+}
+
+/**
+ * @summary Remove item from manual or snapshot list
+ */
+export const removeCustomListItem = async (id: number,
+    listItemId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveCustomListItemUrl(id,listItemId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveCustomListItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeCustomListItem>>, TError,{id: number;listItemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeCustomListItem>>, TError,{id: number;listItemId: number}, TContext> => {
+
+const mutationKey = ['removeCustomListItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeCustomListItem>>, {id: number;listItemId: number}> = (props) => {
+          const {id,listItemId} = props ?? {};
+
+          return  removeCustomListItem(id,listItemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveCustomListItemMutationResult = NonNullable<Awaited<ReturnType<typeof removeCustomListItem>>>
+
+    export type RemoveCustomListItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove item from manual or snapshot list
+ */
+export const useRemoveCustomListItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeCustomListItem>>, TError,{id: number;listItemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeCustomListItem>>,
+        TError,
+        {id: number;listItemId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveCustomListItemMutationOptions(options));
+    }
+
+export const getRefreshCustomListUrl = (id: number,) => {
+
+
+
+
+  return `/api/lists/${id}/refresh`
+}
+
+/**
+ * @summary Re-evaluate rules and update snapshot list membership
+ */
+export const refreshCustomList = async (id: number, options?: RequestInit): Promise<CustomListDetail> => {
+
+  return customFetch<CustomListDetail>(getRefreshCustomListUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRefreshCustomListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshCustomList>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshCustomList>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['refreshCustomList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshCustomList>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  refreshCustomList(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshCustomListMutationResult = NonNullable<Awaited<ReturnType<typeof refreshCustomList>>>
+
+    export type RefreshCustomListMutationError = ErrorType<void>
+
+    /**
+ * @summary Re-evaluate rules and update snapshot list membership
+ */
+export const useRefreshCustomList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshCustomList>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshCustomList>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRefreshCustomListMutationOptions(options));
+    }
 
 export const getGetSeasonDetailsUrl = (tmdbId: number,
     seasonNumber: number,) => {

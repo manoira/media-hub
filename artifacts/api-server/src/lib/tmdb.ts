@@ -710,7 +710,7 @@ function normalizeKeyword(keyword: TmdbKeyword) {
   return { id: keyword.id, name: keyword.name };
 }
 
-async function fetchKeywords(mediaType: string, tmdbId: number) {
+export async function fetchKeywords(mediaType: string, tmdbId: number) {
   if (mediaType === "tv") {
     const data = await tmdbFetch<{ results?: TmdbKeyword[] }>(`/tv/${tmdbId}/keywords`);
     return (data.results ?? []).map(normalizeKeyword);

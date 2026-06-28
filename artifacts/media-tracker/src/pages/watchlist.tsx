@@ -9,9 +9,10 @@ import { MediaCard } from "@/components/media/media-card";
 import { MultiFilterMenu } from "@/components/media/multi-filter-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useSearchParams } from "wouter";
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { useSearchParams, Link } from "wouter";
+import { SlidersHorizontal, ChevronDown, Search, X, ListPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,7 @@ import {
   buildWatchlistSearchParams,
   filterWatchlistItems,
   hasActiveWatchlistFilters,
+  filtersToListRules,
   type WatchlistFilterState,
 } from "@/lib/watchlist-filters";
 
@@ -97,8 +99,16 @@ export function Watchlist() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">My List</h1>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">My List</h1>
+            <Link href="/lists">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+                <ListPlus className="w-4 h-4" />
+                Lists
+              </Button>
+            </Link>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
@@ -123,6 +133,48 @@ export function Watchlist() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        <div className="relative max-w-md">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search your list..."
+            value={filters.query}
+            onChange={(e) => updateFilters({ query: e.target.value })}
+            className="pl-8 pr-8 bg-muted/50"
+          />
+          {filters.query && (
+            <button
+              type="button"
+              onClick={() => updateFilters({ query: "" })}
+              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {filters.query.trim() && !isLoading && (
+          <p className="text-sm text-muted-foreground">
+            {displayItems.length} result{displayItems.length === 1 ? "" : "s"}
+          </p>
+        )}
+
+        {filtersActive && (
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/lists/new?${new URLSearchParams({
+                rules: JSON.stringify(filtersToListRules(filters)),
+              }).toString()}`}
+            >
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <ListPlus className="w-4 h-4" />
+                Save filters as list
+              </Button>
+            </Link>
+          </div>
+        )}
 
         <div className="flex bg-muted rounded-lg p-1 w-fit">
           <Button

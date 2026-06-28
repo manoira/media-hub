@@ -631,6 +631,169 @@ paths:
               schema:
                 $ref: "#/components/schemas/WatchStatusResult"
 
+  /lists:
+    get:
+      operationId: getCustomLists
+      tags: [lists]
+      summary: Get all custom lists
+      responses:
+        "200":
+          description: Custom lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomListSummary"
+    post:
+      operationId: createCustomList
+      tags: [lists]
+      summary: Create a custom list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomListInput"
+      responses:
+        "201":
+          description: Created list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomListDetail"
+
+  /lists/{id}:
+    get:
+      operationId: getCustomList
+      tags: [lists]
+      summary: Get custom list with items
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomListDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCustomList
+      tags: [lists]
+      summary: Update custom list metadata or rules
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomListUpdate"
+      responses:
+        "200":
+          description: Updated list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomListDetail"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCustomList
+      tags: [lists]
+      summary: Delete a custom list
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /lists/{id}/items:
+    post:
+      operationId: addCustomListItem
+      tags: [lists]
+      summary: Add watchlist item to a manual list
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomListItemInput"
+      responses:
+        "201":
+          description: Item added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomListDetail"
+        "404":
+          description: Not found
+
+  /lists/{id}/items/{listItemId}:
+    delete:
+      operationId: removeCustomListItem
+      tags: [lists]
+      summary: Remove item from manual or snapshot list
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: listItemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Not found
+
+  /lists/{id}/refresh:
+    post:
+      operationId: refreshCustomList
+      tags: [lists]
+      summary: Re-evaluate rules and update snapshot list membership
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Refreshed list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomListDetail"
+        "404":
+          description: Not found
+
   /media/tv/{tmdbId}/seasons/{seasonNumber}:
     get:
       operationId: getSeasonDetails
@@ -1395,6 +1558,10 @@ components:
           type: array
           items:
             type: integer
+        keywordIds:
+          type: array
+          items:
+            type: integer
         overview:
           type: ["string", "null"]
       required:
@@ -1448,6 +1615,196 @@ components:
             - type: "null"
       required:
         - inWatchlist
+
+    ListRules:
+      type: object
+      properties:
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        statuses:
+          type: array
+          items:
+            type: string
+            enum: [watching, watched, want_to_watch, unsure]
+        genreIds:
+          type: array
+          items:
+            type: integer
+        languages:
+          type: array
+          items:
+            type: string
+        keywordIds:
+          type: array
+          items:
+            type: integer
+        minRatings:
+          type: array
+          items:
+            type: number
+        yearRanges:
+          type: array
+          items:
+            $ref: "#/components/schemas/YearRange"
+
+    YearRange:
+      type: object
+      properties:
+        min:
+          type: integer
+        max:
+          type: integer
+
+    CustomListSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        kind:
+          type: string
+          enum: [manual, smart]
+        smartMode:
+          type: ["string", "null"]
+          enum: [live, snapshot, null]
+        itemCount:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - kind
+        - itemCount
+        - createdAt
+        - updatedAt
+
+    CustomListDetail:
+      allOf:
+        - $ref: "#/components/schemas/CustomListSummary"
+        - type: object
+          properties:
+            rules:
+              oneOf:
+                - $ref: "#/components/schemas/ListRules"
+                - type: "null"
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/CustomListDisplayItem"
+          required:
+            - items
+
+    CustomListDisplayItem:
+      type: object
+      properties:
+        listItemId:
+          type: ["integer", "null"]
+          description: Row id for remove; null for live smart-list items
+        tracked:
+          type: boolean
+        id:
+          type: integer
+          description: Watchlist row id when tracked
+        tmdbId:
+          type: integer
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        status:
+          type: string
+          enum: [watching, watched, want_to_watch, unsure]
+        userRating:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+        addedAt:
+          type: string
+        updatedAt:
+          type: string
+        title:
+          type: string
+        posterPath:
+          type: ["string", "null"]
+        backdropPath:
+          type: ["string", "null"]
+        releaseDate:
+          type: ["string", "null"]
+        originalLanguage:
+          type: ["string", "null"]
+        voteAverage:
+          type: ["number", "null"]
+        genreIds:
+          type: array
+          items:
+            type: integer
+        keywordIds:
+          type: array
+          items:
+            type: integer
+        overview:
+          type: ["string", "null"]
+      required:
+        - tracked
+        - tmdbId
+        - mediaType
+        - title
+
+    CustomListInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        kind:
+          type: string
+          enum: [manual, smart]
+        smartMode:
+          type: string
+          enum: [live, snapshot]
+        rules:
+          $ref: "#/components/schemas/ListRules"
+      required:
+        - name
+        - kind
+
+    CustomListUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        rules:
+          $ref: "#/components/schemas/ListRules"
+
+    CustomListItemInput:
+      type: object
+      properties:
+        watchlistId:
+          type: integer
+          description: Add a tracked watchlist item
+        tmdbId:
+          type: integer
+          description: Add by TMDB id (tracked or not)
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        title:
+          type: string
+        posterPath:
+          type: ["string", "null"]
+        releaseDate:
+          type: ["string", "null"]
+        voteAverage:
+          type: ["number", "null"]
 
     StatsSummary:
       type: object

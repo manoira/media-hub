@@ -54,6 +54,7 @@ router.get("/media/:mediaType/:tmdbId", async (req, res): Promise<void> => {
             releaseDate: watchlistEntry.releaseDate ?? null,
             voteAverage: watchlistEntry.voteAverage ?? null,
             genreIds: (watchlistEntry.genreIds ?? []).map(Number),
+            keywordIds: watchlistEntry.keywordIds ?? [],
             overview: watchlistEntry.overview ?? null,
           }
         : null,

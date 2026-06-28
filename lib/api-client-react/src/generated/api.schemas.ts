@@ -247,6 +247,7 @@ export interface WatchlistItem {
   /** @nullable */
   voteAverage?: number | null;
   genreIds?: number[];
+  keywordIds?: number[];
   /** @nullable */
   overview?: string | null;
 }
@@ -402,6 +403,184 @@ export interface WatchlistUpdate {
 export interface WatchStatusResult {
   inWatchlist: boolean;
   entry?: WatchlistItem | null;
+}
+
+export type ListRulesMediaType = typeof ListRulesMediaType[keyof typeof ListRulesMediaType];
+
+
+export const ListRulesMediaType = {
+  movie: 'movie',
+  tv: 'tv',
+} as const;
+
+export type ListRulesStatusesItem = typeof ListRulesStatusesItem[keyof typeof ListRulesStatusesItem];
+
+
+export const ListRulesStatusesItem = {
+  watching: 'watching',
+  watched: 'watched',
+  want_to_watch: 'want_to_watch',
+  unsure: 'unsure',
+} as const;
+
+export interface YearRange {
+  min?: number;
+  max?: number;
+}
+
+export interface ListRules {
+  mediaType?: ListRulesMediaType;
+  statuses?: ListRulesStatusesItem[];
+  genreIds?: number[];
+  languages?: string[];
+  keywordIds?: number[];
+  minRatings?: number[];
+  yearRanges?: YearRange[];
+}
+
+export type CustomListSummaryKind = typeof CustomListSummaryKind[keyof typeof CustomListSummaryKind];
+
+
+export const CustomListSummaryKind = {
+  manual: 'manual',
+  smart: 'smart',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CustomListSummarySmartMode = typeof CustomListSummarySmartMode[keyof typeof CustomListSummarySmartMode] | null;
+
+
+export const CustomListSummarySmartMode = {
+  live: 'live',
+  snapshot: 'snapshot',
+} as const;
+
+export interface CustomListSummary {
+  id: number;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  kind: CustomListSummaryKind;
+  /** @nullable */
+  smartMode?: CustomListSummarySmartMode;
+  itemCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CustomListDisplayItemMediaType = typeof CustomListDisplayItemMediaType[keyof typeof CustomListDisplayItemMediaType];
+
+
+export const CustomListDisplayItemMediaType = {
+  movie: 'movie',
+  tv: 'tv',
+} as const;
+
+export type CustomListDisplayItemStatus = typeof CustomListDisplayItemStatus[keyof typeof CustomListDisplayItemStatus];
+
+
+export const CustomListDisplayItemStatus = {
+  watching: 'watching',
+  watched: 'watched',
+  want_to_watch: 'want_to_watch',
+  unsure: 'unsure',
+} as const;
+
+export interface CustomListDisplayItem {
+  /**
+     * Row id for remove; null for live smart-list items
+     * @nullable
+     */
+  listItemId?: number | null;
+  tracked: boolean;
+  /** Watchlist row id when tracked */
+  id?: number;
+  tmdbId: number;
+  mediaType: CustomListDisplayItemMediaType;
+  status?: CustomListDisplayItemStatus;
+  /** @nullable */
+  userRating?: number | null;
+  /** @nullable */
+  notes?: string | null;
+  addedAt?: string;
+  updatedAt?: string;
+  title: string;
+  /** @nullable */
+  posterPath?: string | null;
+  /** @nullable */
+  backdropPath?: string | null;
+  /** @nullable */
+  releaseDate?: string | null;
+  /** @nullable */
+  originalLanguage?: string | null;
+  /** @nullable */
+  voteAverage?: number | null;
+  genreIds?: number[];
+  keywordIds?: number[];
+  /** @nullable */
+  overview?: string | null;
+}
+
+export type CustomListDetail = CustomListSummary & ({
+  rules?: ListRules | null;
+  items: CustomListDisplayItem[];
+});
+
+export type CustomListInputKind = typeof CustomListInputKind[keyof typeof CustomListInputKind];
+
+
+export const CustomListInputKind = {
+  manual: 'manual',
+  smart: 'smart',
+} as const;
+
+export type CustomListInputSmartMode = typeof CustomListInputSmartMode[keyof typeof CustomListInputSmartMode];
+
+
+export const CustomListInputSmartMode = {
+  live: 'live',
+  snapshot: 'snapshot',
+} as const;
+
+export interface CustomListInput {
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  kind: CustomListInputKind;
+  smartMode?: CustomListInputSmartMode;
+  rules?: ListRules;
+}
+
+export interface CustomListUpdate {
+  name?: string;
+  /** @nullable */
+  description?: string | null;
+  rules?: ListRules;
+}
+
+export type CustomListItemInputMediaType = typeof CustomListItemInputMediaType[keyof typeof CustomListItemInputMediaType];
+
+
+export const CustomListItemInputMediaType = {
+  movie: 'movie',
+  tv: 'tv',
+} as const;
+
+export interface CustomListItemInput {
+  /** Add a tracked watchlist item */
+  watchlistId?: number;
+  /** Add by TMDB id (tracked or not) */
+  tmdbId?: number;
+  mediaType?: CustomListItemInputMediaType;
+  title?: string;
+  /** @nullable */
+  posterPath?: string | null;
+  /** @nullable */
+  releaseDate?: string | null;
+  /** @nullable */
+  voteAverage?: number | null;
 }
 
 export interface StatsSummary {

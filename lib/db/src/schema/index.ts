@@ -19,3 +19,4 @@
 
 export * from "./watchlist";
 export * from "./episode-progress";
+export * from "./custom-lists";

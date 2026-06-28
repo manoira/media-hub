@@ -15,6 +15,7 @@ import {
 
 export type WatchlistFilterState = {
   sortBy: WatchlistSortBy;
+  query: string;
   statuses: GetWatchlistStatusItem[];
   mediaType?: GetWatchlistTypeItem;
   genres: number[];
@@ -31,6 +32,7 @@ const VALID_TYPES = new Set<string>(["movie", "tv"]);
 export function defaultWatchlistFilters(): WatchlistFilterState {
   return {
     sortBy: DEFAULT_SORT,
+    query: "",
     statuses: [],
     mediaType: undefined,
     genres: [],
@@ -38,6 +40,14 @@ export function defaultWatchlistFilters(): WatchlistFilterState {
     minRatings: [],
     languages: [],
   };
+}
+
+export function matchesWatchlistQuery(title: string, query: string): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+  const titleLower = title.toLowerCase();
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  return tokens.every(token => titleLower.includes(token));
 }
 
 export function parseWatchlistSearch(search: string | URLSearchParams): WatchlistFilterState {
@@ -81,6 +91,9 @@ export function parseWatchlistSearch(search: string | URLSearchParams): Watchlis
     if (language) state.languages.push(language);
   }
 
+  const q = params.get("q");
+  if (q) state.query = q.trim();
+
   return state;
 }
 
@@ -114,6 +127,10 @@ export function buildWatchlistSearchParams(state: WatchlistFilterState): URLSear
 
   for (const language of state.languages) {
     params.append("language", language);
+  }
+
+  if (state.query.trim()) {
+    params.set("q", state.query.trim());
   }
 
   return params;
@@ -179,6 +196,10 @@ export function filterWatchlistItems(
       }
     }
 
+    if (!matchesWatchlistQuery(item.title, state.query)) {
+      return false;
+    }
+
     return true;
   });
 }
@@ -220,6 +241,7 @@ export function toWatchlistApiParams(state: WatchlistFilterState): GetWatchlistP
 
 export function hasActiveWatchlistFilters(state: WatchlistFilterState): boolean {
   return (
+    state.query.trim().length > 0 ||
     state.statuses.length > 0 ||
     state.mediaType !== undefined ||
     state.genres.length > 0 ||
@@ -227,4 +249,15 @@ export function hasActiveWatchlistFilters(state: WatchlistFilterState): boolean 
     state.minRatings.length > 0 ||
     state.languages.length > 0
   );
+}
+
+export function filtersToListRules(state: WatchlistFilterState) {
+  return {
+    mediaType: state.mediaType,
+    statuses: state.statuses.length > 0 ? [...state.statuses] : undefined,
+    genreIds: state.genres.length > 0 ? [...state.genres] : undefined,
+    languages: state.languages.length > 0 ? [...state.languages] : undefined,
+    minRatings: state.minRatings.length > 0 ? [...state.minRatings] : undefined,
+    yearRanges: state.yearRanges.length > 0 ? [...state.yearRanges] : undefined,
+  };
 }

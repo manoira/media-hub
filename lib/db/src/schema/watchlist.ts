@@ -17,6 +17,7 @@ export const watchlistTable = pgTable("watchlist", {
   voteAverage: real("vote_average"),
   overview: text("overview"),
   genreIds: text("genre_ids").array(),
+  keywordIds: integer("keyword_ids").array(),
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

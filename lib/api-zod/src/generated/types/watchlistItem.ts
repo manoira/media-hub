@@ -31,6 +31,7 @@ export interface WatchlistItem {
   /** @nullable */
   voteAverage?: number | null;
   genreIds?: number[];
+  keywordIds?: number[];
   /** @nullable */
   overview?: string | null;
 }

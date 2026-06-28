@@ -12,6 +12,8 @@ import { WatchProviders } from "@/components/media/watch-providers";
 import { MediaMetadataPanel } from "@/components/media/media-metadata-panel";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
 import { filterUntracked, useWatchlistIndex } from "@/hooks/use-watchlist-index";
+import { UserReviewPanel } from "@/components/media/user-review-panel";
+import { AddToListMenu } from "@/components/media/add-to-list-menu";
 
 export function MediaDetail() {
   const { mediaType, tmdbId } = useParams();
@@ -76,10 +78,19 @@ export function MediaDetail() {
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold drop-shadow-lg">{details.title}</h1>
               {details.tagline && <p className="text-xl text-muted-foreground italic drop-shadow-md">{details.tagline}</p>}
               
-              <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
-                <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
-                  ★ {details.voteAverage?.toFixed(1)}
-                </Badge>
+              <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
+                {details.voteAverage != null && (
+                  <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30 gap-1">
+                    <span className="text-[10px] uppercase tracking-wide opacity-80">TMDB</span>
+                    ★ {details.voteAverage.toFixed(1)}
+                  </Badge>
+                )}
+                {details.watchlistEntry?.userRating != null && (
+                  <Badge variant="secondary" className="bg-amber-500/20 text-amber-400 border-amber-500/30 gap-1">
+                    <span className="text-[10px] uppercase tracking-wide opacity-80">You</span>
+                    ★ {details.watchlistEntry.userRating.toFixed(1)}
+                  </Badge>
+                )}
                 <span>{details.releaseDate?.substring(0, 4)}</span>
                 {details.runtime && <span>{formatRuntime(details.runtime)}</span>}
                 {details.numberOfSeasons && <span>{details.numberOfSeasons} Seasons</span>}
@@ -90,8 +101,11 @@ export function MediaDetail() {
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-4 pt-4 flex-wrap items-center">
                 <WatchlistButton mediaType={type} tmdbId={id} />
+                {details.watchlistEntry && (
+                  <AddToListMenu watchlistId={details.watchlistEntry.id} />
+                )}
               </div>
             </div>
           </div>
@@ -104,6 +118,12 @@ export function MediaDetail() {
             <h2 className="text-2xl font-semibold mb-4">Overview</h2>
             <p className="text-lg text-muted-foreground leading-relaxed">{details.overview}</p>
           </section>
+
+          <UserReviewPanel
+            mediaType={type}
+            tmdbId={id}
+            entry={details.watchlistEntry ?? null}
+          />
 
           {credits?.cast && credits.cast.length > 0 && (
             <section>

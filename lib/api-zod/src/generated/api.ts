@@ -406,6 +406,7 @@ export const GetMediaDetailsResponse = zod.object({
   "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
 }),zod.null()]).optional()
 })
@@ -599,6 +600,7 @@ export const GetWatchlistResponseItem = zod.object({
   "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
 })
 export const GetWatchlistResponse = zod.array(GetWatchlistResponseItem)
@@ -645,6 +647,7 @@ export const UpdateWatchlistItemResponse = zod.object({
   "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
 })
 
@@ -683,9 +686,260 @@ export const GetWatchStatusResponse = zod.object({
   "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
 }),zod.null()]).optional()
 })
+
+
+/**
+ * @summary Get all custom lists
+ */
+export const GetCustomListsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "kind": zod.enum(['manual', 'smart']),
+  "smartMode": zod.union([zod.literal('live'),zod.literal('snapshot'),zod.literal(null)]).nullish(),
+  "itemCount": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const GetCustomListsResponse = zod.array(GetCustomListsResponseItem)
+
+
+/**
+ * @summary Create a custom list
+ */
+export const CreateCustomListBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "kind": zod.enum(['manual', 'smart']),
+  "smartMode": zod.enum(['live', 'snapshot']).optional(),
+  "rules": zod.object({
+  "mediaType": zod.enum(['movie', 'tv']).optional(),
+  "statuses": zod.array(zod.enum(['watching', 'watched', 'want_to_watch', 'unsure'])).optional(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "languages": zod.array(zod.string()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional(),
+  "yearRanges": zod.array(zod.object({
+  "min": zod.number().optional(),
+  "max": zod.number().optional()
+})).optional()
+}).optional()
+})
+
+
+/**
+ * @summary Get custom list with items
+ */
+export const GetCustomListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetCustomListResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "kind": zod.enum(['manual', 'smart']),
+  "smartMode": zod.union([zod.literal('live'),zod.literal('snapshot'),zod.literal(null)]).nullish(),
+  "itemCount": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}).and(zod.object({
+  "rules": zod.union([zod.object({
+  "mediaType": zod.enum(['movie', 'tv']).optional(),
+  "statuses": zod.array(zod.enum(['watching', 'watched', 'want_to_watch', 'unsure'])).optional(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "languages": zod.array(zod.string()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional(),
+  "yearRanges": zod.array(zod.object({
+  "min": zod.number().optional(),
+  "max": zod.number().optional()
+})).optional()
+}),zod.null()]).optional(),
+  "items": zod.array(zod.object({
+  "listItemId": zod.number().nullish().describe('Row id for remove; null for live smart-list items'),
+  "tracked": zod.boolean(),
+  "id": zod.number().optional().describe('Watchlist row id when tracked'),
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']).optional(),
+  "userRating": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "addedAt": zod.string().optional(),
+  "updatedAt": zod.string().optional(),
+  "title": zod.string(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "originalLanguage": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
+  "overview": zod.string().nullish()
+}))
+}))
+
+
+/**
+ * @summary Update custom list metadata or rules
+ */
+export const UpdateCustomListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateCustomListBody = zod.object({
+  "name": zod.string().optional(),
+  "description": zod.string().nullish(),
+  "rules": zod.object({
+  "mediaType": zod.enum(['movie', 'tv']).optional(),
+  "statuses": zod.array(zod.enum(['watching', 'watched', 'want_to_watch', 'unsure'])).optional(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "languages": zod.array(zod.string()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional(),
+  "yearRanges": zod.array(zod.object({
+  "min": zod.number().optional(),
+  "max": zod.number().optional()
+})).optional()
+}).optional()
+})
+
+export const UpdateCustomListResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "kind": zod.enum(['manual', 'smart']),
+  "smartMode": zod.union([zod.literal('live'),zod.literal('snapshot'),zod.literal(null)]).nullish(),
+  "itemCount": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}).and(zod.object({
+  "rules": zod.union([zod.object({
+  "mediaType": zod.enum(['movie', 'tv']).optional(),
+  "statuses": zod.array(zod.enum(['watching', 'watched', 'want_to_watch', 'unsure'])).optional(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "languages": zod.array(zod.string()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional(),
+  "yearRanges": zod.array(zod.object({
+  "min": zod.number().optional(),
+  "max": zod.number().optional()
+})).optional()
+}),zod.null()]).optional(),
+  "items": zod.array(zod.object({
+  "listItemId": zod.number().nullish().describe('Row id for remove; null for live smart-list items'),
+  "tracked": zod.boolean(),
+  "id": zod.number().optional().describe('Watchlist row id when tracked'),
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']).optional(),
+  "userRating": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "addedAt": zod.string().optional(),
+  "updatedAt": zod.string().optional(),
+  "title": zod.string(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "originalLanguage": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
+  "overview": zod.string().nullish()
+}))
+}))
+
+
+/**
+ * @summary Delete a custom list
+ */
+export const DeleteCustomListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add watchlist item to a manual list
+ */
+export const AddCustomListItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddCustomListItemBody = zod.object({
+  "watchlistId": zod.number().optional().describe('Add a tracked watchlist item'),
+  "tmdbId": zod.number().optional().describe('Add by TMDB id (tracked or not)'),
+  "mediaType": zod.enum(['movie', 'tv']).optional(),
+  "title": zod.string().optional(),
+  "posterPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish()
+})
+
+
+/**
+ * @summary Remove item from manual or snapshot list
+ */
+export const RemoveCustomListItemParams = zod.object({
+  "id": zod.coerce.number(),
+  "listItemId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Re-evaluate rules and update snapshot list membership
+ */
+export const RefreshCustomListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RefreshCustomListResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "kind": zod.enum(['manual', 'smart']),
+  "smartMode": zod.union([zod.literal('live'),zod.literal('snapshot'),zod.literal(null)]).nullish(),
+  "itemCount": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}).and(zod.object({
+  "rules": zod.union([zod.object({
+  "mediaType": zod.enum(['movie', 'tv']).optional(),
+  "statuses": zod.array(zod.enum(['watching', 'watched', 'want_to_watch', 'unsure'])).optional(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "languages": zod.array(zod.string()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional(),
+  "yearRanges": zod.array(zod.object({
+  "min": zod.number().optional(),
+  "max": zod.number().optional()
+})).optional()
+}),zod.null()]).optional(),
+  "items": zod.array(zod.object({
+  "listItemId": zod.number().nullish().describe('Row id for remove; null for live smart-list items'),
+  "tracked": zod.boolean(),
+  "id": zod.number().optional().describe('Watchlist row id when tracked'),
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure']).optional(),
+  "userRating": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "addedAt": zod.string().optional(),
+  "updatedAt": zod.string().optional(),
+  "title": zod.string(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "originalLanguage": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
+  "overview": zod.string().nullish()
+}))
+}))
 
 
 /**
@@ -875,6 +1129,7 @@ export const GetRecentlyWatchedResponseItem = zod.object({
   "originalLanguage": zod.string().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
+  "keywordIds": zod.array(zod.number()).optional(),
   "overview": zod.string().nullish()
 })
 export const GetRecentlyWatchedResponse = zod.array(GetRecentlyWatchedResponseItem)

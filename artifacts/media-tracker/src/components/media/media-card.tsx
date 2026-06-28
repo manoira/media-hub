@@ -19,9 +19,8 @@ interface MediaCardProps {
 export function MediaCard({ item, genres, className, showStatus = true, showProgress = false }: MediaCardProps) {
   const isWatchlistItem = "status" in item;
   const status = isWatchlistItem ? item.status : null;
-  const rating = isWatchlistItem
-    ? (item.userRating ?? item.voteAverage)
-    : item.voteAverage;
+  const userRating = isWatchlistItem ? item.userRating : null;
+  const tmdbRating = item.voteAverage;
 
   const imageUrl = getTmdbImageUrl(item.posterPath, "poster");
   const statusConfig = status ? WATCHLIST_STATUS_BY_VALUE[status] : null;
@@ -59,9 +58,25 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
           <WatchStatusBadge mediaType={item.mediaType as "movie" | "tv"} tmdbId={item.tmdbId} />
         )}
 
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs font-medium text-white pointer-events-none">
-          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-          <span>{rating ? rating.toFixed(1) : "NR"}</span>
+        <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1 pointer-events-none">
+          {tmdbRating != null && (
+            <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs font-medium text-white">
+              <Star className="w-3 h-3 text-primary fill-primary/80" />
+              <span>{tmdbRating.toFixed(1)}</span>
+            </div>
+          )}
+          {userRating != null && (
+            <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs font-medium text-amber-400">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span>{userRating.toFixed(1)}</span>
+            </div>
+          )}
+          {tmdbRating == null && userRating == null && (
+            <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs font-medium text-white">
+              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+              <span>NR</span>
+            </div>
+          )}
         </div>
 
         <div className="absolute bottom-2 right-2 z-20">
