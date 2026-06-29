@@ -5,7 +5,7 @@ import { watchlistTable } from "./watchlist";
 
 export const listRulesSchema = z.object({
   mediaType: z.enum(["movie", "tv"]).optional(),
-  statuses: z.array(z.enum(["watching", "watched", "want_to_watch", "unsure"])).optional(),
+  statuses: z.array(z.enum(["watching", "watched", "want_to_watch", "unsure", "waiting"])).optional(),
   genreIds: z.array(z.number()).optional(),
   languages: z.array(z.string()).optional(),
   keywordIds: z.array(z.number()).optional(),

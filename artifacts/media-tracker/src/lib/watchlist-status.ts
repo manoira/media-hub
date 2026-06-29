@@ -3,6 +3,7 @@ import {
   BookmarkPlus,
   CircleHelp,
   Eye,
+  Hourglass,
   type LucideIcon,
 } from "lucide-react";
 import type { WatchlistInputStatus } from "@workspace/api-client-react";
@@ -49,6 +50,18 @@ export const WATCHLIST_STATUS_OPTIONS: WatchlistStatusConfig[] = [
     quickAddHoverClass: "hover:scale-105 hover:border-blue-400/60 hover:shadow-md hover:bg-black/90",
     buttonHoverClass: "hover:scale-[1.02] hover:bg-blue-500/25 hover:border-blue-500/50",
     icon: Eye,
+  },
+  {
+    value: "waiting",
+    label: "Waiting",
+    color: "text-cyan-500",
+    badgeClass: "bg-cyan-500 text-white border-0 shadow-md",
+    cardBorderClass: "hover:border-cyan-500/50",
+    cardTextClass: "text-cyan-500",
+    buttonBg: "bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30",
+    quickAddHoverClass: "hover:scale-105 hover:border-cyan-400/60 hover:shadow-md hover:bg-black/90",
+    buttonHoverClass: "hover:scale-[1.02] hover:bg-cyan-500/25 hover:border-cyan-500/50",
+    icon: Hourglass,
   },
   {
     value: "watched",

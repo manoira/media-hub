@@ -29,7 +29,7 @@ export function Stats() {
       <h1 className="text-3xl font-bold tracking-tight">Your Stats</h1>
       
       {stats && (
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Link href="/watchlist" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-primary/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-primary mb-2">{stats.totalItems}</span>
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Tracked</span>
@@ -41,6 +41,10 @@ export function Stats() {
           <Link href="/watchlist?status=watching" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-blue-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-blue-500 mb-2">{stats.totalWatching}</span>
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Watching</span>
+          </Link>
+          <Link href="/watchlist?status=waiting" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-cyan-500/50 hover:bg-card/80 transition-colors cursor-pointer">
+            <span className="text-4xl font-bold text-cyan-500 mb-2">{stats.totalWaiting}</span>
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Waiting</span>
           </Link>
           <Link href="/watchlist?status=want_to_watch" className="bg-card border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-amber-500/50 hover:bg-card/80 transition-colors cursor-pointer">
             <span className="text-4xl font-bold text-amber-500 mb-2">{stats.totalWantToWatch}</span>

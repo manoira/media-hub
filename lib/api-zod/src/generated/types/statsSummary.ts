@@ -11,6 +11,7 @@ export interface StatsSummary {
   totalWatching: number;
   totalWantToWatch: number;
   totalUnsure: number;
+  totalWaiting: number;
   totalMovies: number;
   totalTvShows: number;
   /** @nullable */

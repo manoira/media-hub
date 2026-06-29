@@ -14,4 +14,5 @@ export const GetWatchlistStatusItem = {
   watched: 'watched',
   want_to_watch: 'want_to_watch',
   unsure: 'unsure',
+  waiting: 'waiting',
 } as const;

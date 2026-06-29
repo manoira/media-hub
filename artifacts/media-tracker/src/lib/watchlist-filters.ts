@@ -26,7 +26,7 @@ export type WatchlistFilterState = {
 
 const DEFAULT_SORT: WatchlistSortBy = "added_at";
 const VALID_SORTS = new Set<string>(WATCHLIST_SORT_OPTIONS.map(o => o.value));
-const VALID_STATUSES = new Set<string>(["watching", "watched", "want_to_watch", "unsure"]);
+const VALID_STATUSES = new Set<string>(["watching", "watched", "want_to_watch", "unsure", "waiting"]);
 const VALID_TYPES = new Set<string>(["movie", "tv"]);
 
 export function defaultWatchlistFilters(): WatchlistFilterState {

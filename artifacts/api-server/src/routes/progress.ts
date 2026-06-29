@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, episodeProgressTable } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
 import { getSeasonDetails, getTvDetails } from "../lib/tmdb";
+import { syncWatchlistStatusFromProgress } from "../lib/watchlist-status-sync";
 
 const router = Router();
 
@@ -71,6 +72,7 @@ router.post("/progress/tv/:tmdbId/episode", async (req, res) => {
     );
   }
 
+  await syncWatchlistStatusFromProgress(tmdbId);
   res.json({ tmdbId, seasonNumber, episodeNumber, watched });
 });
 
@@ -98,6 +100,7 @@ router.post("/progress/tv/:tmdbId/season/:seasonNumber/watch", async (req, res) 
     );
     res.json({ tmdbId, seasonNumber, watched: false });
   }
+  await syncWatchlistStatusFromProgress(tmdbId);
 });
 
 router.post("/progress/tv/:tmdbId/watch-all", async (req, res) => {
@@ -130,6 +133,7 @@ router.post("/progress/tv/:tmdbId/watch-all", async (req, res) => {
     await db.delete(episodeProgressTable).where(eq(episodeProgressTable.tmdbId, tmdbId));
     res.json({ tmdbId, watched: false });
   }
+  await syncWatchlistStatusFromProgress(tmdbId);
 });
 
 export default router;

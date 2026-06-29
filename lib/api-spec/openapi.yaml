@@ -488,7 +488,7 @@ paths:
             type: array
             items:
               type: string
-              enum: [watching, watched, want_to_watch, unsure]
+              enum: [watching, watched, want_to_watch, unsure, waiting]
           style: form
           explode: true
         - name: type
@@ -1533,7 +1533,7 @@ components:
           enum: [movie, tv]
         status:
           type: string
-          enum: [watching, watched, want_to_watch, unsure]
+          enum: [watching, watched, want_to_watch, unsure, waiting]
         userRating:
           type: ["number", "null"]
         notes:
@@ -1583,7 +1583,7 @@ components:
           enum: [movie, tv]
         status:
           type: string
-          enum: [watching, watched, want_to_watch, unsure]
+          enum: [watching, watched, want_to_watch, unsure, waiting]
         userRating:
           type: ["number", "null"]
         notes:
@@ -1598,7 +1598,7 @@ components:
       properties:
         status:
           type: string
-          enum: [watching, watched, want_to_watch, unsure]
+          enum: [watching, watched, want_to_watch, unsure, waiting]
         userRating:
           type: ["number", "null"]
         notes:
@@ -1626,7 +1626,7 @@ components:
           type: array
           items:
             type: string
-            enum: [watching, watched, want_to_watch, unsure]
+            enum: [watching, watched, want_to_watch, unsure, waiting]
         genreIds:
           type: array
           items:
@@ -1719,7 +1719,7 @@ components:
           enum: [movie, tv]
         status:
           type: string
-          enum: [watching, watched, want_to_watch, unsure]
+          enum: [watching, watched, want_to_watch, unsure, waiting]
         userRating:
           type: ["number", "null"]
         notes:
@@ -1817,6 +1817,8 @@ components:
           type: integer
         totalUnsure:
           type: integer
+        totalWaiting:
+          type: integer
         totalMovies:
           type: integer
         totalTvShows:
@@ -1830,6 +1832,7 @@ components:
         - totalWatching
         - totalWantToWatch
         - totalUnsure
+        - totalWaiting
         - totalMovies
         - totalTvShows
         - totalItems

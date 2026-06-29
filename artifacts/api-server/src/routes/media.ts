@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { getMovieDetails, getTvDetails, getCredits, getVideos, getSimilar, getWatchProviders, getMediaMetadata } from "../lib/tmdb";
+import { serializeWatchlistItem } from "../lib/watchlist-item";
 import { db, watchlistTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import {
@@ -38,26 +39,7 @@ router.get("/media/:mediaType/:tmdbId", async (req, res): Promise<void> => {
 
     const response = {
       ...details,
-      watchlistEntry: watchlistEntry
-        ? {
-            id: watchlistEntry.id,
-            tmdbId: watchlistEntry.tmdbId,
-            mediaType: watchlistEntry.mediaType as "movie" | "tv",
-            status: watchlistEntry.status as "watching" | "watched" | "want_to_watch" | "unsure",
-            userRating: watchlistEntry.userRating ?? null,
-            notes: watchlistEntry.notes ?? null,
-            addedAt: watchlistEntry.addedAt.toISOString(),
-            updatedAt: watchlistEntry.updatedAt.toISOString(),
-            title: watchlistEntry.title,
-            posterPath: watchlistEntry.posterPath ?? null,
-            backdropPath: watchlistEntry.backdropPath ?? null,
-            releaseDate: watchlistEntry.releaseDate ?? null,
-            voteAverage: watchlistEntry.voteAverage ?? null,
-            genreIds: (watchlistEntry.genreIds ?? []).map(Number),
-            keywordIds: watchlistEntry.keywordIds ?? [],
-            overview: watchlistEntry.overview ?? null,
-          }
-        : null,
+      watchlistEntry: watchlistEntry ? serializeWatchlistItem(watchlistEntry) : null,
     };
     res.json(GetMediaDetailsResponse.parse(response));
   } catch (err: unknown) {

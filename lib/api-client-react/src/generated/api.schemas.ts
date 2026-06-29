@@ -222,6 +222,7 @@ export const WatchlistItemStatus = {
   watched: 'watched',
   want_to_watch: 'want_to_watch',
   unsure: 'unsure',
+  waiting: 'waiting',
 } as const;
 
 export interface WatchlistItem {
@@ -370,6 +371,7 @@ export const WatchlistInputStatus = {
   watched: 'watched',
   want_to_watch: 'want_to_watch',
   unsure: 'unsure',
+  waiting: 'waiting',
 } as const;
 
 export interface WatchlistInput {
@@ -390,6 +392,7 @@ export const WatchlistUpdateStatus = {
   watched: 'watched',
   want_to_watch: 'want_to_watch',
   unsure: 'unsure',
+  waiting: 'waiting',
 } as const;
 
 export interface WatchlistUpdate {
@@ -421,6 +424,7 @@ export const ListRulesStatusesItem = {
   watched: 'watched',
   want_to_watch: 'want_to_watch',
   unsure: 'unsure',
+  waiting: 'waiting',
 } as const;
 
 export interface YearRange {
@@ -486,6 +490,7 @@ export const CustomListDisplayItemStatus = {
   watched: 'watched',
   want_to_watch: 'want_to_watch',
   unsure: 'unsure',
+  waiting: 'waiting',
 } as const;
 
 export interface CustomListDisplayItem {
@@ -588,6 +593,7 @@ export interface StatsSummary {
   totalWatching: number;
   totalWantToWatch: number;
   totalUnsure: number;
+  totalWaiting: number;
   totalMovies: number;
   totalTvShows: number;
   /** @nullable */
@@ -890,6 +896,7 @@ export const GetWatchlistStatusItem = {
   watched: 'watched',
   want_to_watch: 'want_to_watch',
   unsure: 'unsure',
+  waiting: 'waiting',
 } as const;
 
 export type GetWatchlistTypeItem = typeof GetWatchlistTypeItem[keyof typeof GetWatchlistTypeItem];
