@@ -36,6 +36,7 @@ import type {
   GetRecentlyWatchedParams,
   GetTrendingParams,
   GetWatchlistParams,
+  GetWatchlistRecommendationsParams,
   HealthStatus,
   MediaDetails,
   MediaMetadata,
@@ -809,6 +810,91 @@ export function useGetBrowseCategory<TData = Awaited<ReturnType<typeof getBrowse
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetBrowseCategoryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetWatchlistRecommendationsUrl = (params?: GetWatchlistRecommendationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/recommendations/watchlist?${stringifiedParams}` : `/api/recommendations/watchlist`
+}
+
+/**
+ * Picks random watchlist titles and returns similar TMDB titles, reshuffled on each request.
+ * @summary Random recommendations based on the user's watchlist
+ */
+export const getWatchlistRecommendations = async (params?: GetWatchlistRecommendationsParams, options?: RequestInit): Promise<MediaSearchResult> => {
+
+  return customFetch<MediaSearchResult>(getGetWatchlistRecommendationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWatchlistRecommendationsQueryKey = (params?: GetWatchlistRecommendationsParams,) => {
+    return [
+    `/api/recommendations/watchlist`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWatchlistRecommendationsQueryOptions = <TData = Awaited<ReturnType<typeof getWatchlistRecommendations>>, TError = ErrorType<unknown>>(params?: GetWatchlistRecommendationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWatchlistRecommendations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWatchlistRecommendationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWatchlistRecommendations>>> = ({ signal }) => getWatchlistRecommendations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWatchlistRecommendations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWatchlistRecommendationsQueryResult = NonNullable<Awaited<ReturnType<typeof getWatchlistRecommendations>>>
+export type GetWatchlistRecommendationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Random recommendations based on the user's watchlist
+ */
+
+export function useGetWatchlistRecommendations<TData = Awaited<ReturnType<typeof getWatchlistRecommendations>>, TError = ErrorType<unknown>>(
+ params?: GetWatchlistRecommendationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWatchlistRecommendations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWatchlistRecommendationsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

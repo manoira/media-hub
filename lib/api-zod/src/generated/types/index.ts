@@ -42,6 +42,7 @@ export * from './getTrendingParams';
 export * from './getTrendingTimeWindow';
 export * from './getTrendingType';
 export * from './getWatchlistParams';
+export * from './getWatchlistRecommendationsParams';
 export * from './getWatchlistSortBy';
 export * from './getWatchlistStatusItem';
 export * from './getWatchlistTypeItem';

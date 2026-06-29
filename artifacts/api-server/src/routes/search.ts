@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres, getPopular, getTopRated, getNowPlaying, getUpcoming, getOnAir, searchByTag } from "../lib/tmdb";
 import { applyExcludeTracked, parseExcludeTrackedFromQuery } from "../lib/exclude-tracked";
+import { getWatchlistBasedRecommendations } from "../lib/watchlist-recommendations";
 import {
   SearchMediaQueryParams,
   SearchMediaResponse,
@@ -11,6 +12,8 @@ import {
   GetGenresResponse,
   GetBrowseCategoryQueryParams,
   GetBrowseCategoryResponse,
+  GetWatchlistRecommendationsQueryParams,
+  GetWatchlistRecommendationsResponse,
   SearchByTagQueryParams,
   SearchByTagResponse,
 } from "@workspace/api-zod";
@@ -134,6 +137,23 @@ router.get("/browse", async (req, res): Promise<void> => {
   } catch (err: unknown) {
     req.log.error({ err }, "Browse error");
     res.status(500).json({ error: "Failed to browse category" });
+  }
+});
+
+router.get("/recommendations/watchlist", async (req, res): Promise<void> => {
+  const parsed = GetWatchlistRecommendationsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  try {
+    let result = await getWatchlistBasedRecommendations();
+    result = await applyExcludeTracked(result, excludeTracked);
+    res.json(GetWatchlistRecommendationsResponse.parse(result));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Watchlist recommendations error");
+    res.status(500).json({ error: "Failed to get watchlist recommendations" });
   }
 });
 

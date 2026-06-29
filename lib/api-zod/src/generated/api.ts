@@ -316,6 +316,39 @@ export const GetBrowseCategoryResponse = zod.object({
 
 
 /**
+ * Picks random watchlist titles and returns similar TMDB titles, reshuffled on each request.
+ * @summary Random recommendations based on the user's watchlist
+ */
+export const getWatchlistRecommendationsQueryExcludeTrackedDefault = false;
+
+export const GetWatchlistRecommendationsQueryParams = zod.object({
+  "exclude_tracked": zod.coerce.boolean().default(getWatchlistRecommendationsQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
+})
+
+export const GetWatchlistRecommendationsResponse = zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+})
+
+
+/**
  * @summary Get all genres for movies and TV
  */
 export const GetGenresResponse = zod.object({

@@ -875,6 +875,13 @@ export const GetBrowseCategoryCategory = {
   on_air: 'on_air',
 } as const;
 
+export type GetWatchlistRecommendationsParams = {
+/**
+ * Omit items already on the watchlist (any status)
+ */
+exclude_tracked?: boolean;
+};
+
 export type GetWatchlistParams = {
 status?: GetWatchlistStatusItem[];
 type?: GetWatchlistTypeItem[];

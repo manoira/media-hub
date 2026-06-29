@@ -311,6 +311,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/MediaSearchResult"
 
+  /recommendations/watchlist:
+    get:
+      operationId: getWatchlistRecommendations
+      tags: [search]
+      summary: Random recommendations based on the user's watchlist
+      description: Picks random watchlist titles and returns similar TMDB titles, reshuffled on each request.
+      parameters:
+        - name: exclude_tracked
+          in: query
+          description: Omit items already on the watchlist (any status)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Watchlist-based recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaSearchResult"
+
   /genres:
     get:
       operationId: getGenres

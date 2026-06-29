@@ -1,7 +1,7 @@
 import {
-  useGetTrending, useGetGenres, useGetBrowseCategory,
+  useGetTrending, useGetGenres, useGetBrowseCategory, useGetWatchlistRecommendations,
   getGetTrendingQueryKey, getGetGenresQueryKey,
-  getGetBrowseCategoryQueryKey,
+  getGetBrowseCategoryQueryKey, getGetWatchlistRecommendationsQueryKey,
   type GetBrowseCategoryParams,
 } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
@@ -23,6 +23,7 @@ function useBrowse(category: GetBrowseCategoryParams["category"], hideTracked: b
 export function Home() {
   const [type, setType] = useState<"all" | "movie" | "tv">("all");
   const [timeWindow, setTimeWindow] = useState<"day" | "week">("week");
+  const [visitKey] = useState(() => crypto.randomUUID());
   const { hideTracked, setHideTracked } = useHideTrackedPreference();
 
   const trendingParams = withExcludeTracked({ type, time_window: timeWindow }, hideTracked);
@@ -39,6 +40,17 @@ export function Home() {
   const { data: nowPlaying, isLoading: loadingNowPlaying }       = useBrowse("now_playing", hideTracked);
   const { data: upcoming, isLoading: loadingUpcoming }           = useBrowse("upcoming", hideTracked);
   const { data: onAir, isLoading: loadingOnAir }                 = useBrowse("on_air", hideTracked);
+
+  const watchlistPickParams = withExcludeTracked({}, hideTracked);
+  const { data: watchlistPicks, isLoading: loadingWatchlistPicks } = useGetWatchlistRecommendations(
+    watchlistPickParams,
+    {
+      query: {
+        queryKey: [...getGetWatchlistRecommendationsQueryKey(watchlistPickParams), visitKey],
+        staleTime: 0,
+      },
+    },
+  );
 
   return (
     <div className="space-y-10 pb-20">
@@ -93,6 +105,14 @@ export function Home() {
 
       <MediaSlider title="Popular Movies"       items={popularMovies?.results}  isLoading={loadingPopMovies}    genres={genres} />
       <MediaSlider title="Popular TV Shows"     items={popularTv?.results}      isLoading={loadingPopTv}        genres={genres} />
+      {(loadingWatchlistPicks || (watchlistPicks?.results?.length ?? 0) > 0) && (
+        <MediaSlider
+          title="More of what you like"
+          items={watchlistPicks?.results}
+          isLoading={loadingWatchlistPicks}
+          genres={genres}
+        />
+      )}
       <MediaSlider title="Now Playing in Cinemas" items={nowPlaying?.results}   isLoading={loadingNowPlaying}   genres={genres} />
       <MediaSlider title="Coming Soon"          items={upcoming?.results}       isLoading={loadingUpcoming}     genres={genres} />
       <MediaSlider title="Top Rated Movies"     items={topRatedMovies?.results} isLoading={loadingTopMovies}    genres={genres} />
