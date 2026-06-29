@@ -1,0 +1,52 @@
+import { Router, type IRouter } from "express";
+import {
+  syncNotifications,
+  listNotifications,
+  getUnreadCount,
+  markAllNotificationsRead,
+  serializeNotification,
+} from "../lib/notification-sync";
+import {
+  GetNotificationsQueryParams,
+  GetNotificationsResponse,
+  GetUnreadNotificationCountResponse,
+} from "@workspace/api-zod";
+
+const router: IRouter = Router();
+
+router.get("/notifications", async (req, res): Promise<void> => {
+  const parsed = GetNotificationsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  try {
+    await syncNotifications(parsed.data.refresh === true);
+    const rows = await listNotifications();
+    res.json(GetNotificationsResponse.parse(rows.map(serializeNotification)));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Notifications list error");
+    res.status(500).json({ error: "Failed to list notifications" });
+  }
+});
+
+router.get("/notifications/unread-count", async (_req, res): Promise<void> => {
+  try {
+    const count = await getUnreadCount();
+    res.json(GetUnreadNotificationCountResponse.parse({ count }));
+  } catch (err: unknown) {
+    res.status(500).json({ error: "Failed to get unread count" });
+  }
+});
+
+router.post("/notifications/mark-read", async (_req, res): Promise<void> => {
+  try {
+    await markAllNotificationsRead();
+    res.status(204).send();
+  } catch (err: unknown) {
+    res.status(500).json({ error: "Failed to mark notifications read" });
+  }
+});
+
+export default router;

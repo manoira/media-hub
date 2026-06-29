@@ -15,6 +15,7 @@ import { ListNewPage } from "@/pages/list-new";
 import { Stats } from "@/pages/stats";
 import { Browse } from "@/pages/browse";
 import { PersonDetail } from "@/pages/person-detail";
+import { Updates } from "@/pages/updates";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +39,7 @@ function Router() {
         <Route path="/lists/:id" component={ListDetailPage} />
         <Route path="/lists" component={ListsPage} />
         <Route path="/stats" component={Stats} />
+        <Route path="/updates" component={Updates} />
         <Route path="/browse" component={Browse} />
         <Route component={NotFound} />
       </Switch>

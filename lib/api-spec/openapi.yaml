@@ -17,6 +17,8 @@ tags:
     description: User watchlist management
   - name: stats
     description: User statistics and summaries
+  - name: notifications
+    description: User update notifications
 
 paths:
   /healthz:
@@ -1011,6 +1013,50 @@ paths:
                 items:
                   $ref: "#/components/schemas/WatchlistItem"
 
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: List update notifications
+      parameters:
+        - name: refresh
+          in: query
+          description: Force a notification sync before listing
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationItem"
+
+  /notifications/unread-count:
+    get:
+      operationId: getUnreadNotificationCount
+      tags: [notifications]
+      summary: Count unread notifications
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadNotificationCount"
+
+  /notifications/mark-read:
+    post:
+      operationId: markNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "204":
+          description: Marked read
+
 components:
   schemas:
     HealthStatus:
@@ -1870,6 +1916,47 @@ components:
       required:
         - genreId
         - genreName
+        - count
+
+    NotificationItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: [new_season, streaming_available, launch]
+        title:
+          type: string
+        message:
+          type: string
+        tmdbId:
+          type: integer
+        mediaType:
+          type: string
+          enum: [movie, tv]
+        posterPath:
+          type: ["string", "null"]
+        read:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - kind
+        - title
+        - message
+        - tmdbId
+        - mediaType
+        - read
+        - createdAt
+
+    UnreadNotificationCount:
+      type: object
+      properties:
+        count:
+          type: integer
+      required:
         - count
 
     Episode:

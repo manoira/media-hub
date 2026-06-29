@@ -7,6 +7,7 @@ import listsRouter from "./lists";
 import statsRouter from "./stats";
 import progressRouter from "./progress";
 import peopleRouter from "./people";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(statsRouter);
 router.use(watchlistRouter);
 router.use(listsRouter);
 router.use(progressRouter);
+router.use(notificationsRouter);
 
 export default router;

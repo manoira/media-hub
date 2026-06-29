@@ -1169,3 +1169,34 @@ export const GetRecentlyWatchedResponseItem = zod.object({
 export const GetRecentlyWatchedResponse = zod.array(GetRecentlyWatchedResponseItem)
 
 
+/**
+ * @summary List update notifications
+ */
+export const getNotificationsQueryRefreshDefault = false;
+
+export const GetNotificationsQueryParams = zod.object({
+  "refresh": zod.coerce.boolean().default(getNotificationsQueryRefreshDefault).describe('Force a notification sync before listing')
+})
+
+export const GetNotificationsResponseItem = zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['new_season', 'streaming_available', 'launch']),
+  "title": zod.string(),
+  "message": zod.string(),
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "posterPath": zod.string().nullish(),
+  "read": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const GetNotificationsResponse = zod.array(GetNotificationsResponseItem)
+
+
+/**
+ * @summary Count unread notifications
+ */
+export const GetUnreadNotificationCountResponse = zod.object({
+  "count": zod.number()
+})
+
+

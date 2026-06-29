@@ -607,6 +607,40 @@ export interface GenreStat {
   count: number;
 }
 
+export type NotificationItemKind = typeof NotificationItemKind[keyof typeof NotificationItemKind];
+
+
+export const NotificationItemKind = {
+  new_season: 'new_season',
+  streaming_available: 'streaming_available',
+  launch: 'launch',
+} as const;
+
+export type NotificationItemMediaType = typeof NotificationItemMediaType[keyof typeof NotificationItemMediaType];
+
+
+export const NotificationItemMediaType = {
+  movie: 'movie',
+  tv: 'tv',
+} as const;
+
+export interface NotificationItem {
+  id: number;
+  kind: NotificationItemKind;
+  title: string;
+  message: string;
+  tmdbId: number;
+  mediaType: NotificationItemMediaType;
+  /** @nullable */
+  posterPath?: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface UnreadNotificationCount {
+  count: number;
+}
+
 export interface Episode {
   id: number;
   episodeNumber: number;
@@ -926,5 +960,12 @@ export const GetWatchlistSortBy = {
 
 export type GetRecentlyWatchedParams = {
 limit?: number;
+};
+
+export type GetNotificationsParams = {
+/**
+ * Force a notification sync before listing
+ */
+refresh?: boolean;
 };
 
