@@ -11,12 +11,13 @@ import {
 import { MediaCard } from "@/components/media/media-card";
 import { PersonResultCard } from "@/components/media/person-result-card";
 import { TagLink } from "@/components/media/tag-link";
-import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
+import { ContentFilterToggles } from "@/components/media/content-filter-toggles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
-import { withExcludeTracked } from "@/lib/exclude-tracked";
+import { useHideAdultPreference } from "@/hooks/use-hide-adult";
+import { withContentFilters } from "@/lib/content-filters";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Search as SearchIcon } from "lucide-react";
@@ -45,6 +46,7 @@ export function Search() {
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [mode, setMode] = useState<SearchMode>(initialMode);
   const { hideTracked, setHideTracked } = useHideTrackedPreference();
+  const { hideAdult, setHideAdult } = useHideAdultPreference();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -65,8 +67,8 @@ export function Search() {
     }
   }, [debouncedQuery, mode, setLocation]);
 
-  const titleSearchParams = withExcludeTracked({ query: debouncedQuery }, hideTracked);
-  const tagSearchParams = withExcludeTracked({ query: debouncedQuery }, hideTracked);
+  const titleSearchParams = withContentFilters({ query: debouncedQuery }, { hideTracked, hideAdult });
+  const tagSearchParams = withContentFilters({ query: debouncedQuery }, { hideTracked, hideAdult });
 
   const { data: titleResults, isLoading: titlesLoading } = useSearchMedia(
     titleSearchParams,
@@ -156,11 +158,13 @@ export function Search() {
       </div>
 
       {(mode === "titles" || mode === "tags") && (
-        <HideTrackedToggle
-          checked={hideTracked}
-          onCheckedChange={setHideTracked}
-          id="hide-tracked-search"
-          className="flex items-center justify-center gap-2"
+        <ContentFilterToggles
+          hideAdult={hideAdult}
+          onHideAdultChange={setHideAdult}
+          hideTracked={hideTracked}
+          onHideTrackedChange={setHideTracked}
+          idPrefix="search"
+          className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6"
         />
       )}
 

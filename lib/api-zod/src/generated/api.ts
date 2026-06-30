@@ -22,12 +22,14 @@ export const HealthCheckResponse = zod.object({
 export const searchMediaQueryTypeDefault = `all`;
 export const searchMediaQueryPageDefault = 1;
 export const searchMediaQueryExcludeTrackedDefault = false;
+export const searchMediaQueryExcludeAdultDefault = true;
 
 export const SearchMediaQueryParams = zod.object({
   "query": zod.coerce.string(),
   "type": zod.enum(['all', 'movie', 'tv']).default(searchMediaQueryTypeDefault),
   "page": zod.coerce.number().default(searchMediaQueryPageDefault),
-  "exclude_tracked": zod.coerce.boolean().default(searchMediaQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
+  "exclude_tracked": zod.coerce.boolean().default(searchMediaQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)'),
+  "exclude_adult": zod.coerce.boolean().default(searchMediaQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
 })
 
 export const SearchMediaResponse = zod.object({
@@ -98,12 +100,14 @@ export const SearchPeopleResponse = zod.object({
 export const searchByTagQueryTypeDefault = `all`;
 export const searchByTagQueryPageDefault = 1;
 export const searchByTagQueryExcludeTrackedDefault = false;
+export const searchByTagQueryExcludeAdultDefault = true;
 
 export const SearchByTagQueryParams = zod.object({
   "query": zod.coerce.string(),
   "type": zod.enum(['all', 'movie', 'tv']).default(searchByTagQueryTypeDefault),
   "page": zod.coerce.number().default(searchByTagQueryPageDefault),
-  "exclude_tracked": zod.coerce.boolean().default(searchByTagQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
+  "exclude_tracked": zod.coerce.boolean().default(searchByTagQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)'),
+  "exclude_adult": zod.coerce.boolean().default(searchByTagQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
 })
 
 export const SearchByTagResponse = zod.object({
@@ -161,11 +165,13 @@ export const GetPersonCreditsParams = zod.object({
 export const getPersonCreditsQueryTypeDefault = `all`;
 export const getPersonCreditsQueryPageDefault = 1;
 export const getPersonCreditsQueryPageSizeDefault = 24;
+export const getPersonCreditsQueryExcludeAdultDefault = true;
 
 export const GetPersonCreditsQueryParams = zod.object({
   "type": zod.enum(['all', 'movie', 'tv']).default(getPersonCreditsQueryTypeDefault),
   "page": zod.coerce.number().default(getPersonCreditsQueryPageDefault),
-  "page_size": zod.coerce.number().default(getPersonCreditsQueryPageSizeDefault)
+  "page_size": zod.coerce.number().default(getPersonCreditsQueryPageSizeDefault),
+  "exclude_adult": zod.coerce.boolean().default(getPersonCreditsQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
 })
 
 export const GetPersonCreditsResponse = zod.object({
@@ -208,6 +214,7 @@ export const discoverMediaQueryTypeDefault = `movie`;
 export const discoverMediaQuerySortByDefault = `popularity.desc`;
 export const discoverMediaQueryPageDefault = 1;
 export const discoverMediaQueryExcludeTrackedDefault = false;
+export const discoverMediaQueryExcludeAdultDefault = true;
 
 export const DiscoverMediaQueryParams = zod.object({
   "type": zod.enum(['movie', 'tv']).default(discoverMediaQueryTypeDefault),
@@ -218,7 +225,8 @@ export const DiscoverMediaQueryParams = zod.object({
   "max_year": zod.coerce.number().nullish(),
   "language": zod.coerce.string().nullish(),
   "page": zod.coerce.number().default(discoverMediaQueryPageDefault),
-  "exclude_tracked": zod.coerce.boolean().default(discoverMediaQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
+  "exclude_tracked": zod.coerce.boolean().default(discoverMediaQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)'),
+  "exclude_adult": zod.coerce.boolean().default(discoverMediaQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
 })
 
 export const DiscoverMediaResponse = zod.object({
@@ -250,11 +258,13 @@ export const DiscoverMediaResponse = zod.object({
 export const getTrendingQueryTypeDefault = `all`;
 export const getTrendingQueryTimeWindowDefault = `week`;
 export const getTrendingQueryExcludeTrackedDefault = false;
+export const getTrendingQueryExcludeAdultDefault = true;
 
 export const GetTrendingQueryParams = zod.object({
   "type": zod.enum(['all', 'movie', 'tv']).default(getTrendingQueryTypeDefault),
   "time_window": zod.enum(['day', 'week']).default(getTrendingQueryTimeWindowDefault),
-  "exclude_tracked": zod.coerce.boolean().default(getTrendingQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
+  "exclude_tracked": zod.coerce.boolean().default(getTrendingQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)'),
+  "exclude_adult": zod.coerce.boolean().default(getTrendingQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
 })
 
 export const GetTrendingResponse = zod.object({
@@ -285,11 +295,13 @@ export const GetTrendingResponse = zod.object({
  */
 export const getBrowseCategoryQueryPageDefault = 1;
 export const getBrowseCategoryQueryExcludeTrackedDefault = false;
+export const getBrowseCategoryQueryExcludeAdultDefault = true;
 
 export const GetBrowseCategoryQueryParams = zod.object({
   "category": zod.enum(['popular_movies', 'popular_tv', 'top_rated_movies', 'top_rated_tv', 'now_playing', 'upcoming', 'on_air']),
   "page": zod.coerce.number().default(getBrowseCategoryQueryPageDefault),
-  "exclude_tracked": zod.coerce.boolean().default(getBrowseCategoryQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
+  "exclude_tracked": zod.coerce.boolean().default(getBrowseCategoryQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)'),
+  "exclude_adult": zod.coerce.boolean().default(getBrowseCategoryQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
 })
 
 export const GetBrowseCategoryResponse = zod.object({
@@ -320,9 +332,11 @@ export const GetBrowseCategoryResponse = zod.object({
  * @summary Random recommendations based on the user's watchlist
  */
 export const getWatchlistRecommendationsQueryExcludeTrackedDefault = false;
+export const getWatchlistRecommendationsQueryExcludeAdultDefault = true;
 
 export const GetWatchlistRecommendationsQueryParams = zod.object({
-  "exclude_tracked": zod.coerce.boolean().default(getWatchlistRecommendationsQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)')
+  "exclude_tracked": zod.coerce.boolean().default(getWatchlistRecommendationsQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)'),
+  "exclude_adult": zod.coerce.boolean().default(getWatchlistRecommendationsQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
 })
 
 export const GetWatchlistRecommendationsResponse = zod.object({
@@ -437,6 +451,7 @@ export const GetMediaDetailsResponse = zod.object({
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
   "originalLanguage": zod.string().nullish(),
+  "adult": zod.boolean().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
@@ -529,6 +544,12 @@ export const GetMediaVideosResponse = zod.object({
 export const GetSimilarMediaParams = zod.object({
   "mediaType": zod.enum(['movie', 'tv']),
   "tmdbId": zod.coerce.number()
+})
+
+export const getSimilarMediaQueryExcludeAdultDefault = true;
+
+export const GetSimilarMediaQueryParams = zod.object({
+  "exclude_adult": zod.coerce.boolean().default(getSimilarMediaQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
 })
 
 export const GetSimilarMediaResponse = zod.object({
@@ -631,6 +652,7 @@ export const GetWatchlistResponseItem = zod.object({
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
   "originalLanguage": zod.string().nullish(),
+  "adult": zod.boolean().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
@@ -678,6 +700,7 @@ export const UpdateWatchlistItemResponse = zod.object({
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
   "originalLanguage": zod.string().nullish(),
+  "adult": zod.boolean().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
@@ -717,6 +740,7 @@ export const GetWatchStatusResponse = zod.object({
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
   "originalLanguage": zod.string().nullish(),
+  "adult": zod.boolean().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
@@ -1161,6 +1185,7 @@ export const GetRecentlyWatchedResponseItem = zod.object({
   "backdropPath": zod.string().nullish(),
   "releaseDate": zod.string().nullish(),
   "originalLanguage": zod.string().nullish(),
+  "adult": zod.boolean().nullish(),
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
@@ -1172,7 +1197,7 @@ export const GetRecentlyWatchedResponse = zod.array(GetRecentlyWatchedResponseIt
 /**
  * @summary List update notifications
  */
-export const getNotificationsQueryRefreshDefault = false;
+export const getNotificationsQueryRefreshDefault = true;
 
 export const GetNotificationsQueryParams = zod.object({
   "refresh": zod.coerce.boolean().default(getNotificationsQueryRefreshDefault).describe('Force a notification sync before listing')

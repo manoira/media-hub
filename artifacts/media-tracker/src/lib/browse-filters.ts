@@ -40,6 +40,8 @@ export const LANGUAGE_OPTIONS: { label: string; value?: string }[] = [
   { label: "Hindi", value: "hi" },
   { label: "Portuguese", value: "pt" },
   { label: "Swedish", value: "sv" },
+  { label: "Norwegian", value: "no" },
+  { label: "Danish", value: "da" },
 ];
 
 export const STATUS_OPTIONS = WATCHLIST_FILTER_STATUS_OPTIONS;

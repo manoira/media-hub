@@ -4,13 +4,15 @@ import { useMemo } from "react";
 import { getTmdbImageUrl, getYoutubeEmbedUrl, formatRuntime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { WatchlistButton } from "@/components/media/watchlist-button";
-import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
+import { ContentFilterToggles } from "@/components/media/content-filter-toggles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard } from "@/components/media/media-card";
 import { SeasonsPanel } from "@/components/media/seasons-panel";
 import { WatchProviders } from "@/components/media/watch-providers";
 import { MediaMetadataPanel } from "@/components/media/media-metadata-panel";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
+import { useHideAdultPreference } from "@/hooks/use-hide-adult";
+import { withExcludeAdult } from "@/lib/exclude-adult";
 import { filterUntracked, useWatchlistIndex } from "@/hooks/use-watchlist-index";
 import { UserReviewPanel } from "@/components/media/user-review-panel";
 import { AddToListMenu } from "@/components/media/add-to-list-menu";
@@ -32,11 +34,13 @@ export function MediaDetail() {
     query: { enabled: !!id && !!type, queryKey: getGetMediaVideosQueryKey(type, id) }
   });
 
-  const { data: similar } = useGetSimilarMedia(type, id, {
-    query: { enabled: !!id && !!type, queryKey: getGetSimilarMediaQueryKey(type, id) }
+  const { hideTracked, setHideTracked } = useHideTrackedPreference();
+  const { hideAdult, setHideAdult } = useHideAdultPreference();
+  const similarParams = withExcludeAdult({}, hideAdult);
+  const { data: similar } = useGetSimilarMedia(type, id, similarParams, {
+    query: { enabled: !!id && !!type, queryKey: getGetSimilarMediaQueryKey(type, id, similarParams) }
   });
 
-  const { hideTracked, setHideTracked } = useHideTrackedPreference();
   const { index } = useWatchlistIndex();
   const similarItems = useMemo(
     () => filterUntracked(similar?.results ?? [], index, hideTracked).slice(0, 10),
@@ -225,10 +229,12 @@ export function MediaDetail() {
         <section className="pt-8">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <h2 className="text-2xl font-semibold">Similar {type === 'movie' ? 'Movies' : 'Shows'}</h2>
-            <HideTrackedToggle
-              id="hide-tracked-similar"
-              checked={hideTracked}
-              onCheckedChange={setHideTracked}
+            <ContentFilterToggles
+              hideAdult={hideAdult}
+              onHideAdultChange={setHideAdult}
+              hideTracked={hideTracked}
+              onHideTrackedChange={setHideTracked}
+              idPrefix="similar"
             />
           </div>
           {similarItems.length > 0 ? (

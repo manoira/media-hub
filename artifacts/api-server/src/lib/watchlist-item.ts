@@ -15,6 +15,7 @@ export function serializeWatchlistItem(item: typeof watchlistTable.$inferSelect)
     backdropPath: item.backdropPath ?? null,
     releaseDate: item.releaseDate ?? null,
     originalLanguage: item.originalLanguage ?? null,
+    adult: item.adult ?? null,
     voteAverage: item.voteAverage ?? null,
     genreIds: (item.genreIds ?? []).map(Number),
     keywordIds: item.keywordIds ?? [],

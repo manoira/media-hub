@@ -5,9 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PersonCreditCard } from "@/components/media/person-credit-card";
-import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
+import { ContentFilterToggles } from "@/components/media/content-filter-toggles";
 import { getTmdbImageUrl } from "@/lib/utils";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
+import { useHideAdultPreference } from "@/hooks/use-hide-adult";
+import { withExcludeAdult } from "@/lib/exclude-adult";
 import { filterUntracked, useWatchlistIndex } from "@/hooks/use-watchlist-index";
 import type { GetPersonCreditsType, PersonCredit, PersonDetails } from "@workspace/api-client-react";
 
@@ -23,13 +25,17 @@ export function PersonDetail() {
   const mergedPageRef = useRef(0);
   const scrollYRef = useRef<number | null>(null);
 
+  const { hideTracked, setHideTracked } = useHideTrackedPreference();
+  const { hideAdult, setHideAdult } = useHideAdultPreference();
+  const creditParams = withExcludeAdult({ type: filter, page, page_size: 24 }, hideAdult);
+
   const { data, isLoading, isFetching, isError } = useGetPersonCredits(
     id,
-    { type: filter, page, page_size: 24 },
+    creditParams,
     {
       query: {
         enabled: !!id,
-        queryKey: getGetPersonCreditsQueryKey(id, { type: filter, page, page_size: 24 }),
+        queryKey: getGetPersonCreditsQueryKey(id, creditParams),
         placeholderData: keepPreviousData,
       },
     },
@@ -40,7 +46,7 @@ export function PersonDetail() {
     setAllCredits([]);
     setPerson(null);
     mergedPageRef.current = 0;
-  }, [filter, id]);
+  }, [filter, id, hideAdult]);
 
   useEffect(() => {
     if (data?.person) setPerson(data.person);
@@ -67,7 +73,6 @@ export function PersonDetail() {
     setPage(p => p + 1);
   }, []);
 
-  const { hideTracked, setHideTracked } = useHideTrackedPreference();
   const { index } = useWatchlistIndex();
   const visibleCredits = useMemo(
     () => filterUntracked(allCredits, index, hideTracked),
@@ -138,10 +143,12 @@ export function PersonDetail() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold">Filmography</h2>
           <div className="flex flex-wrap items-center gap-4">
-            <HideTrackedToggle
-              id="hide-tracked-person"
-              checked={hideTracked}
-              onCheckedChange={setHideTracked}
+            <ContentFilterToggles
+              hideAdult={hideAdult}
+              onHideAdultChange={setHideAdult}
+              hideTracked={hideTracked}
+              onHideTrackedChange={setHideTracked}
+              idPrefix="person"
             />
             <div className="flex gap-2">
               {filters.map(({ value, label }) => (

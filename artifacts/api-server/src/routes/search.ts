@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres, getPopular, getTopRated, getNowPlaying, getUpcoming, getOnAir, searchByTag } from "../lib/tmdb";
 import { applyExcludeTracked, parseExcludeTrackedFromQuery } from "../lib/exclude-tracked";
+import { applyExcludeAdult, parseExcludeAdultFromQuery } from "../lib/filter-adult";
 import { getWatchlistBasedRecommendations } from "../lib/watchlist-recommendations";
 import {
   SearchMediaQueryParams,
@@ -28,6 +29,7 @@ router.get("/search", async (req, res): Promise<void> => {
   }
   const { query, type = "all", page = 1 } = parsed.data;
   const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
     let result;
     if (type === "movie") result = await searchMovies(query, page);
@@ -35,6 +37,7 @@ router.get("/search", async (req, res): Promise<void> => {
     else result = await searchMulti(query, page);
 
     result = await applyExcludeTracked(result, excludeTracked);
+    result = applyExcludeAdult(result, excludeAdult);
     res.json(SearchMediaResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Search error");
@@ -50,9 +53,11 @@ router.get("/search/by-tag", async (req, res): Promise<void> => {
   }
   const { query, type = "all", page = 1 } = parsed.data;
   const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
     let result = await searchByTag(query, type, page);
     result = await applyExcludeTracked(result, excludeTracked);
+    result = applyExcludeAdult(result, excludeAdult);
     res.json(SearchByTagResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Tag search error");
@@ -68,6 +73,7 @@ router.get("/discover", async (req, res): Promise<void> => {
   }
   const { type = "movie", genre, sort_by = "popularity.desc", min_rating, min_year, max_year, language, page = 1 } = parsed.data;
   const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
     let result;
     const params = {
@@ -83,6 +89,7 @@ router.get("/discover", async (req, res): Promise<void> => {
     else result = await discoverMovies(params);
 
     result = await applyExcludeTracked(result, excludeTracked);
+    result = applyExcludeAdult(result, excludeAdult);
     res.json(DiscoverMediaResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Discover error");
@@ -98,12 +105,14 @@ router.get("/trending", async (req, res): Promise<void> => {
   }
   const { type = "all", time_window = "week" } = parsed.data;
   const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
     let result;
     if (type === "all") result = await getTrendingAll(time_window);
     else result = await getTrendingType(type, time_window);
 
     result = await applyExcludeTracked(result, excludeTracked);
+    result = applyExcludeAdult(result, excludeAdult);
     res.json(GetTrendingResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Trending error");
@@ -119,6 +128,7 @@ router.get("/browse", async (req, res): Promise<void> => {
   }
   const { category, page = 1 } = parsed.data;
   const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
     let result;
     switch (category) {
@@ -133,6 +143,7 @@ router.get("/browse", async (req, res): Promise<void> => {
     }
 
     result = await applyExcludeTracked(result, excludeTracked);
+    result = applyExcludeAdult(result, excludeAdult);
     res.json(GetBrowseCategoryResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Browse error");
@@ -147,9 +158,11 @@ router.get("/recommendations/watchlist", async (req, res): Promise<void> => {
     return;
   }
   const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
     let result = await getWatchlistBasedRecommendations();
     result = await applyExcludeTracked(result, excludeTracked);
+    result = applyExcludeAdult(result, excludeAdult);
     res.json(GetWatchlistRecommendationsResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Watchlist recommendations error");

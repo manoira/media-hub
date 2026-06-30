@@ -126,7 +126,7 @@ export async function searchMovies(query: string, page = 1) {
 export async function searchTv(query: string, page = 1) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
     "/search/tv",
-    { query, page }
+    { query, page, include_adult: false }
   );
   return {
     results: data.results.map(r => normalizeMediaItem(r, "tv")),
@@ -793,7 +793,7 @@ export async function searchByTag(query: string, type: "all" | "movie" | "tv" = 
 
   if (type === "movie" || type === "all") {
     discoverCalls.push(
-      tmdbFetch("/discover/movie", { with_keywords: keywordParam, sort_by: "popularity.desc", page }),
+      tmdbFetch("/discover/movie", { with_keywords: keywordParam, sort_by: "popularity.desc", page, include_adult: false }),
     );
   }
   if (type === "tv" || type === "all") {

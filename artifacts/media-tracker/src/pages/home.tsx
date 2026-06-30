@@ -6,15 +6,20 @@ import {
 } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
 import { MediaSlider } from "@/components/media/media-slider";
-import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
+import { ContentFilterToggles } from "@/components/media/content-filter-toggles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
-import { withExcludeTracked } from "@/lib/exclude-tracked";
+import { useHideAdultPreference } from "@/hooks/use-hide-adult";
+import { withContentFilters } from "@/lib/content-filters";
 import { useState } from "react";
 
-function useBrowse(category: GetBrowseCategoryParams["category"], hideTracked: boolean) {
-  const params = withExcludeTracked({ category }, hideTracked);
+function useBrowse(
+  category: GetBrowseCategoryParams["category"],
+  hideTracked: boolean,
+  hideAdult: boolean,
+) {
+  const params = withContentFilters({ category }, { hideTracked, hideAdult });
   return useGetBrowseCategory(params, {
     query: { queryKey: getGetBrowseCategoryQueryKey(params) },
   });
@@ -25,23 +30,24 @@ export function Home() {
   const [timeWindow, setTimeWindow] = useState<"day" | "week">("week");
   const [visitKey] = useState(() => crypto.randomUUID());
   const { hideTracked, setHideTracked } = useHideTrackedPreference();
+  const { hideAdult, setHideAdult } = useHideAdultPreference();
 
-  const trendingParams = withExcludeTracked({ type, time_window: timeWindow }, hideTracked);
+  const trendingParams = withContentFilters({ type, time_window: timeWindow }, { hideTracked, hideAdult });
   const { data: trending, isLoading: isLoadingTrending } = useGetTrending(
     trendingParams,
     { query: { queryKey: getGetTrendingQueryKey(trendingParams) } },
   );
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
 
-  const { data: popularMovies, isLoading: loadingPopMovies }     = useBrowse("popular_movies", hideTracked);
-  const { data: popularTv, isLoading: loadingPopTv }             = useBrowse("popular_tv", hideTracked);
-  const { data: topRatedMovies, isLoading: loadingTopMovies }    = useBrowse("top_rated_movies", hideTracked);
-  const { data: topRatedTv, isLoading: loadingTopTv }            = useBrowse("top_rated_tv", hideTracked);
-  const { data: nowPlaying, isLoading: loadingNowPlaying }       = useBrowse("now_playing", hideTracked);
-  const { data: upcoming, isLoading: loadingUpcoming }           = useBrowse("upcoming", hideTracked);
-  const { data: onAir, isLoading: loadingOnAir }                 = useBrowse("on_air", hideTracked);
+  const { data: popularMovies, isLoading: loadingPopMovies }     = useBrowse("popular_movies", hideTracked, hideAdult);
+  const { data: popularTv, isLoading: loadingPopTv }             = useBrowse("popular_tv", hideTracked, hideAdult);
+  const { data: topRatedMovies, isLoading: loadingTopMovies }    = useBrowse("top_rated_movies", hideTracked, hideAdult);
+  const { data: topRatedTv, isLoading: loadingTopTv }            = useBrowse("top_rated_tv", hideTracked, hideAdult);
+  const { data: nowPlaying, isLoading: loadingNowPlaying }       = useBrowse("now_playing", hideTracked, hideAdult);
+  const { data: upcoming, isLoading: loadingUpcoming }           = useBrowse("upcoming", hideTracked, hideAdult);
+  const { data: onAir, isLoading: loadingOnAir }                 = useBrowse("on_air", hideTracked, hideAdult);
 
-  const watchlistPickParams = withExcludeTracked({}, hideTracked);
+  const watchlistPickParams = withContentFilters({}, { hideTracked, hideAdult });
   const { data: watchlistPicks, isLoading: loadingWatchlistPicks } = useGetWatchlistRecommendations(
     watchlistPickParams,
     {
@@ -54,10 +60,12 @@ export function Home() {
 
   return (
     <div className="space-y-10 pb-20">
-      <HideTrackedToggle
-        checked={hideTracked}
-        onCheckedChange={setHideTracked}
-        id="hide-tracked-home"
+      <ContentFilterToggles
+        hideAdult={hideAdult}
+        onHideAdultChange={setHideAdult}
+        hideTracked={hideTracked}
+        onHideTrackedChange={setHideTracked}
+        idPrefix="home"
       />
 
       <section>

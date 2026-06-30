@@ -11,4 +11,8 @@ export type GetPersonCreditsParams = {
 type?: GetPersonCreditsType;
 page?: number;
 page_size?: number;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };

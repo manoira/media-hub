@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { searchPeople, getPersonDetails, getPersonCredits } from "../lib/tmdb";
+import { applyExcludeAdult, parseExcludeAdultFromQuery } from "../lib/filter-adult";
 import {
   SearchPeopleQueryParams,
   SearchPeopleResponse,
@@ -53,8 +54,10 @@ router.get("/people/:personId/credits", async (req, res): Promise<void> => {
   }
   const { personId } = params.data;
   const { type = "all", page = 1, page_size = 24 } = query.data;
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
-    const result = await getPersonCredits(personId, type, page, page_size);
+    let result = await getPersonCredits(personId, type, page, page_size);
+    result = applyExcludeAdult(result, excludeAdult);
     res.json(GetPersonCreditsResponse.parse(result));
   } catch (err: unknown) {
     req.log.error({ err }, "Person credits error");

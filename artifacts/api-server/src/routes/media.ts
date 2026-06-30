@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { getMovieDetails, getTvDetails, getCredits, getVideos, getSimilar, getWatchProviders, getMediaMetadata } from "../lib/tmdb";
+import { applyExcludeAdult, parseExcludeAdultFromQuery } from "../lib/filter-adult";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
 import { db, watchlistTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
@@ -108,8 +109,10 @@ router.get("/media/:mediaType/:tmdbId/similar", async (req, res): Promise<void> 
     return;
   }
   const { mediaType, tmdbId } = params.data;
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
-    const similar = await getSimilar(mediaType, tmdbId);
+    let similar = await getSimilar(mediaType, tmdbId);
+    similar = applyExcludeAdult(similar, excludeAdult);
     res.json(GetSimilarMediaResponse.parse(similar));
   } catch (err: unknown) {
     req.log.error({ err }, "Similar error");

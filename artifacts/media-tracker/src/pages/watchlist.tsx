@@ -29,6 +29,7 @@ import {
   decodeYearRange,
   isYearRangeActive,
 } from "@/lib/browse-filters";
+import { HideAdultToggle } from "@/components/media/hide-adult-toggle";
 import {
   parseWatchlistSearch,
   buildWatchlistSearchParams,
@@ -37,6 +38,8 @@ import {
   filtersToListRules,
   type WatchlistFilterState,
 } from "@/lib/watchlist-filters";
+import { useHideAdultPreference } from "@/hooks/use-hide-adult";
+import { filterAdultItems } from "@/lib/filter-adult";
 
 const YEAR_FILTER_OPTIONS = YEAR_OPTIONS.filter(isYearRangeActive).map(opt => ({
   label: opt.label,
@@ -54,6 +57,7 @@ const LANGUAGE_FILTER_OPTIONS = LANGUAGE_OPTIONS.filter(
 export function Watchlist() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => parseWatchlistSearch(searchParams), [searchParams]);
+  const { hideAdult, setHideAdult } = useHideAdultPreference();
 
   const updateFilters = useCallback(
     (patch: Partial<WatchlistFilterState>) => {
@@ -72,8 +76,8 @@ export function Watchlist() {
   });
 
   const displayItems = useMemo(
-    () => filterWatchlistItems(watchlist ?? [], filters),
-    [watchlist, filters],
+    () => filterAdultItems(filterWatchlistItems(watchlist ?? [], filters), hideAdult),
+    [watchlist, filters, hideAdult],
   );
 
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
@@ -109,7 +113,13 @@ export function Watchlist() {
               </Button>
             </Link>
           </div>
-          <DropdownMenu>
+          <div className="flex items-center gap-4 flex-wrap">
+            <HideAdultToggle
+              checked={hideAdult}
+              onCheckedChange={setHideAdult}
+              id="hide-adult-watchlist"
+            />
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 <SlidersHorizontal className="w-4 h-4" />
@@ -132,6 +142,7 @@ export function Watchlist() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
         <div className="relative max-w-md">

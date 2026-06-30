@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, real, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -14,6 +14,7 @@ export const watchlistTable = pgTable("watchlist", {
   backdropPath: text("backdrop_path"),
   releaseDate: text("release_date"),
   originalLanguage: text("original_language"),
+  adult: boolean("adult"),
   voteAverage: real("vote_average"),
   overview: text("overview"),
   genreIds: text("genre_ids").array(),

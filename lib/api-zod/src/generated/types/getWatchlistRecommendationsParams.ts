@@ -11,4 +11,8 @@ export type GetWatchlistRecommendationsParams = {
  * Omit items already on the watchlist (any status)
  */
 exclude_tracked?: boolean;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };

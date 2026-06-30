@@ -35,6 +35,7 @@ import type {
   GetNotificationsParams,
   GetPersonCreditsParams,
   GetRecentlyWatchedParams,
+  GetSimilarMediaParams,
   GetTrendingParams,
   GetWatchlistParams,
   GetWatchlistRecommendationsParams,
@@ -1316,21 +1317,30 @@ export function useGetMediaVideos<TData = Awaited<ReturnType<typeof getMediaVide
 
 
 export const getGetSimilarMediaUrl = (mediaType: 'movie' | 'tv',
-    tmdbId: number,) => {
+    tmdbId: number,
+    params?: GetSimilarMediaParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/media/${mediaType}/${tmdbId}/similar`
+  return stringifiedParams.length > 0 ? `/api/media/${mediaType}/${tmdbId}/similar?${stringifiedParams}` : `/api/media/${mediaType}/${tmdbId}/similar`
 }
 
 /**
  * @summary Get similar movies or shows
  */
 export const getSimilarMedia = async (mediaType: 'movie' | 'tv',
-    tmdbId: number, options?: RequestInit): Promise<MediaSearchResult> => {
+    tmdbId: number,
+    params?: GetSimilarMediaParams, options?: RequestInit): Promise<MediaSearchResult> => {
 
-  return customFetch<MediaSearchResult>(getGetSimilarMediaUrl(mediaType,tmdbId),
+  return customFetch<MediaSearchResult>(getGetSimilarMediaUrl(mediaType,tmdbId,params),
   {
     ...options,
     method: 'GET'
@@ -1344,24 +1354,26 @@ export const getSimilarMedia = async (mediaType: 'movie' | 'tv',
 
 
 export const getGetSimilarMediaQueryKey = (mediaType: 'movie' | 'tv',
-    tmdbId: number,) => {
+    tmdbId: number,
+    params?: GetSimilarMediaParams,) => {
     return [
-    `/api/media/${mediaType}/${tmdbId}/similar`
+    `/api/media/${mediaType}/${tmdbId}/similar`, ...(params ? [params] : [])
     ] as const;
     }
 
 
 export const getGetSimilarMediaQueryOptions = <TData = Awaited<ReturnType<typeof getSimilarMedia>>, TError = ErrorType<unknown>>(mediaType: 'movie' | 'tv',
-    tmdbId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSimilarMedia>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    tmdbId: number,
+    params?: GetSimilarMediaParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSimilarMedia>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetSimilarMediaQueryKey(mediaType,tmdbId);
+  const queryKey =  queryOptions?.queryKey ?? getGetSimilarMediaQueryKey(mediaType,tmdbId,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSimilarMedia>>> = ({ signal }) => getSimilarMedia(mediaType,tmdbId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSimilarMedia>>> = ({ signal }) => getSimilarMedia(mediaType,tmdbId,params, { signal, ...requestOptions });
 
 
 
@@ -1380,11 +1392,12 @@ export type GetSimilarMediaQueryError = ErrorType<unknown>
 
 export function useGetSimilarMedia<TData = Awaited<ReturnType<typeof getSimilarMedia>>, TError = ErrorType<unknown>>(
  mediaType: 'movie' | 'tv',
-    tmdbId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSimilarMedia>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    tmdbId: number,
+    params?: GetSimilarMediaParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSimilarMedia>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetSimilarMediaQueryOptions(mediaType,tmdbId,options)
+  const queryOptions = getGetSimilarMediaQueryOptions(mediaType,tmdbId,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -29,6 +29,8 @@ export interface WatchlistItem {
   /** @nullable */
   originalLanguage?: string | null;
   /** @nullable */
+  adult?: boolean | null;
+  /** @nullable */
   voteAverage?: number | null;
   genreIds?: number[];
   keywordIds?: number[];

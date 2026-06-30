@@ -39,6 +39,7 @@ export * from './getNotificationsParams';
 export * from './getPersonCreditsParams';
 export * from './getPersonCreditsType';
 export * from './getRecentlyWatchedParams';
+export * from './getSimilarMediaParams';
 export * from './getTrendingParams';
 export * from './getTrendingTimeWindow';
 export * from './getTrendingType';

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useDiscoverMedia, useGetGenres, getGetGenresQueryKey, getDiscoverMediaQueryKey } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
-import { HideTrackedToggle } from "@/components/media/hide-tracked-toggle";
+import { ContentFilterToggles } from "@/components/media/content-filter-toggles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { withExcludeTracked } from "@/lib/exclude-tracked";
+import { withContentFilters } from "@/lib/content-filters";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
+import { useHideAdultPreference } from "@/hooks/use-hide-adult";
 import {
   YEAR_OPTIONS,
   RATING_OPTIONS,
@@ -82,8 +83,9 @@ export function Browse() {
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLDivElement>(null);
   const { hideTracked, setHideTracked } = useHideTrackedPreference();
+  const { hideAdult, setHideAdult } = useHideAdultPreference();
 
-  const params = withExcludeTracked({
+  const params = withContentFilters({
     type: mediaType,
     genre: selectedGenre ?? undefined,
     sort_by: sortBy,
@@ -92,7 +94,7 @@ export function Browse() {
     max_year: yearRange.max,
     language,
     page,
-  }, hideTracked);
+  }, { hideTracked, hideAdult });
 
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
 
@@ -283,10 +285,12 @@ export function Browse() {
         </div>
       </div>
 
-      <HideTrackedToggle
-        checked={hideTracked}
-        onCheckedChange={setHideTracked}
-        id="hide-tracked-browse"
+      <ContentFilterToggles
+        hideAdult={hideAdult}
+        onHideAdultChange={setHideAdult}
+        hideTracked={hideTracked}
+        onHideTrackedChange={setHideTracked}
+        idPrefix="browse"
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

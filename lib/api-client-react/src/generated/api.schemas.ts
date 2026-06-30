@@ -246,6 +246,8 @@ export interface WatchlistItem {
   /** @nullable */
   originalLanguage?: string | null;
   /** @nullable */
+  adult?: boolean | null;
+  /** @nullable */
   voteAverage?: number | null;
   genreIds?: number[];
   keywordIds?: number[];
@@ -760,6 +762,10 @@ page?: number;
  * Omit items already on the watchlist (any status)
  */
 exclude_tracked?: boolean;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };
 
 export type SearchMediaType = typeof SearchMediaType[keyof typeof SearchMediaType];
@@ -784,6 +790,10 @@ page?: number;
  * Omit items already on the watchlist (any status)
  */
 exclude_tracked?: boolean;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };
 
 export type SearchByTagType = typeof SearchByTagType[keyof typeof SearchByTagType];
@@ -799,6 +809,10 @@ export type GetPersonCreditsParams = {
 type?: GetPersonCreditsType;
 page?: number;
 page_size?: number;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };
 
 export type GetPersonCreditsType = typeof GetPersonCreditsType[keyof typeof GetPersonCreditsType];
@@ -838,6 +852,10 @@ page?: number;
  * Omit items already on the watchlist (any status)
  */
 exclude_tracked?: boolean;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };
 
 export type DiscoverMediaType = typeof DiscoverMediaType[keyof typeof DiscoverMediaType];
@@ -868,6 +886,10 @@ time_window?: GetTrendingTimeWindow;
  * Omit items already on the watchlist (any status)
  */
 exclude_tracked?: boolean;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };
 
 export type GetTrendingType = typeof GetTrendingType[keyof typeof GetTrendingType];
@@ -894,6 +916,10 @@ page?: number;
  * Omit items already on the watchlist (any status)
  */
 exclude_tracked?: boolean;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };
 
 export type GetBrowseCategoryCategory = typeof GetBrowseCategoryCategory[keyof typeof GetBrowseCategoryCategory];
@@ -914,6 +940,17 @@ export type GetWatchlistRecommendationsParams = {
  * Omit items already on the watchlist (any status)
  */
 exclude_tracked?: boolean;
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
+};
+
+export type GetSimilarMediaParams = {
+/**
+ * Omit TMDB adult/pornographic titles
+ */
+exclude_adult?: boolean;
 };
 
 export type GetWatchlistParams = {
