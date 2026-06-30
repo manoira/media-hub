@@ -44,6 +44,9 @@ export const LANGUAGE_OPTIONS: { label: string; value?: string }[] = [
   { label: "Danish", value: "da" },
 ];
 
+/** Browse language codes that also use stricter adult heuristics (see @workspace/content-filter). */
+export const STRICT_ADULT_FILTER_LANGUAGE_CODES = ["ja", "ko", "zh", "hi", "th", "vi"] as const;
+
 export const STATUS_OPTIONS = WATCHLIST_FILTER_STATUS_OPTIONS;
 
 export type WatchlistSortBy = "added_at" | "release_date" | "rating" | "title";

@@ -46,6 +46,8 @@ export function PersonDetail() {
     setAllCredits([]);
     setPerson(null);
     mergedPageRef.current = 0;
+    scrollYRef.current = null;
+    window.scrollTo(0, 0);
   }, [filter, id, hideAdult]);
 
   useEffect(() => {

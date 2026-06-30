@@ -1,4 +1,6 @@
-type AdultItem = { adult?: boolean | null };
+import { isBlockedAdultContent } from "@workspace/content-filter";
+
+type AdultItem = { adult?: boolean | null; originalLanguage?: string | null; title?: string | null; originalTitle?: string | null; overview?: string | null; genreIds?: number[] | null; voteCount?: number | null };
 type AdultSearchResult = { results: AdultItem[] };
 
 /** Query booleans must not use z.coerce.boolean() — String("false") is truthy in JS. */
@@ -20,10 +22,10 @@ export function applyExcludeAdult<T extends AdultSearchResult>(
   if (!excludeAdult) return result;
   return {
     ...result,
-    results: result.results.filter((item) => item.adult !== true),
+    results: result.results.filter((item) => !isBlockedAdultContent(item, true)),
   };
 }
 
-export function isAdultItem(item: { adult?: boolean | null }): boolean {
-  return item.adult === true;
+export function isAdultItem(item: AdultItem): boolean {
+  return isBlockedAdultContent(item, true);
 }

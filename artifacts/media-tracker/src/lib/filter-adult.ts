@@ -1,7 +1,8 @@
-export function filterAdultItems<T extends { adult?: boolean | null }>(
+import { filterBlockedAdultContent } from "@workspace/content-filter";
+
+export function filterAdultItems<T extends { adult?: boolean | null; originalLanguage?: string | null; title?: string | null; originalTitle?: string | null; overview?: string | null; genreIds?: number[] | null; voteCount?: number | null }>(
   items: T[],
   hideAdult: boolean,
 ): T[] {
-  if (!hideAdult) return items;
-  return items.filter((item) => item.adult !== true);
+  return filterBlockedAdultContent(items, hideAdult);
 }
