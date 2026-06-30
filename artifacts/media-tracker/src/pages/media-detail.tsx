@@ -22,7 +22,7 @@ export function MediaDetail() {
   const id = Number(tmdbId);
   const type = mediaType as "movie" | "tv";
 
-  const { data: details, isLoading: isLoadingDetails } = useGetMediaDetails(type, id, {
+  const { data: details, isLoading: isLoadingDetails, isError: detailsError } = useGetMediaDetails(type, id, {
     query: { enabled: !!id && !!type, queryKey: getGetMediaDetailsQueryKey(type, id) }
   });
 
@@ -55,7 +55,16 @@ export function MediaDetail() {
     </div>;
   }
 
-  if (!details) return <div>Not found</div>;
+  if (detailsError) {
+    return (
+      <div className="py-20 text-center space-y-3">
+        <p className="text-lg font-medium">Could not load this title.</p>
+        <p className="text-sm text-muted-foreground">The server had a temporary problem. Try refreshing the page.</p>
+      </div>
+    );
+  }
+
+  if (!details) return <div className="py-20 text-center text-muted-foreground">Not found</div>;
 
   const backdropUrl = getTmdbImageUrl(details.backdropPath, "backdrop");
   const posterUrl = getTmdbImageUrl(details.posterPath, "poster");

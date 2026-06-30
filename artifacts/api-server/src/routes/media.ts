@@ -33,14 +33,20 @@ router.get("/media/:mediaType/:tmdbId", async (req, res): Promise<void> => {
       ? await getTvDetails(tmdbId)
       : await getMovieDetails(tmdbId);
 
-    const [watchlistEntry] = await db
-      .select()
-      .from(watchlistTable)
-      .where(and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, mediaType)));
+    let watchlistEntry = null;
+    try {
+      const [entry] = await db
+        .select()
+        .from(watchlistTable)
+        .where(and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, mediaType)));
+      watchlistEntry = entry ? serializeWatchlistItem(entry) : null;
+    } catch (watchlistErr: unknown) {
+      req.log.error({ err: watchlistErr }, "Watchlist lookup failed on media details");
+    }
 
     const response = {
       ...details,
-      watchlistEntry: watchlistEntry ? serializeWatchlistItem(watchlistEntry) : null,
+      watchlistEntry,
     };
     res.json(GetMediaDetailsResponse.parse(response));
   } catch (err: unknown) {
