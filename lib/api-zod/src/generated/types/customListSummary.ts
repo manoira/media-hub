@@ -17,6 +17,8 @@ export interface CustomListSummary {
   /** @nullable */
   smartMode?: CustomListSummarySmartMode;
   itemCount: number;
+  /** Up to four poster paths for gallery preview */
+  previewPosters?: string[];
   createdAt: string;
   updatedAt: string;
 }

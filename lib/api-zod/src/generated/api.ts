@@ -759,6 +759,7 @@ export const GetCustomListsResponseItem = zod.object({
   "kind": zod.enum(['manual', 'smart']),
   "smartMode": zod.union([zod.literal('live'),zod.literal('snapshot'),zod.literal(null)]).nullish(),
   "itemCount": zod.number(),
+  "previewPosters": zod.array(zod.string()).optional().describe('Up to four poster paths for gallery preview'),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -802,6 +803,7 @@ export const GetCustomListResponse = zod.object({
   "kind": zod.enum(['manual', 'smart']),
   "smartMode": zod.union([zod.literal('live'),zod.literal('snapshot'),zod.literal(null)]).nullish(),
   "itemCount": zod.number(),
+  "previewPosters": zod.array(zod.string()).optional().describe('Up to four poster paths for gallery preview'),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({
@@ -872,6 +874,7 @@ export const UpdateCustomListResponse = zod.object({
   "kind": zod.enum(['manual', 'smart']),
   "smartMode": zod.union([zod.literal('live'),zod.literal('snapshot'),zod.literal(null)]).nullish(),
   "itemCount": zod.number(),
+  "previewPosters": zod.array(zod.string()).optional().describe('Up to four poster paths for gallery preview'),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({
@@ -960,6 +963,7 @@ export const RefreshCustomListResponse = zod.object({
   "kind": zod.enum(['manual', 'smart']),
   "smartMode": zod.union([zod.literal('live'),zod.literal('snapshot'),zod.literal(null)]).nullish(),
   "itemCount": zod.number(),
+  "previewPosters": zod.array(zod.string()).optional().describe('Up to four poster paths for gallery preview'),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 }).and(zod.object({

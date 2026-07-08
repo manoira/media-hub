@@ -6,19 +6,11 @@ import {
   getGetGenresQueryKey,
 } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
-import { MultiFilterMenu } from "@/components/media/multi-filter-menu";
+import { WatchlistListRow } from "@/components/media/watchlist-list-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { useSearchParams, Link } from "wouter";
-import { SlidersHorizontal, ChevronDown, Search, X, ListPlus } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Link, useSearchParams } from "wouter";
+import { ListPlus } from "lucide-react";
 import {
   YEAR_OPTIONS,
   RATING_OPTIONS,
@@ -29,7 +21,6 @@ import {
   decodeYearRange,
   isYearRangeActive,
 } from "@/lib/browse-filters";
-import { HideAdultToggle } from "@/components/media/hide-adult-toggle";
 import {
   parseWatchlistSearch,
   buildWatchlistSearchParams,
@@ -39,7 +30,12 @@ import {
   type WatchlistFilterState,
 } from "@/lib/watchlist-filters";
 import { useHideAdultPreference } from "@/hooks/use-hide-adult";
+import { useListViewMode } from "@/hooks/use-list-view-mode";
 import { filterAdultItems } from "@/lib/filter-adult";
+import { ListsSectionLayout } from "@/components/lists/lists-section-layout";
+import { StatusFilterPills } from "@/components/lists/status-filter-pills";
+import { SharedFilterBar, type MediaTypeTab } from "@/components/lists/shared-filter-bar";
+import { WatchlistFilterPanel } from "@/components/lists/watchlist-filter-panel";
 
 const YEAR_FILTER_OPTIONS = YEAR_OPTIONS.filter(isYearRangeActive).map(opt => ({
   label: opt.label,
@@ -54,10 +50,17 @@ const LANGUAGE_FILTER_OPTIONS = LANGUAGE_OPTIONS.filter(
   (opt): opt is { label: string; value: string } => opt.value !== undefined,
 );
 
-export function Watchlist() {
+function toMediaTypeTab(mediaType?: WatchlistFilterState["mediaType"]): MediaTypeTab {
+  if (mediaType === "movie") return "movie";
+  if (mediaType === "tv") return "tv";
+  return "all";
+}
+
+export function WatchlistContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => parseWatchlistSearch(searchParams), [searchParams]);
   const { hideAdult, setHideAdult } = useHideAdultPreference();
+  const { viewMode, setViewMode } = useListViewMode();
 
   const updateFilters = useCallback(
     (patch: Partial<WatchlistFilterState>) => {
@@ -100,189 +103,121 @@ export function Watchlist() {
   const listIsEmpty = !watchlist?.length;
   const hasNoMatches = !listIsEmpty && displayItems.length === 0;
 
+  const handleMediaTypeChange = (tab: MediaTypeTab) => {
+    if (tab === "all") {
+      updateFilters({ mediaType: undefined, genres: [] });
+      return;
+    }
+    updateFilters({ mediaType: tab, genres: [] });
+  };
+
+  const saveAsListButton = filtersActive ? (
+    <Link
+      href={`/lists/new?${new URLSearchParams({
+        rules: JSON.stringify(filtersToListRules(filters)),
+      }).toString()}`}
+    >
+      <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+        <ListPlus className="h-3.5 w-3.5" />
+        Save as list
+      </Button>
+    </Link>
+  ) : null;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">My List</h1>
-            <Link href="/lists">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-                <ListPlus className="w-4 h-4" />
-                Lists
-              </Button>
-            </Link>
-          </div>
-          <div className="flex items-center gap-4 flex-wrap">
-            <HideAdultToggle
-              checked={hideAdult}
-              onCheckedChange={setHideAdult}
-              id="hide-adult-watchlist"
+    <ListsSectionLayout
+      activeSection="tracking"
+      contextTabs={
+        <StatusFilterPills
+          selected={filters.statuses}
+          onChange={(statuses) => updateFilters({ statuses })}
+        />
+      }
+    >
+      <div className="space-y-6">
+        <SharedFilterBar
+          mediaType={toMediaTypeTab(filters.mediaType)}
+          onMediaTypeChange={handleMediaTypeChange}
+          itemCount={displayItems.length}
+          searchQuery={filters.query}
+          onSearchChange={(query) => updateFilters({ query })}
+          searchPlaceholder="Search your list..."
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortLabel={currentSort.label}
+          sortOptions={WATCHLIST_SORT_OPTIONS}
+          currentSort={filters.sortBy}
+          onSortChange={(sortBy) => updateFilters({ sortBy: sortBy as WatchlistFilterState["sortBy"] })}
+          filterActive={filtersActive || hideAdult}
+          trailing={saveAsListButton}
+          filterPanel={
+            <WatchlistFilterPanel
+              hideAdult={hideAdult}
+              onHideAdultChange={setHideAdult}
+              statusOptions={STATUS_OPTIONS}
+              selectedStatuses={filters.statuses}
+              onStatusesChange={(statuses) => updateFilters({ statuses })}
+              yearOptions={YEAR_FILTER_OPTIONS}
+              selectedYearKeys={selectedYearKeys}
+              onYearKeysChange={(keys) =>
+                updateFilters({
+                  yearRanges: keys
+                    .map(key => decodeYearRange(key))
+                    .filter((range): range is NonNullable<typeof range> => range !== null),
+                })
+              }
+              ratingOptions={RATING_FILTER_OPTIONS}
+              selectedRatings={filters.minRatings}
+              onRatingsChange={(minRatings) => updateFilters({ minRatings })}
+              languageOptions={LANGUAGE_FILTER_OPTIONS}
+              selectedLanguages={filters.languages}
+              onLanguagesChange={(languages) => updateFilters({ languages })}
+              genreOptions={genreOptions}
+              selectedGenres={filters.genres}
+              onGenresChange={(genres) => updateFilters({ genres })}
             />
-            <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <SlidersHorizontal className="w-4 h-4" />
-                {currentSort.label}
-                <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {WATCHLIST_SORT_OPTIONS.map(opt => (
-                <DropdownMenuItem
-                  key={opt.value}
-                  className={cn("cursor-pointer", filters.sortBy === opt.value && "bg-muted")}
-                  onClick={() => updateFilters({ sortBy: opt.value })}
-                >
-                  {opt.label}
-                  {filters.sortBy === opt.value && (
-                    <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
-                  )}
-                </DropdownMenuItem>
+          }
+        />
+
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <Skeleton className="aspect-[2/3] w-full rounded-2xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : displayItems.length ? (
+          viewMode === "list" ? (
+            <div className="flex flex-col gap-2">
+              {displayItems.map(item => (
+                <WatchlistListRow key={item.id} item={item} showProgress={item.mediaType === "tv"} />
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          </div>
-        </div>
-
-        <div className="relative max-w-md">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search your list..."
-            value={filters.query}
-            onChange={(e) => updateFilters({ query: e.target.value })}
-            className="pl-8 pr-8 bg-muted/50"
-          />
-          {filters.query && (
-            <button
-              type="button"
-              onClick={() => updateFilters({ query: "" })}
-              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        {filters.query.trim() && !isLoading && (
-          <p className="text-sm text-muted-foreground">
-            {displayItems.length} result{displayItems.length === 1 ? "" : "s"}
-          </p>
-        )}
-
-        {filtersActive && (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/lists/new?${new URLSearchParams({
-                rules: JSON.stringify(filtersToListRules(filters)),
-              }).toString()}`}
-            >
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <ListPlus className="w-4 h-4" />
-                Save filters as list
-              </Button>
-            </Link>
-          </div>
-        )}
-
-        <div className="flex bg-muted rounded-lg p-1 w-fit">
-          <Button
-            variant={filters.mediaType === "movie" ? "default" : "ghost"}
-            size="sm"
-            onClick={() =>
-              updateFilters({
-                mediaType: filters.mediaType === "movie" ? undefined : "movie",
-                genres: [],
-              })
-            }
-          >
-            Movies
-          </Button>
-          <Button
-            variant={filters.mediaType === "tv" ? "default" : "ghost"}
-            size="sm"
-            onClick={() =>
-              updateFilters({
-                mediaType: filters.mediaType === "tv" ? undefined : "tv",
-                genres: [],
-              })
-            }
-          >
-            TV Shows
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <MultiFilterMenu
-            label="Status"
-            options={STATUS_OPTIONS}
-            selected={filters.statuses}
-            onChange={(statuses) => updateFilters({ statuses })}
-          />
-
-          <MultiFilterMenu
-            label="Year"
-            options={YEAR_FILTER_OPTIONS}
-            selected={selectedYearKeys}
-            onChange={(keys) =>
-              updateFilters({
-                yearRanges: keys
-                  .map(key => decodeYearRange(key))
-                  .filter((range): range is NonNullable<typeof range> => range !== null),
-              })
-            }
-          />
-
-          <MultiFilterMenu
-            label="Rating"
-            options={RATING_FILTER_OPTIONS}
-            selected={filters.minRatings}
-            onChange={(minRatings) => updateFilters({ minRatings })}
-          />
-
-          <MultiFilterMenu
-            label="Language"
-            options={LANGUAGE_FILTER_OPTIONS}
-            selected={filters.languages}
-            onChange={(languages) => updateFilters({ languages })}
-          />
-
-          <MultiFilterMenu
-            label="Genre"
-            options={genreOptions}
-            selected={filters.genres}
-            onChange={(genres) => updateFilters({ genres })}
-          />
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2">
-              <Skeleton className="aspect-[2/3] w-full rounded-lg" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
             </div>
-          ))}
-        </div>
-      ) : displayItems.length ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {displayItems.map(item => (
-            <MediaCard key={item.id} item={item} showProgress={item.mediaType === "tv"} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-20 bg-card rounded-xl border border-border/50">
-          <p className="text-muted-foreground text-lg">
-            {hasNoMatches || filtersActive
-              ? "No items match these filters."
-              : "Your list is empty."}
-          </p>
-        </div>
-      )}
-    </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {displayItems.map(item => (
+                <MediaCard
+                  key={item.id}
+                  item={item}
+                  variant="tracking"
+                  showProgress={item.mediaType === "tv"}
+                />
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="rounded-2xl border border-border/50 bg-card py-20 text-center">
+            <p className="text-lg text-muted-foreground">
+              {hasNoMatches || filtersActive
+                ? "No items match these filters."
+                : "Your list is empty."}
+            </p>
+          </div>
+        )}
+      </div>
+    </ListsSectionLayout>
   );
 }

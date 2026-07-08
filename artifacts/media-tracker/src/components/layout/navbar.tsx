@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, Film, Compass, BarChart2, Bookmark, Menu, List, Bell } from "lucide-react";
+import { Search, Film, Compass, BarChart2, Bookmark, Menu, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -10,8 +10,7 @@ import { cn } from "@/lib/utils";
 const mainNavLinks = [
   { href: "/", label: "Home", icon: Film },
   { href: "/browse", label: "Browse", icon: Compass },
-  { href: "/watchlist", label: "My List", icon: Bookmark },
-  { href: "/lists", label: "Lists", icon: List },
+  { href: "/lists", label: "Lists", icon: Bookmark },
   { href: "/stats", label: "Stats", icon: BarChart2 },
 ];
 
@@ -52,7 +51,13 @@ export function Navbar() {
   const navLinkClass = (href: string) =>
     cn(
       "flex items-center text-sm font-medium transition-colors hover:text-foreground/80",
-      location === href ? "text-foreground" : "text-foreground/60",
+      href === "/lists"
+        ? (location === "/lists" || location.startsWith("/lists/") || location === "/watchlist")
+          ? "text-foreground"
+          : "text-foreground/60"
+        : location === href
+          ? "text-foreground"
+          : "text-foreground/60",
     );
 
   return (

@@ -8,8 +8,9 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Home } from "@/pages/home";
 import { Search } from "@/pages/search";
 import { MediaDetail } from "@/pages/media-detail";
-import { Watchlist } from "@/pages/watchlist";
-import { ListsPage } from "@/pages/lists";
+import { WatchlistRedirect } from "@/pages/watchlist-redirect";
+import { ListsHubPage } from "@/pages/lists-hub";
+import { ListsCollectionsPage } from "@/pages/lists-collections";
 import { ListDetailPage } from "@/pages/list-detail";
 import { ListNewPage } from "@/pages/list-new";
 import { Stats } from "@/pages/stats";
@@ -34,10 +35,11 @@ function Router() {
         <Route path="/search" component={Search} />
         <Route path="/person/:personId" component={PersonDetail} />
         <Route path="/media/:mediaType/:tmdbId" component={MediaDetail} />
-        <Route path="/watchlist" component={Watchlist} />
+        <Route path="/watchlist" component={WatchlistRedirect} />
         <Route path="/lists/new" component={ListNewPage} />
+        <Route path="/lists/collections" component={ListsCollectionsPage} />
         <Route path="/lists/:id" component={ListDetailPage} />
-        <Route path="/lists" component={ListsPage} />
+        <Route path="/lists" component={ListsHubPage} />
         <Route path="/stats" component={Stats} />
         <Route path="/updates" component={Updates} />
         <Route path="/browse" component={Browse} />

@@ -22,8 +22,9 @@ import {
   decodeYearRange,
   isYearRangeActive,
 } from "@/lib/browse-filters";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2, ChevronLeft } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { ListsSectionLayout } from "@/components/lists/lists-section-layout";
 
 const YEAR_FILTER_OPTIONS = YEAR_OPTIONS.filter(isYearRangeActive).map(opt => ({
   label: opt.label,
@@ -134,13 +135,22 @@ export function ListNewPage() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <Link href="/lists" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="w-4 h-4" />
-        All lists
-      </Link>
-
-      <h1 className="text-3xl font-bold tracking-tight">New list</h1>
+    <ListsSectionLayout
+      activeSection="collections"
+      contextTabs={
+        <Link href="/lists/collections" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-4 w-4" />
+          Back to My Lists
+        </Link>
+      }
+    >
+      <div className="max-w-2xl space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">New list</h1>
+          <p className="mt-1 text-muted-foreground">
+            Create a manual list or save watchlist filters as a smart list.
+          </p>
+        </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
@@ -303,6 +313,7 @@ export function ListNewPage() {
           Create list
         </Button>
       </form>
-    </div>
+      </div>
+    </ListsSectionLayout>
   );
 }

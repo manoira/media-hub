@@ -1790,6 +1790,11 @@ components:
           enum: [live, snapshot, null]
         itemCount:
           type: integer
+        previewPosters:
+          type: array
+          items:
+            type: string
+          description: Up to four poster paths for gallery preview
         createdAt:
           type: string
         updatedAt:

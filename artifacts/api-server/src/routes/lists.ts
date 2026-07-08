@@ -7,7 +7,7 @@ import {
   listRulesSchema,
   type ListRules,
 } from "@workspace/db";
-import { eq, and, asc, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { evaluateListRules } from "../lib/list-rules";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
 import {
@@ -57,9 +57,30 @@ async function fetchTmdbSnapshot(tmdbId: number, mediaType: string) {
 
 const router: IRouter = Router();
 
+async function getListPreviewPosters(list: typeof customListsTable.$inferSelect): Promise<string[]> {
+  if (list.kind === "smart" && list.smartMode === "live") {
+    const allItems = await db.select().from(watchlistTable);
+    const rules = parseRules(list.rules);
+    return evaluateListRules(allItems, rules)
+      .slice(0, 4)
+      .map(item => item.posterPath)
+      .filter((path): path is string => !!path);
+  }
+
+  const rows = await db
+    .select({ posterPath: customListItemsTable.posterPath })
+    .from(customListItemsTable)
+    .where(eq(customListItemsTable.listId, list.id))
+    .orderBy(desc(customListItemsTable.addedAt))
+    .limit(4);
+
+  return rows.map(row => row.posterPath).filter((path): path is string => !!path);
+}
+
 function serializeListSummary(
   list: typeof customListsTable.$inferSelect,
   itemCount: number,
+  previewPosters: string[],
 ) {
   return {
     id: list.id,
@@ -68,6 +89,7 @@ function serializeListSummary(
     kind: list.kind as "manual" | "smart",
     smartMode: (list.smartMode as "live" | "snapshot" | null) ?? null,
     itemCount,
+    previewPosters,
     createdAt: list.createdAt.toISOString(),
     updatedAt: list.updatedAt.toISOString(),
   };
@@ -127,8 +149,12 @@ async function resolveListItems(list: typeof customListsTable.$inferSelect) {
 
 async function buildListDetail(list: typeof customListsTable.$inferSelect) {
   const items = await resolveListItems(list);
+  const previewPosters = items
+    .slice(0, 4)
+    .map(item => item.posterPath)
+    .filter((path): path is string => !!path);
   return {
-    ...serializeListSummary(list, items.length),
+    ...serializeListSummary(list, items.length, previewPosters),
     rules: parseRules(list.rules),
     items,
   };
@@ -151,7 +177,13 @@ router.get("/lists", async (req, res): Promise<void> => {
   try {
     const lists = await db.select().from(customListsTable).orderBy(asc(customListsTable.name));
     const summaries = await Promise.all(
-      lists.map(async (list) => serializeListSummary(list, await getListItemCount(list))),
+      lists.map(async (list) => {
+        const [itemCount, previewPosters] = await Promise.all([
+          getListItemCount(list),
+          getListPreviewPosters(list),
+        ]);
+        return serializeListSummary(list, itemCount, previewPosters);
+      }),
     );
     res.json(GetCustomListsResponse.parse(summaries));
   } catch (err: unknown) {

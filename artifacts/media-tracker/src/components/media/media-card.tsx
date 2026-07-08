@@ -5,6 +5,7 @@ import { cn, getTmdbImageUrl } from "@/lib/utils";
 import { MediaItem, WatchlistItem, Genre } from "@workspace/api-client-react";
 import { TvProgressBar } from "./tv-progress-bar";
 import { WatchStatusBadge } from "./watch-status-badge";
+import { CardHoverActions } from "./card-hover-actions";
 import { QuickAddButton } from "./quick-add-button";
 import { WATCHLIST_STATUS_BY_VALUE } from "@/lib/watchlist-status";
 
@@ -14,9 +15,17 @@ interface MediaCardProps {
   className?: string;
   showStatus?: boolean;
   showProgress?: boolean;
+  variant?: "default" | "tracking";
 }
 
-export function MediaCard({ item, genres, className, showStatus = true, showProgress = false }: MediaCardProps) {
+export function MediaCard({
+  item,
+  genres,
+  className,
+  showStatus = true,
+  showProgress = false,
+  variant = "default",
+}: MediaCardProps) {
   const isWatchlistItem = "status" in item;
   const status = isWatchlistItem ? item.status : null;
   const userRating = isWatchlistItem ? item.userRating : null;
@@ -26,9 +35,18 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
   const statusConfig = status ? WATCHLIST_STATUS_BY_VALUE[status] : null;
   const detailHref = `/media/${item.mediaType}/${item.tmdbId}`;
 
+  const isTracking = variant === "tracking";
+
   return (
     <div className={cn("group flex flex-col gap-2 relative", className)}>
-      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted shadow-sm transition-all duration-300 group-hover:shadow-md group-hover:scale-[1.02]">
+      <div
+        className={cn(
+          "relative aspect-[2/3] overflow-hidden bg-muted transition-all duration-300",
+          isTracking
+            ? "rounded-2xl border border-border/40 shadow-lg group-hover:shadow-xl"
+            : "rounded-lg shadow-sm group-hover:shadow-md group-hover:scale-[1.02]",
+        )}
+      >
         <Link href={detailHref} className="absolute inset-0 z-0 block">
           {imageUrl ? (
             <img
@@ -47,7 +65,7 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
         {isWatchlistItem && statusConfig && showStatus && (
           <Badge
             className={cn(
-              "absolute top-2 left-2 z-10 shadow-md pointer-events-none",
+              "absolute top-3 left-3 z-10 shadow-lg pointer-events-none uppercase tracking-wide text-[11px]",
               statusConfig.badgeClass,
             )}
           >
@@ -58,7 +76,7 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
           <WatchStatusBadge mediaType={item.mediaType as "movie" | "tv"} tmdbId={item.tmdbId} />
         )}
 
-        <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1 pointer-events-none">
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1 pointer-events-none">
           {tmdbRating != null && (
             <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs font-medium text-white">
               <Star className="w-3 h-3 text-primary fill-primary/80" />
@@ -79,19 +97,34 @@ export function MediaCard({ item, genres, className, showStatus = true, showProg
           )}
         </div>
 
-        <div className="absolute bottom-2 right-2 z-20">
-          <QuickAddButton mediaType={item.mediaType as "movie" | "tv"} tmdbId={item.tmdbId} />
-        </div>
+        {isTracking && isWatchlistItem ? (
+          <CardHoverActions
+            detailHref={detailHref}
+            mediaType={item.mediaType as "movie" | "tv"}
+            tmdbId={item.tmdbId}
+          />
+        ) : (
+          <>
+            <div className="absolute bottom-2 right-2 z-20">
+              <QuickAddButton mediaType={item.mediaType as "movie" | "tv"} tmdbId={item.tmdbId} />
+            </div>
 
-        {item.overview && (
-          <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 pointer-events-none">
-            <div className="text-white text-sm font-medium line-clamp-3 pr-12">{item.overview}</div>
-          </div>
+            {item.overview && (
+              <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 pointer-events-none">
+                <div className="text-white text-sm font-medium line-clamp-3 pr-12">{item.overview}</div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      <Link href={detailHref} className="block">
-        <h3 className="font-semibold text-sm leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+      <Link href={detailHref} className="block px-1">
+        <h3
+          className={cn(
+            "font-semibold leading-tight line-clamp-1 group-hover:text-primary transition-colors",
+            isTracking ? "font-bold text-sm" : "text-sm",
+          )}
+        >
           {item.title}
         </h3>
         <p className="text-xs text-muted-foreground mt-0.5">
