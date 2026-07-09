@@ -7,7 +7,7 @@ import {
   listRulesSchema,
   type ListRules,
 } from "@workspace/db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, asc, desc, sql } from "drizzle-orm";
 import { evaluateListRules } from "../lib/list-rules";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
 import {
@@ -59,7 +59,7 @@ const router: IRouter = Router();
 
 async function getListPreviewPosters(list: typeof customListsTable.$inferSelect): Promise<string[]> {
   if (list.kind === "smart" && list.smartMode === "live") {
-    const allItems = await db.select().from(watchlistTable);
+    const allItems = await db.select().from(watchlistTable).orderBy(desc(watchlistTable.addedAt));
     const rules = parseRules(list.rules);
     return evaluateListRules(allItems, rules)
       .slice(0, 4)
@@ -116,7 +116,7 @@ async function getListItemCount(list: typeof customListsTable.$inferSelect): Pro
 
 async function resolveListItems(list: typeof customListsTable.$inferSelect) {
   if (list.kind === "smart" && list.smartMode === "live") {
-    const allItems = await db.select().from(watchlistTable);
+    const allItems = await db.select().from(watchlistTable).orderBy(desc(watchlistTable.addedAt));
     const rules = parseRules(list.rules);
     return evaluateListRules(allItems, rules).map((item) => ({
       listItemId: null,
@@ -132,7 +132,8 @@ async function resolveListItems(list: typeof customListsTable.$inferSelect) {
     })
     .from(customListItemsTable)
     .leftJoin(watchlistTable, eq(customListItemsTable.watchlistId, watchlistTable.id))
-    .where(eq(customListItemsTable.listId, list.id));
+    .where(eq(customListItemsTable.listId, list.id))
+    .orderBy(desc(customListItemsTable.addedAt));
 
   const watchlistByKey = new Map(
     (await db.select().from(watchlistTable)).map(w => [`${w.mediaType}:${w.tmdbId}`, w]),
@@ -148,11 +149,10 @@ async function resolveListItems(list: typeof customListsTable.$inferSelect) {
 }
 
 async function buildListDetail(list: typeof customListsTable.$inferSelect) {
-  const items = await resolveListItems(list);
-  const previewPosters = items
-    .slice(0, 4)
-    .map(item => item.posterPath)
-    .filter((path): path is string => !!path);
+  const [items, previewPosters] = await Promise.all([
+    resolveListItems(list),
+    getListPreviewPosters(list),
+  ]);
   return {
     ...serializeListSummary(list, items.length, previewPosters),
     rules: parseRules(list.rules),
