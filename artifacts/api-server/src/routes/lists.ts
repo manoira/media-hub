@@ -14,6 +14,7 @@ import {
   serializeCustomListDisplayItem,
   watchlistRowToListItemValues,
 } from "../lib/list-item-serialize";
+import { getMovieDetails, getTvDetails } from "../lib/tmdb";
 import {
   GetCustomListsResponse,
   CreateCustomListBody,
@@ -30,29 +31,20 @@ import {
   RefreshCustomListResponse,
 } from "@workspace/api-zod";
 
-const TMDB_BASE = "https://api.themoviedb.org/3";
-
 async function fetchTmdbSnapshot(tmdbId: number, mediaType: string) {
-  const apiKey = process.env.TMDB_API_KEY;
-  const endpoint = mediaType === "tv" ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
-  const url = `${TMDB_BASE}${endpoint}?api_key=${apiKey}`;
-  const res = await globalThis.fetch(url);
-  if (!res.ok) return null;
-  const data = await res.json() as Record<string, unknown>;
-  if (mediaType === "tv") {
+  try {
+    const details = mediaType === "tv"
+      ? await getTvDetails(tmdbId)
+      : await getMovieDetails(tmdbId);
     return {
-      title: (data.name as string) || "Unknown",
-      posterPath: (data.poster_path as string | null) ?? null,
-      releaseDate: (data.first_air_date as string | null) ?? null,
-      voteAverage: (data.vote_average as number | null) ?? null,
+      title: details.title,
+      posterPath: details.posterPath,
+      releaseDate: details.releaseDate,
+      voteAverage: details.voteAverage,
     };
+  } catch {
+    return null;
   }
-  return {
-    title: (data.title as string) || "Unknown",
-    posterPath: (data.poster_path as string | null) ?? null,
-    releaseDate: (data.release_date as string | null) ?? null,
-    voteAverage: (data.vote_average as number | null) ?? null,
-  };
 }
 
 const router: IRouter = Router();

@@ -10,6 +10,7 @@
     "import-notion": "tsx ./src/import-notion-csv.ts",
     "backfill-watchlist-language": "tsx ./src/backfill-watchlist-language.ts",
     "backfill-watchlist-keywords": "tsx ./src/backfill-watchlist-keywords.ts",
+    "backfill-watchlist-titles": "tsx ./src/backfill-watchlist-titles.ts",
     "migrate": "tsx ./src/run-migration.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

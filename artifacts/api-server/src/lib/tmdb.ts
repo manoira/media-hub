@@ -2,6 +2,36 @@ import { getProviderLink, resolveWatchProviderLinks } from "./watch-provider-lin
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
+/** TMDB UI locale for titles, overviews, and genre names (e.g. sv-SE, en-US). */
+export function getTmdbLanguage(): string {
+  return process.env.TMDB_LANGUAGE?.trim() || "sv-SE";
+}
+
+function isSwedishTmdbLocale(): boolean {
+  const locale = getTmdbLanguage().toLowerCase();
+  return locale === "sv" || locale.startsWith("sv-");
+}
+
+/** Prefer the original Swedish title when TMDB returns an English localized name. */
+export function resolveLocalizedTitle(
+  title: string | null | undefined,
+  originalTitle: string | null | undefined,
+  originalLanguage: string | null | undefined,
+  alternateName?: string | null | undefined,
+): string {
+  const localized = (title ?? alternateName ?? "").trim();
+  const original = (originalTitle ?? "").trim();
+  const lang = originalLanguage?.toLowerCase() ?? "";
+
+  if (isSwedishTmdbLocale() && lang === "sv" && original) {
+    if (!localized || localized.toLowerCase() !== original.toLowerCase()) {
+      return original;
+    }
+  }
+
+  return localized || original || "Unknown";
+}
+
 function getApiKey(): string {
   const key = process.env.TMDB_API_KEY;
   if (!key) throw new Error("TMDB_API_KEY is not set");
@@ -11,8 +41,9 @@ function getApiKey(): string {
 async function tmdbFetch<T>(path: string, params: Record<string, string | number | boolean | undefined> = {}): Promise<T> {
   const url = new URL(`${TMDB_BASE}${path}`);
   url.searchParams.set("api_key", getApiKey());
+  url.searchParams.set("language", params.language !== undefined ? String(params.language) : getTmdbLanguage());
   for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined) url.searchParams.set(k, String(v));
+    if (v !== undefined && k !== "language") url.searchParams.set(k, String(v));
   }
   const res = await fetch(url.toString());
   if (!res.ok) {
@@ -81,10 +112,16 @@ interface TmdbVideo {
 
 export function normalizeMediaItem(item: TmdbMovie, mediaTypeOverride?: string) {
   const mediaType = mediaTypeOverride ?? item.media_type ?? "movie";
+  const isTv = mediaType === "tv";
   return {
     tmdbId: item.id,
     mediaType,
-    title: (item.title ?? item.name ?? "Unknown").trim(),
+    title: resolveLocalizedTitle(
+      isTv ? item.name : item.title,
+      isTv ? item.original_name : item.original_title,
+      item.original_language,
+      isTv ? item.name : item.title,
+    ),
     originalTitle: item.original_title ?? item.original_name ?? null,
     overview: item.overview ?? null,
     posterPath: item.poster_path ?? null,
@@ -277,7 +314,7 @@ export async function getMovieDetails(tmdbId: number) {
   return {
     tmdbId: data.id,
     mediaType: "movie",
-    title: data.title,
+    title: resolveLocalizedTitle(data.title, data.original_title, data.original_language),
     originalTitle: data.original_title ?? null,
     overview: data.overview ?? null,
     tagline: data.tagline ?? null,
@@ -330,7 +367,7 @@ export async function getTvDetails(tmdbId: number) {
   return {
     tmdbId: data.id,
     mediaType: "tv",
-    title: data.name,
+    title: resolveLocalizedTitle(data.name, data.original_name, data.original_language),
     originalTitle: data.original_name ?? null,
     overview: data.overview ?? null,
     tagline: data.tagline ?? null,

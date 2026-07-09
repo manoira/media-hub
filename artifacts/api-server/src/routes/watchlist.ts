@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, watchlistTable } from "@workspace/db";
 import { eq, and, desc, asc, inArray, gte, sql, type SQL } from "drizzle-orm";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
-import { fetchKeywords } from "../lib/tmdb";
+import { fetchKeywords, getMovieDetails, getTvDetails } from "../lib/tmdb";
 import {
   GetWatchlistQueryParams,
   GetWatchlistResponse,
@@ -14,8 +14,6 @@ import {
   GetWatchStatusParams,
   GetWatchStatusResponse,
 } from "@workspace/api-zod";
-
-const TMDB_BASE = "https://api.themoviedb.org/3";
 
 const ARRAY_QUERY_KEYS = [
   "status",
@@ -90,40 +88,27 @@ function buildRatingCondition(minRatings: number[]): SQL | undefined {
 }
 
 async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
-  const apiKey = process.env.TMDB_API_KEY;
-  const endpoint = mediaType === "tv" ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
-  const url = `${TMDB_BASE}${endpoint}?api_key=${apiKey}`;
-  const res = await globalThis.fetch(url);
   const keywords = await fetchKeywords(mediaType, tmdbId).catch(() => []);
   const keywordIds = keywords.map(k => k.id);
-  if (!res.ok) return { keywordIds };
-  const data = await res.json() as Record<string, unknown>;
-  if (mediaType === "tv") {
+  try {
+    const details = mediaType === "tv"
+      ? await getTvDetails(tmdbId)
+      : await getMovieDetails(tmdbId);
     return {
-      title: (data.name as string) || "Unknown",
-      posterPath: (data.poster_path as string | null) ?? null,
-      backdropPath: (data.backdrop_path as string | null) ?? null,
-      releaseDate: (data.first_air_date as string | null) ?? null,
-      originalLanguage: (data.original_language as string | null) ?? null,
-      adult: (data.adult as boolean | null) ?? null,
-      voteAverage: (data.vote_average as number | null) ?? null,
-      overview: (data.overview as string | null) ?? null,
-      genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
+      title: details.title,
+      posterPath: details.posterPath,
+      backdropPath: details.backdropPath,
+      releaseDate: details.releaseDate,
+      originalLanguage: details.originalLanguage,
+      adult: details.adult,
+      voteAverage: details.voteAverage,
+      overview: details.overview,
+      genreIds: details.genres.map(g => String(g.id)),
       keywordIds,
     };
+  } catch {
+    return { keywordIds };
   }
-  return {
-    title: (data.title as string) || "Unknown",
-    posterPath: (data.poster_path as string | null) ?? null,
-    backdropPath: (data.backdrop_path as string | null) ?? null,
-    releaseDate: (data.release_date as string | null) ?? null,
-    originalLanguage: (data.original_language as string | null) ?? null,
-    adult: (data.adult as boolean | null) ?? null,
-    voteAverage: (data.vote_average as number | null) ?? null,
-    overview: (data.overview as string | null) ?? null,
-    genreIds: ((data.genres as { id: number }[] | null) ?? []).map(g => String(g.id)),
-    keywordIds,
-  };
 }
 
 const serializeItem = serializeWatchlistItem;
