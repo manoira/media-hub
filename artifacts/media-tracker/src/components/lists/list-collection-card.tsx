@@ -2,9 +2,16 @@ import { Link } from "wouter";
 import type { CustomListSummary } from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getTmdbImageUrl } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
 
 function listKindLabel(kind: string, smartMode?: string | null) {
   if (kind === "manual") return "Manual";
@@ -67,28 +74,34 @@ export function ListCollectionCard({ list, onDelete, className }: ListCollection
         </div>
       </Link>
 
-      <div className="absolute right-3 top-3 z-10 flex flex-col gap-2 opacity-0 transition-all group-hover:opacity-100">
-        <Button
-          type="button"
-          size="icon"
-          variant="secondary"
-          className="h-9 w-9 rounded-full bg-white/10 backdrop-blur-md hover:bg-destructive"
-          aria-label={`Delete ${list.name}`}
-          onClick={onDelete}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="secondary"
-          className="h-9 w-9 rounded-full bg-white/10 backdrop-blur-md hover:bg-primary"
-          asChild
-        >
-          <Link href={`/lists/${list.id}`} aria-label={`Open ${list.name}`}>
-            <Plus className="h-4 w-4" />
-          </Link>
-        </Button>
+      <div className="absolute right-3 top-3 z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              className="h-9 w-9 rounded-full bg-black/40 backdrop-blur-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+              aria-label={`Actions for ${list.name}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/lists/${list.id}`}>Open list</Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive focus:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete list
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

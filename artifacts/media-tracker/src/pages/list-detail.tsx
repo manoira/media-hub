@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import {
   useGetCustomList,
   getGetCustomListQueryKey,
+  getGetCustomListsQueryKey,
   useRefreshCustomList,
   useRemoveCustomListItem,
+  useDeleteCustomList,
 } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +23,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { CustomListDisplayItem } from "@workspace/api-client-react";
@@ -59,6 +62,7 @@ function sortItems(items: CustomListDisplayItem[], sortBy: string): CustomListDi
 
 export function ListDetailPage() {
   const { id } = useParams();
+  const [, setLocation] = useLocation();
   const listId = Number(id);
   const queryClient = useQueryClient();
   const { viewMode, setViewMode } = useListViewMode();
@@ -73,6 +77,7 @@ export function ListDetailPage() {
 
   const refreshList = useRefreshCustomList();
   const removeItem = useRemoveCustomListItem();
+  const deleteList = useDeleteCustomList();
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getGetCustomListQueryKey(listId) });
@@ -117,6 +122,19 @@ export function ListDetailPage() {
   const canRemove = list.kind === "manual" || list.smartMode === "snapshot";
   const sortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? "Title";
 
+  const handleDeleteList = () => {
+    if (!confirm(`Delete list "${list.name}"? This cannot be undone.`)) return;
+    deleteList.mutate(
+      { id: listId },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetCustomListsQueryKey() });
+          setLocation("/lists/collections");
+        },
+      },
+    );
+  };
+
   return (
     <ListsSectionLayout activeSection="collections" contextTabs={backLink}>
       <div className="space-y-6">
@@ -157,6 +175,14 @@ export function ListDetailPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link href="/lists/new">Create another list</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                  disabled={deleteList.isPending}
+                  onClick={handleDeleteList}
+                >
+                  Delete list
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
