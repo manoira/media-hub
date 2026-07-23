@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
-import { useDiscoverMedia, useGetGenres, getGetGenresQueryKey, getDiscoverMediaQueryKey } from "@workspace/api-client-react";
+import {
+  useDiscoverMedia,
+  useGetGenres,
+  useGetStreamingProviders,
+  getGetGenresQueryKey,
+  getDiscoverMediaQueryKey,
+  getGetStreamingProvidersQueryKey,
+} from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
 import { ContentFilterToggles } from "@/components/media/content-filter-toggles";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,8 +19,16 @@ import {
   YEAR_OPTIONS,
   RATING_OPTIONS,
   LANGUAGE_OPTIONS,
+  CURRENT_YEAR,
   type YearRange,
 } from "@/lib/browse-filters";
+import {
+  PROVIDER_COLLECTION_OPTIONS,
+  TMDB_PROVIDER_LOGO,
+  providerCollectionMinYear,
+  providerCollectionSort,
+  type ProviderCollection,
+} from "@/lib/streaming-browse";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -78,6 +93,8 @@ export function Browse() {
   const [yearRange, setYearRange] = useState<YearRange>(YEAR_OPTIONS[0]);
   const [minRating, setMinRating] = useState<number | undefined>(undefined);
   const [language, setLanguage] = useState<string | undefined>(undefined);
+  const [selectedProviderId, setSelectedProviderId] = useState<number | null>(null);
+  const [providerCollection, setProviderCollection] = useState<ProviderCollection>("popular");
   const [page, setPage] = useState(1);
   const [allItems, setAllItems] = useState<MediaItem[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -85,14 +102,30 @@ export function Browse() {
   const { hideTracked, setHideTracked } = useHideTrackedPreference();
   const { hideAdult, setHideAdult } = useHideAdultPreference();
 
+  const streamingProviderParams = { type: mediaType };
+  const { data: streamingProviders } = useGetStreamingProviders(streamingProviderParams, {
+    query: { queryKey: getGetStreamingProvidersQueryKey(streamingProviderParams) },
+  });
+
+  const selectedProvider = streamingProviders?.providers.find(
+    (provider) => provider.providerId === selectedProviderId,
+  );
+  const effectiveSortBy = selectedProviderId
+    ? providerCollectionSort(providerCollection)
+    : sortBy;
+  const providerMinYear = selectedProviderId
+    ? providerCollectionMinYear(providerCollection, CURRENT_YEAR)
+    : undefined;
+
   const params = withContentFilters({
     type: mediaType,
     genre: selectedGenre ?? undefined,
-    sort_by: sortBy,
+    sort_by: effectiveSortBy,
     min_rating: minRating,
-    min_year: yearRange.min,
+    min_year: providerMinYear ?? yearRange.min,
     max_year: yearRange.max,
     language,
+    provider_id: selectedProviderId ?? undefined,
     page,
   }, { hideTracked, hideAdult });
 
@@ -130,6 +163,8 @@ export function Browse() {
     year?: YearRange;
     rating?: number;
     lang?: string;
+    provider?: number | null;
+    collection?: ProviderCollection;
   }) => {
     setAllItems([]);
     setHasMore(true);
@@ -140,6 +175,8 @@ export function Browse() {
     if (opts.year !== undefined) setYearRange(opts.year);
     if ("rating" in opts) setMinRating(opts.rating);
     if ("lang" in opts) setLanguage(opts.lang);
+    if ("provider" in opts) setSelectedProviderId(opts.provider ?? null);
+    if (opts.collection !== undefined) setProviderCollection(opts.collection);
   }, []);
 
   useEffect(() => {
@@ -160,6 +197,9 @@ export function Browse() {
   const activeGenres = mediaType === "movie" ? genres?.movieGenres : genres?.tvGenres;
   const visibleSortOptions = SORT_OPTIONS.filter(o => !o.movieOnly || mediaType === "movie");
   const currentSort = SORT_OPTIONS.find(o => o.value === sortBy)!;
+  const currentProviderCollection = PROVIDER_COLLECTION_OPTIONS.find(
+    (option) => option.value === providerCollection,
+  )!;
 
   const cardSkeletons = Array.from({ length: 20 }).map((_, i) => (
     <div key={i} className="space-y-2">
@@ -174,44 +214,104 @@ export function Browse() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Browse</h1>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <SlidersHorizontal className="w-4 h-4" />
-                {currentSort.label}
-                <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {visibleSortOptions.map(opt => (
-                <DropdownMenuItem
-                  key={opt.value}
-                  className={cn("cursor-pointer", sortBy === opt.value && "bg-muted")}
-                  onClick={() => resetAndFilter({ sort: opt.value })}
-                >
-                  {opt.label}
-                  {sortBy === opt.value && <span className="ml-auto text-[10px] text-muted-foreground">✓</span>}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {selectedProviderId ? (
+            <Button variant="outline" size="sm" className="gap-2" disabled>
+              <SlidersHorizontal className="w-4 h-4" />
+              {currentProviderCollection.label} on {selectedProvider?.providerName ?? "service"}
+            </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <SlidersHorizontal className="w-4 h-4" />
+                  {currentSort.label}
+                  <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {visibleSortOptions.map(opt => (
+                  <DropdownMenuItem
+                    key={opt.value}
+                    className={cn("cursor-pointer", sortBy === opt.value && "bg-muted")}
+                    onClick={() => resetAndFilter({ sort: opt.value })}
+                  >
+                    {opt.label}
+                    {sortBy === opt.value && <span className="ml-auto text-[10px] text-muted-foreground">✓</span>}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         <div className="flex bg-muted rounded-lg p-1 w-fit">
           <Button
             variant={mediaType === "movie" ? "default" : "ghost"}
             size="sm"
-            onClick={() => resetAndFilter({ type: "movie", genre: null })}
+            onClick={() => resetAndFilter({ type: "movie", genre: null, provider: null })}
           >
             Movies
           </Button>
           <Button
             variant={mediaType === "tv" ? "default" : "ghost"}
             size="sm"
-            onClick={() => resetAndFilter({ type: "tv", genre: null, sort: sortBy === "revenue.desc" ? "popularity.desc" : undefined })}
+            onClick={() => resetAndFilter({
+              type: "tv",
+              genre: null,
+              provider: null,
+              sort: sortBy === "revenue.desc" ? "popularity.desc" : undefined,
+            })}
           >
             TV Shows
           </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <FilterMenu
+            label={selectedProvider?.providerName ?? "Streaming service"}
+            active={selectedProviderId !== null}
+          >
+            <DropdownMenuItem
+              className={cn("cursor-pointer", selectedProviderId === null && "bg-muted")}
+              onClick={() => resetAndFilter({ provider: null })}
+            >
+              Any service
+              {selectedProviderId === null && <span className="ml-auto text-[10px] text-muted-foreground">✓</span>}
+            </DropdownMenuItem>
+            {streamingProviders?.providers.map((provider) => (
+              <DropdownMenuItem
+                key={provider.providerId}
+                className={cn("cursor-pointer gap-2", selectedProviderId === provider.providerId && "bg-muted")}
+                onClick={() => resetAndFilter({ provider: provider.providerId, collection: "popular" })}
+              >
+                <img
+                  src={`${TMDB_PROVIDER_LOGO}${provider.logoPath}`}
+                  alt=""
+                  className="h-5 w-5 rounded object-cover"
+                  loading="lazy"
+                />
+                <span>{provider.providerName}</span>
+                {selectedProviderId === provider.providerId && (
+                  <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
+                )}
+              </DropdownMenuItem>
+            ))}
+          </FilterMenu>
+
+          {selectedProviderId && (
+            <div className="flex bg-muted rounded-lg p-1">
+              {PROVIDER_COLLECTION_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  variant={providerCollection === option.value ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => resetAndFilter({ collection: option.value })}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -322,7 +422,9 @@ export function Browse() {
         <p className="text-center text-sm text-muted-foreground py-12">
           {hideTracked
             ? "No untracked items match these filters. Try turning off \"Hide items already on my watchlist\"."
-            : "No items match these filters."}
+            : selectedProviderId
+              ? `No ${currentProviderCollection.label.toLowerCase()} titles found on ${selectedProvider?.providerName ?? "this service"} right now.`
+              : "No items match these filters."}
         </p>
       )}
     </div>

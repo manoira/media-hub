@@ -31,6 +31,11 @@ max_year?: number | null;
  * @nullable
  */
 language?: string | null;
+/**
+ * TMDB watch provider ID — limits results to titles on that streaming service in the watch region
+ * @nullable
+ */
+provider_id?: number | null;
 page?: number;
 /**
  * Omit items already on the watchlist (any status)

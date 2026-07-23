@@ -224,6 +224,7 @@ export const DiscoverMediaQueryParams = zod.object({
   "min_year": zod.coerce.number().nullish(),
   "max_year": zod.coerce.number().nullish(),
   "language": zod.coerce.string().nullish(),
+  "provider_id": zod.coerce.number().nullish().describe('TMDB watch provider ID — limits results to titles on that streaming service in the watch region'),
   "page": zod.coerce.number().default(discoverMediaQueryPageDefault),
   "exclude_tracked": zod.coerce.boolean().default(discoverMediaQueryExcludeTrackedDefault).describe('Omit items already on the watchlist (any status)'),
   "exclude_adult": zod.coerce.boolean().default(discoverMediaQueryExcludeAdultDefault).describe('Omit TMDB adult\/pornographic titles')
@@ -249,6 +250,26 @@ export const DiscoverMediaResponse = zod.object({
   "totalResults": zod.number(),
   "totalPages": zod.number(),
   "page": zod.number()
+})
+
+
+/**
+ * @summary List subscription streaming services in the watch region
+ */
+export const getStreamingProvidersQueryTypeDefault = `movie`;
+
+export const GetStreamingProvidersQueryParams = zod.object({
+  "type": zod.enum(['movie', 'tv']).default(getStreamingProvidersQueryTypeDefault)
+})
+
+export const GetStreamingProvidersResponse = zod.object({
+  "providers": zod.array(zod.object({
+  "providerId": zod.number(),
+  "providerName": zod.string(),
+  "logoPath": zod.string(),
+  "displayPriority": zod.number(),
+  "link": zod.string().nullish().describe('Direct link to watch, rent, or buy on the provider')
+}))
 })
 
 

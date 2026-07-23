@@ -36,6 +36,7 @@ import type {
   GetPersonCreditsParams,
   GetRecentlyWatchedParams,
   GetSimilarMediaParams,
+  GetStreamingProvidersParams,
   GetTrendingParams,
   GetWatchlistParams,
   GetWatchlistRecommendationsParams,
@@ -55,6 +56,7 @@ import type {
   SeasonWithProgress,
   SeriesWatchResult,
   StatsSummary,
+  StreamingProviderList,
   TagSearchResult,
   TvProgress,
   UnreadNotificationCount,
@@ -646,6 +648,90 @@ export function useDiscoverMedia<TData = Awaited<ReturnType<typeof discoverMedia
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getDiscoverMediaQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetStreamingProvidersUrl = (params?: GetStreamingProvidersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/streaming-providers?${stringifiedParams}` : `/api/streaming-providers`
+}
+
+/**
+ * @summary List subscription streaming services in the watch region
+ */
+export const getStreamingProviders = async (params?: GetStreamingProvidersParams, options?: RequestInit): Promise<StreamingProviderList> => {
+
+  return customFetch<StreamingProviderList>(getGetStreamingProvidersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStreamingProvidersQueryKey = (params?: GetStreamingProvidersParams,) => {
+    return [
+    `/api/streaming-providers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStreamingProvidersQueryOptions = <TData = Awaited<ReturnType<typeof getStreamingProviders>>, TError = ErrorType<unknown>>(params?: GetStreamingProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStreamingProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStreamingProvidersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStreamingProviders>>> = ({ signal }) => getStreamingProviders(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStreamingProviders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStreamingProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof getStreamingProviders>>>
+export type GetStreamingProvidersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List subscription streaming services in the watch region
+ */
+
+export function useGetStreamingProviders<TData = Awaited<ReturnType<typeof getStreamingProviders>>, TError = ErrorType<unknown>>(
+ params?: GetStreamingProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStreamingProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStreamingProvidersQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
