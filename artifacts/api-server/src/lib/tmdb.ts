@@ -582,7 +582,8 @@ export async function getWatchProviders(mediaType: string, tmdbId: number, count
 
 export async function getPopular(mediaType: "movie" | "tv", page = 1) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
-    `/${mediaType}/popular`, { page }
+    `/${mediaType}/popular`,
+    mediaType === "movie" ? { page, region: getTmdbRegion() } : { page },
   );
   return {
     results: data.results.map(r => normalizeMediaItem(r, mediaType)),
@@ -602,7 +603,8 @@ export async function getTopRated(mediaType: "movie" | "tv", page = 1) {
 
 export async function getNowPlaying(page = 1) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
-    `/movie/now_playing`, { page }
+    `/movie/now_playing`,
+    { page, region: getTmdbRegion() },
   );
   return {
     results: data.results.map(r => normalizeMediaItem(r, "movie")),
@@ -612,7 +614,8 @@ export async function getNowPlaying(page = 1) {
 
 export async function getUpcoming(page = 1) {
   const data = await tmdbFetch<{ results: TmdbMovie[]; total_results: number; total_pages: number; page: number }>(
-    `/movie/upcoming`, { page }
+    `/movie/upcoming`,
+    { page, region: getTmdbRegion() },
   );
   return {
     results: data.results.map(r => normalizeMediaItem(r, "movie")),

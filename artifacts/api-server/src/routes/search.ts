@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres, getPopular, getTopRated, getNowPlaying, getUpcoming, getOnAir, searchByTag, getStreamingProviders } from "../lib/tmdb";
 import { applyExcludeTracked, parseExcludeTrackedFromQuery } from "../lib/exclude-tracked";
 import { applyExcludeAdult, parseExcludeAdultFromQuery } from "../lib/filter-adult";
+import { applyMarketFilter } from "../lib/filter-market";
 import { getWatchlistBasedRecommendations } from "../lib/watchlist-recommendations";
 import {
   SearchMediaQueryParams,
@@ -114,6 +115,7 @@ router.get("/trending", async (req, res): Promise<void> => {
     if (type === "all") result = await getTrendingAll(time_window);
     else result = await getTrendingType(type, time_window);
 
+    result = applyMarketFilter(result);
     result = await applyExcludeTracked(result, excludeTracked);
     result = applyExcludeAdult(result, excludeAdult);
     res.json(GetTrendingResponse.parse(result));
@@ -145,6 +147,7 @@ router.get("/browse", async (req, res): Promise<void> => {
       default:                  res.status(400).json({ error: "Unknown category" }); return;
     }
 
+    result = applyMarketFilter(result);
     result = await applyExcludeTracked(result, excludeTracked);
     result = applyExcludeAdult(result, excludeAdult);
     res.json(GetBrowseCategoryResponse.parse(result));
@@ -164,6 +167,7 @@ router.get("/recommendations/watchlist", async (req, res): Promise<void> => {
   const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
     let result = await getWatchlistBasedRecommendations();
+    result = applyMarketFilter(result);
     result = await applyExcludeTracked(result, excludeTracked);
     result = applyExcludeAdult(result, excludeAdult);
     res.json(GetWatchlistRecommendationsResponse.parse(result));
