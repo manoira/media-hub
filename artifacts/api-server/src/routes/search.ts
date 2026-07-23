@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres, getPopular, getTopRated, getNowPlaying, getUpcoming, getOnAir, searchByTag } from "../lib/tmdb";
+import { searchMulti, searchMovies, searchTv, discoverMovies, discoverTv, getTrendingAll, getTrendingType, getGenres, getPopular, getTopRated, getNowPlaying, getUpcoming, getOnAir, searchByTag, getStreamingProviders } from "../lib/tmdb";
 import { applyExcludeTracked, parseExcludeTrackedFromQuery } from "../lib/exclude-tracked";
 import { applyExcludeAdult, parseExcludeAdultFromQuery } from "../lib/filter-adult";
 import { getWatchlistBasedRecommendations } from "../lib/watchlist-recommendations";
@@ -17,6 +17,8 @@ import {
   GetWatchlistRecommendationsResponse,
   SearchByTagQueryParams,
   SearchByTagResponse,
+  GetStreamingProvidersQueryParams,
+  GetStreamingProvidersResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -71,7 +73,7 @@ router.get("/discover", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { type = "movie", genre, sort_by = "popularity.desc", min_rating, min_year, max_year, language, page = 1 } = parsed.data;
+  const { type = "movie", genre, sort_by = "popularity.desc", min_rating, min_year, max_year, language, provider_id, page = 1 } = parsed.data;
   const excludeTracked = parseExcludeTrackedFromQuery(req.query);
   const excludeAdult = parseExcludeAdultFromQuery(req.query);
   try {
@@ -84,6 +86,7 @@ router.get("/discover", async (req, res): Promise<void> => {
       min_year: min_year ?? undefined,
       max_year: max_year ?? undefined,
       language: language ?? undefined,
+      provider_id: provider_id ?? undefined,
     };
     if (type === "tv") result = await discoverTv(params);
     else result = await discoverMovies(params);
@@ -177,6 +180,22 @@ router.get("/genres", async (req, res): Promise<void> => {
   } catch (err: unknown) {
     req.log.error({ err }, "Genres error");
     res.status(500).json({ error: "Failed to get genres" });
+  }
+});
+
+router.get("/streaming-providers", async (req, res): Promise<void> => {
+  const parsed = GetStreamingProvidersQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { type = "movie" } = parsed.data;
+  try {
+    const providers = await getStreamingProviders(type);
+    res.json(GetStreamingProvidersResponse.parse(providers));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Streaming providers error");
+    res.status(500).json({ error: "Failed to get streaming providers" });
   }
 });
 

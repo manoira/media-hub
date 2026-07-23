@@ -249,6 +249,11 @@ paths:
           in: query
           schema:
             type: ["string", "null"]
+        - name: provider_id
+          in: query
+          description: TMDB watch provider ID — limits results to titles on that streaming service in the watch region
+          schema:
+            type: ["integer", "null"]
         - name: page
           in: query
           schema:
@@ -273,6 +278,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MediaSearchResult"
+
+  /streaming-providers:
+    get:
+      operationId: getStreamingProviders
+      tags: [search]
+      summary: List subscription streaming services in the watch region
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [movie, tv]
+            default: movie
+      responses:
+        "200":
+          description: Streaming services available for discovery filters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamingProviderList"
 
   /trending:
     get:
@@ -1495,6 +1520,16 @@ components:
       required:
         - movieGenres
         - tvGenres
+
+    StreamingProviderList:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
+      required:
+        - providers
 
     ProductionCompany:
       type: object

@@ -313,6 +313,22 @@ export interface GenreList {
   tvGenres: Genre[];
 }
 
+export interface WatchProvider {
+  providerId: number;
+  providerName: string;
+  logoPath: string;
+  displayPriority: number;
+  /**
+     * Direct link to watch, rent, or buy on the provider
+     * @nullable
+     */
+  link?: string | null;
+}
+
+export interface StreamingProviderList {
+  providers: WatchProvider[];
+}
+
 export interface CastMember {
   id: number;
   name: string;
@@ -734,18 +750,6 @@ export interface SeriesWatchResult {
   episodeCount?: number;
 }
 
-export interface WatchProvider {
-  providerId: number;
-  providerName: string;
-  logoPath: string;
-  displayPriority: number;
-  /**
-     * Direct link to watch, rent, or buy on the provider
-     * @nullable
-     */
-  link?: string | null;
-}
-
 export interface WatchProvidersResult {
   /** @nullable */
   link?: string | null;
@@ -849,6 +853,11 @@ max_year?: number | null;
  * @nullable
  */
 language?: string | null;
+/**
+ * TMDB watch provider ID — limits results to titles on that streaming service in the watch region
+ * @nullable
+ */
+provider_id?: number | null;
 page?: number;
 /**
  * Omit items already on the watchlist (any status)
@@ -879,6 +888,18 @@ export const DiscoverMediaSortBy = {
   release_dateasc: 'release_date.asc',
   revenuedesc: 'revenue.desc',
   titleasc: 'title.asc',
+} as const;
+
+export type GetStreamingProvidersParams = {
+type?: GetStreamingProvidersType;
+};
+
+export type GetStreamingProvidersType = typeof GetStreamingProvidersType[keyof typeof GetStreamingProvidersType];
+
+
+export const GetStreamingProvidersType = {
+  movie: 'movie',
+  tv: 'tv',
 } as const;
 
 export type GetTrendingParams = {

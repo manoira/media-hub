@@ -7,6 +7,11 @@ export function getTmdbLanguage(): string {
   return process.env.TMDB_LANGUAGE?.trim() || "sv-SE";
 }
 
+/** ISO 3166-1 region for watch-provider and theatrical release filters. */
+export function getTmdbRegion(): string {
+  return process.env.TMDB_REGION?.trim().toUpperCase() || "SE";
+}
+
 function isSwedishTmdbLocale(): boolean {
   const locale = getTmdbLanguage().toLowerCase();
   return locale === "sv" || locale.startsWith("sv-");
@@ -181,6 +186,7 @@ export interface DiscoverParams {
   min_year?: number;
   max_year?: number;
   language?: string;
+  provider_id?: number;
 }
 
 // Map our logical sort values to the field names TMDB's movie/tv discover
@@ -234,6 +240,12 @@ function buildDiscoverQuery(
 
   if (mediaType === "movie") query.include_adult = false;
 
+  if (params.provider_id !== undefined) {
+    query.with_watch_providers = params.provider_id;
+    query.watch_region = getTmdbRegion();
+    query.with_watch_monetization_types = "flatrate";
+  }
+
   return query;
 }
 
@@ -284,6 +296,32 @@ export async function getTrendingType(type: string, timeWindow: string, page = 1
     totalResults: data.total_results,
     totalPages: data.total_pages,
     page: data.page,
+  };
+}
+
+interface TmdbStreamingProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+  display_priority: number;
+}
+
+export async function getStreamingProviders(mediaType: "movie" | "tv") {
+  const data = await tmdbFetch<{ results: TmdbStreamingProvider[] }>(
+    `/watch/providers/${mediaType}`,
+    { watch_region: getTmdbRegion() },
+  );
+  return {
+    providers: data.results
+      .slice()
+      .sort((a, b) => a.display_priority - b.display_priority)
+      .map((provider) => ({
+        providerId: provider.provider_id,
+        providerName: provider.provider_name,
+        logoPath: provider.logo_path,
+        displayPriority: provider.display_priority,
+        link: null,
+      })),
   };
 }
 
