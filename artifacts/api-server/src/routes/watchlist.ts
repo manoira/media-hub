@@ -3,6 +3,7 @@ import { db, watchlistTable } from "@workspace/db";
 import { eq, and, desc, asc, inArray, gte, sql, type SQL } from "drizzle-orm";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
 import { fetchKeywords, getMovieDetails, getTvDetails } from "../lib/tmdb";
+import { invalidateWatchlistCache } from "../lib/watchlist-cache";
 import {
   GetWatchlistQueryParams,
   GetWatchlistResponse,
@@ -199,6 +200,7 @@ router.post("/watchlist", async (req, res): Promise<void> => {
       .set({ status, userRating: userRating ?? null, notes: notes ?? null })
       .where(eq(watchlistTable.id, existing[0].id))
       .returning();
+    invalidateWatchlistCache();
     res.status(201).json(serializeItem(updated));
     return;
   }
@@ -223,6 +225,7 @@ router.post("/watchlist", async (req, res): Promise<void> => {
     keywordIds: tmdbData?.keywordIds ?? [],
   }).returning();
 
+  invalidateWatchlistCache();
   res.status(201).json(serializeItem(inserted));
 });
 
@@ -238,10 +241,11 @@ router.patch("/watchlist/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const updateData: Partial<{ status: string; userRating: number | null; notes: string | null }> = {};
+  const updateData: Partial<{ status: string; userRating: number | null; notes: string | null; tags: string[] | null }> = {};
   if (body.data.status !== undefined) updateData.status = body.data.status;
   if (body.data.userRating !== undefined) updateData.userRating = body.data.userRating ?? null;
   if (body.data.notes !== undefined) updateData.notes = body.data.notes ?? null;
+  if (body.data.tags !== undefined) updateData.tags = body.data.tags;
 
   const [updated] = await db
     .update(watchlistTable)
@@ -253,6 +257,7 @@ router.patch("/watchlist/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Not found" });
     return;
   }
+  invalidateWatchlistCache();
   res.json(UpdateWatchlistItemResponse.parse(serializeItem(updated)));
 });
 
@@ -269,6 +274,7 @@ router.delete("/watchlist/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Not found" });
     return;
   }
+  invalidateWatchlistCache();
   res.sendStatus(204);
 });
 

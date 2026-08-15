@@ -18,11 +18,17 @@ import { Browse } from "@/pages/browse";
 import { PersonDetail } from "@/pages/person-detail";
 import { Updates } from "@/pages/updates";
 
+const ONE_DAY_MS = 24 * 60 * 60_000;
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
       refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      staleTime: ONE_DAY_MS,
+      gcTime: ONE_DAY_MS,
     },
   },
 });
@@ -31,7 +37,8 @@ function Router() {
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/" component={ListsHubPage} />
+        <Route path="/discover" component={Home} />
         <Route path="/search" component={Search} />
         <Route path="/person/:personId" component={PersonDetail} />
         <Route path="/media/:mediaType/:tmdbId" component={MediaDetail} />

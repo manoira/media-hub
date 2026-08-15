@@ -1,8 +1,6 @@
 import {
-  useGetTrending, useGetGenres, useGetBrowseCategory, useGetWatchlistRecommendations,
-  getGetTrendingQueryKey, getGetGenresQueryKey,
-  getGetBrowseCategoryQueryKey, getGetWatchlistRecommendationsQueryKey,
-  type GetBrowseCategoryParams,
+  useGetHomeFeed,
+  getGetHomeFeedQueryKey,
 } from "@workspace/api-client-react";
 import { MediaCard } from "@/components/media/media-card";
 import { MediaSlider } from "@/components/media/media-slider";
@@ -12,51 +10,24 @@ import { Button } from "@/components/ui/button";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
 import { useHideAdultPreference } from "@/hooks/use-hide-adult";
 import { withContentFilters } from "@/lib/content-filters";
-import { useState } from "react";
-
-function useBrowse(
-  category: GetBrowseCategoryParams["category"],
-  hideTracked: boolean,
-  hideAdult: boolean,
-) {
-  const params = withContentFilters({ category }, { hideTracked, hideAdult });
-  return useGetBrowseCategory(params, {
-    query: { queryKey: getGetBrowseCategoryQueryKey(params) },
-  });
-}
+import { useMemo, useState } from "react";
 
 export function Home() {
   const [type, setType] = useState<"all" | "movie" | "tv">("all");
   const [timeWindow, setTimeWindow] = useState<"day" | "week">("week");
-  const [visitKey] = useState(() => crypto.randomUUID());
   const { hideTracked, setHideTracked } = useHideTrackedPreference();
   const { hideAdult, setHideAdult } = useHideAdultPreference();
 
-  const trendingParams = withContentFilters({ type, time_window: timeWindow }, { hideTracked, hideAdult });
-  const { data: trending, isLoading: isLoadingTrending } = useGetTrending(
-    trendingParams,
-    { query: { queryKey: getGetTrendingQueryKey(trendingParams) } },
+  const homeParams = useMemo(
+    () => withContentFilters({ type, time_window: timeWindow }, { hideTracked, hideAdult }),
+    [type, timeWindow, hideTracked, hideAdult],
   );
-  const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
 
-  const { data: popularMovies, isLoading: loadingPopMovies }     = useBrowse("popular_movies", hideTracked, hideAdult);
-  const { data: popularTv, isLoading: loadingPopTv }             = useBrowse("popular_tv", hideTracked, hideAdult);
-  const { data: topRatedMovies, isLoading: loadingTopMovies }    = useBrowse("top_rated_movies", hideTracked, hideAdult);
-  const { data: topRatedTv, isLoading: loadingTopTv }            = useBrowse("top_rated_tv", hideTracked, hideAdult);
-  const { data: nowPlaying, isLoading: loadingNowPlaying }       = useBrowse("now_playing", hideTracked, hideAdult);
-  const { data: upcoming, isLoading: loadingUpcoming }           = useBrowse("upcoming", hideTracked, hideAdult);
-  const { data: onAir, isLoading: loadingOnAir }                 = useBrowse("on_air", hideTracked, hideAdult);
+  const { data: homeFeed, isLoading } = useGetHomeFeed(homeParams, {
+    query: { queryKey: getGetHomeFeedQueryKey(homeParams) },
+  });
 
-  const watchlistPickParams = withContentFilters({}, { hideTracked, hideAdult });
-  const { data: watchlistPicks, isLoading: loadingWatchlistPicks } = useGetWatchlistRecommendations(
-    watchlistPickParams,
-    {
-      query: {
-        queryKey: [...getGetWatchlistRecommendationsQueryKey(watchlistPickParams), visitKey],
-        staleTime: 0,
-      },
-    },
-  );
+  const genres = homeFeed?.genres;
 
   return (
     <div className="space-y-10 pb-20">
@@ -84,7 +55,7 @@ export function Home() {
           </div>
         </div>
 
-        {isLoadingTrending ? (
+        {isLoading ? (
           <div className="flex gap-3 overflow-x-hidden pb-2">
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="flex-none w-[160px] space-y-2">
@@ -94,9 +65,9 @@ export function Home() {
               </div>
             ))}
           </div>
-        ) : trending?.results && trending.results.length > 0 ? (
+        ) : homeFeed?.trending?.results && homeFeed.trending.results.length > 0 ? (
           <div className="flex gap-3 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: "none" }}>
-            {trending.results.map(item => (
+            {homeFeed.trending.results.map(item => (
               <div key={item.tmdbId} className="flex-none w-[160px]">
                 <MediaCard item={item} genres={genres} />
               </div>
@@ -111,21 +82,21 @@ export function Home() {
         )}
       </section>
 
-      <MediaSlider title="Popular Movies"       items={popularMovies?.results}  isLoading={loadingPopMovies}    genres={genres} />
-      <MediaSlider title="Popular TV Shows"     items={popularTv?.results}      isLoading={loadingPopTv}        genres={genres} />
-      {(loadingWatchlistPicks || (watchlistPicks?.results?.length ?? 0) > 0) && (
+      <MediaSlider title="Popular Movies" items={homeFeed?.popularMovies?.results} isLoading={isLoading} genres={genres} />
+      <MediaSlider title="Popular TV Shows" items={homeFeed?.popularTv?.results} isLoading={isLoading} genres={genres} />
+      {(isLoading || (homeFeed?.watchlistRecommendations?.results?.length ?? 0) > 0) && (
         <MediaSlider
           title="More of what you like"
-          items={watchlistPicks?.results}
-          isLoading={loadingWatchlistPicks}
+          items={homeFeed?.watchlistRecommendations?.results}
+          isLoading={isLoading}
           genres={genres}
         />
       )}
-      <MediaSlider title="Now Playing in Cinemas" items={nowPlaying?.results}   isLoading={loadingNowPlaying}   genres={genres} />
-      <MediaSlider title="Coming Soon"          items={upcoming?.results}       isLoading={loadingUpcoming}     genres={genres} />
-      <MediaSlider title="Top Rated Movies"     items={topRatedMovies?.results} isLoading={loadingTopMovies}    genres={genres} />
-      <MediaSlider title="Currently Airing TV"  items={onAir?.results}          isLoading={loadingOnAir}        genres={genres} />
-      <MediaSlider title="Top Rated TV Shows"   items={topRatedTv?.results}     isLoading={loadingTopTv}        genres={genres} />
+      <MediaSlider title="Now Playing in Cinemas" items={homeFeed?.nowPlaying?.results} isLoading={isLoading} genres={genres} />
+      <MediaSlider title="Coming Soon" items={homeFeed?.upcoming?.results} isLoading={isLoading} genres={genres} />
+      <MediaSlider title="Top Rated Movies" items={homeFeed?.topRatedMovies?.results} isLoading={isLoading} genres={genres} />
+      <MediaSlider title="Currently Airing TV" items={homeFeed?.onAir?.results} isLoading={isLoading} genres={genres} />
+      <MediaSlider title="Top Rated TV Shows" items={homeFeed?.topRatedTv?.results} isLoading={isLoading} genres={genres} />
     </div>
   );
 }

@@ -16,10 +16,7 @@ export type WatchlistIndexEntry = {
 
 export function useWatchlistIndex() {
   const { data: watchlist, isLoading, isFetching } = useGetWatchlist(undefined, {
-    query: {
-      queryKey: getGetWatchlistQueryKey(),
-      staleTime: 60_000,
-    },
+    query: { queryKey: getGetWatchlistQueryKey() },
   });
 
   const index = useMemo(() => {

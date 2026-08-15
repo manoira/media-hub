@@ -13,4 +13,5 @@ export interface WatchlistUpdate {
   userRating?: number | null;
   /** @nullable */
   notes?: string | null;
+  tags?: string[];
 }

@@ -15,6 +15,7 @@ import { useHideAdultPreference } from "@/hooks/use-hide-adult";
 import { withExcludeAdult } from "@/lib/exclude-adult";
 import { filterUntracked, useWatchlistIndex } from "@/hooks/use-watchlist-index";
 import { UserReviewPanel } from "@/components/media/user-review-panel";
+import { UserTagsPanel } from "@/components/media/user-tags-panel";
 import { AddToListMenu } from "@/components/media/add-to-list-menu";
 
 export function MediaDetail() {
@@ -133,6 +134,12 @@ export function MediaDetail() {
           </section>
 
           <UserReviewPanel
+            mediaType={type}
+            tmdbId={id}
+            entry={details.watchlistEntry ?? null}
+          />
+
+          <UserTagsPanel
             mediaType={type}
             tmdbId={id}
             entry={details.watchlistEntry ?? null}

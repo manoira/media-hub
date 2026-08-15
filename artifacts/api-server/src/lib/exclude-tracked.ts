@@ -1,4 +1,5 @@
 import { db, watchlistTable } from "@workspace/db";
+import { getCachedWatchlistSnapshot } from "./watchlist-cache";
 
 type MediaResult = { mediaType: string; tmdbId: number };
 type MediaSearchResult = { results: MediaResult[] };
@@ -15,23 +16,30 @@ export function parseExcludeTrackedFromQuery(
 }
 
 export async function getTrackedMediaKeys(): Promise<Set<string>> {
-  const rows = await db
-    .select({ tmdbId: watchlistTable.tmdbId, mediaType: watchlistTable.mediaType })
-    .from(watchlistTable);
-  return new Set(rows.map((row) => `${row.mediaType}:${row.tmdbId}`));
+  const { keys } = await getCachedWatchlistSnapshot();
+  return keys;
 }
 
-export async function applyExcludeTracked<T extends MediaSearchResult>(
+export function filterExcludedTracked<T extends MediaSearchResult>(
   result: T,
-  excludeTracked: boolean,
-): Promise<T> {
-  if (!excludeTracked) return result;
-
-  const tracked = await getTrackedMediaKeys();
+  tracked: Set<string>,
+): T {
+  if (tracked.size === 0) return result;
   return {
     ...result,
     results: result.results.filter(
       (item) => !tracked.has(`${item.mediaType}:${item.tmdbId}`),
     ),
   };
+}
+
+export async function applyExcludeTracked<T extends MediaSearchResult>(
+  result: T,
+  excludeTracked: boolean,
+  trackedKeys?: Set<string>,
+): Promise<T> {
+  if (!excludeTracked) return result;
+
+  const tracked = trackedKeys ?? await getTrackedMediaKeys();
+  return filterExcludedTracked(result, tracked);
 }

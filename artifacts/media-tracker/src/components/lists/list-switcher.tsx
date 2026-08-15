@@ -41,7 +41,7 @@ export function ListSwitcher({ activeListId, className }: ListSwitcherProps) {
       role="tablist"
       aria-label="List views"
     >
-      <Link href="/lists">
+      <Link href="/">
         <Button
           variant={activeListId === undefined ? "default" : "outline"}
           size="sm"

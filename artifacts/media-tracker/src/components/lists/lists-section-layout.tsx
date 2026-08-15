@@ -11,7 +11,7 @@ interface ListsSectionLayoutProps {
 }
 
 const SECTIONS: { id: ListsSection; label: string; href: string }[] = [
-  { id: "tracking", label: "Tracking", href: "/lists" },
+  { id: "tracking", label: "Tracking", href: "/" },
   { id: "collections", label: "My lists", href: "/lists/collections" },
 ];
 

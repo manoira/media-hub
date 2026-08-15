@@ -32,6 +32,7 @@ import type {
   GenreList,
   GenreStat,
   GetBrowseCategoryParams,
+  GetHomeFeedParams,
   GetNotificationsParams,
   GetPersonCreditsParams,
   GetRecentlyWatchedParams,
@@ -41,6 +42,7 @@ import type {
   GetWatchlistParams,
   GetWatchlistRecommendationsParams,
   HealthStatus,
+  HomeFeed,
   MediaDetails,
   MediaMetadata,
   MediaSearchResult,
@@ -985,6 +987,91 @@ export function useGetWatchlistRecommendations<TData = Awaited<ReturnType<typeof
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetWatchlistRecommendationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetHomeFeedUrl = (params?: GetHomeFeedParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/home?${stringifiedParams}` : `/api/home`
+}
+
+/**
+ * Single request replacing multiple browse/trending/genre calls. Uses one watchlist DB read when exclude_tracked is true.
+ * @summary Home page feed (trending, browse rows, genres, recommendations)
+ */
+export const getHomeFeed = async (params?: GetHomeFeedParams, options?: RequestInit): Promise<HomeFeed> => {
+
+  return customFetch<HomeFeed>(getGetHomeFeedUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHomeFeedQueryKey = (params?: GetHomeFeedParams,) => {
+    return [
+    `/api/home`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetHomeFeedQueryOptions = <TData = Awaited<ReturnType<typeof getHomeFeed>>, TError = ErrorType<unknown>>(params?: GetHomeFeedParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHomeFeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHomeFeedQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHomeFeed>>> = ({ signal }) => getHomeFeed(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHomeFeed>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetHomeFeedQueryResult = NonNullable<Awaited<ReturnType<typeof getHomeFeed>>>
+export type GetHomeFeedQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Home page feed (trending, browse rows, genres, recommendations)
+ */
+
+export function useGetHomeFeed<TData = Awaited<ReturnType<typeof getHomeFeed>>, TError = ErrorType<unknown>>(
+ params?: GetHomeFeedParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHomeFeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetHomeFeedQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

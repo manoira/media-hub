@@ -1,10 +1,12 @@
-import { db, watchlistTable } from "@workspace/db";
 import { getSimilar } from "./tmdb";
+import { getCachedWatchlistSnapshot } from "./watchlist-cache";
+import type { watchlistTable } from "@workspace/db";
 
 const SEED_COUNT = 5;
 const SIMILAR_PER_SEED = 8;
 const RESULT_LIMIT = 16;
 
+type WatchlistRow = typeof watchlistTable.$inferSelect;
 type MediaItem = Awaited<ReturnType<typeof getSimilar>>["results"][number];
 
 function shuffle<T>(items: T[]): T[] {
@@ -20,13 +22,15 @@ function mediaKey(item: { mediaType: string; tmdbId: number }): string {
   return `${item.mediaType}:${item.tmdbId}`;
 }
 
-export async function getWatchlistBasedRecommendations(): Promise<{
+export async function getWatchlistBasedRecommendations(
+  watchlistRows?: WatchlistRow[],
+): Promise<{
   results: MediaItem[];
   totalResults: number;
   totalPages: number;
   page: number;
 }> {
-  const watchlist = await db.select().from(watchlistTable);
+  const watchlist = watchlistRows ?? (await getCachedWatchlistSnapshot()).rows;
   if (watchlist.length === 0) {
     return { results: [], totalResults: 0, totalPages: 1, page: 1 };
   }

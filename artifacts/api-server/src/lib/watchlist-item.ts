@@ -19,6 +19,7 @@ export function serializeWatchlistItem(item: typeof watchlistTable.$inferSelect)
     voteAverage: item.voteAverage ?? null,
     genreIds: (item.genreIds ?? []).map(Number),
     keywordIds: item.keywordIds ?? [],
+    tags: item.tags ?? [],
     overview: item.overview ?? null,
   };
 }

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, Film, Compass, BarChart2, Bookmark, Menu, Bell } from "lucide-react";
+import { Search, Film, Compass, BarChart2, Bookmark, Menu, Bell, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -8,9 +8,9 @@ import { useGetUnreadNotificationCount, getGetUnreadNotificationCountQueryKey } 
 import { cn } from "@/lib/utils";
 
 const mainNavLinks = [
-  { href: "/", label: "Home", icon: Film },
+  { href: "/", label: "My list", icon: Bookmark, match: (path: string) => path === "/" || path === "/lists" || path === "/watchlist" },
   { href: "/browse", label: "Browse", icon: Compass },
-  { href: "/lists", label: "Lists", icon: Bookmark },
+  { href: "/discover", label: "Discover", icon: Sparkles },
   { href: "/stats", label: "Stats", icon: BarChart2 },
 ];
 
@@ -34,7 +34,7 @@ export function Navbar() {
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: unreadData } = useGetUnreadNotificationCount({
-    query: { queryKey: getGetUnreadNotificationCountQueryKey(), refetchInterval: 60_000 },
+    query: { queryKey: getGetUnreadNotificationCountQueryKey() },
   });
   const unreadCount = unreadData?.count ?? 0;
 
@@ -48,16 +48,12 @@ export function Navbar() {
     }
   };
 
-  const navLinkClass = (href: string) =>
+  const navLinkClass = (href: string, match?: (path: string) => boolean) =>
     cn(
       "flex items-center text-sm font-medium transition-colors hover:text-foreground/80",
-      href === "/lists"
-        ? (location === "/lists" || location.startsWith("/lists/") || location === "/watchlist")
-          ? "text-foreground"
-          : "text-foreground/60"
-        : location === href
-          ? "text-foreground"
-          : "text-foreground/60",
+      (match ? match(location) : location === href)
+        ? "text-foreground"
+        : "text-foreground/60",
     );
 
   return (
@@ -72,7 +68,7 @@ export function Navbar() {
             {mainNavLinks.map((link) => {
               const Icon = link.icon;
               return (
-                <Link key={link.href} href={link.href} className={navLinkClass(link.href)}>
+                <Link key={link.href} href={link.href} className={navLinkClass(link.href, "match" in link ? link.match : undefined)}>
                   <Icon className="h-4 w-4 mr-2" />
                   {link.label}
                 </Link>

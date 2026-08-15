@@ -44,6 +44,7 @@ async function main() {
         voteAverage: (w.voteAverage as number | null) ?? null,
         overview: (w.overview as string | null) ?? null,
         genreIds: (w.genreIds as string[] | null) ?? [],
+        tags: (w.tags as string[] | null) ?? [],
         ...(toDate(w.addedAt) ? { addedAt: toDate(w.addedAt)! } : {}),
         ...(toDate(w.updatedAt) ? { updatedAt: toDate(w.updatedAt)! } : {}),
       })),

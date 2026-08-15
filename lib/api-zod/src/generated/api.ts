@@ -384,6 +384,225 @@ export const GetWatchlistRecommendationsResponse = zod.object({
 
 
 /**
+ * Single request replacing multiple browse/trending/genre calls. Uses one watchlist DB read when exclude_tracked is true.
+ * @summary Home page feed (trending, browse rows, genres, recommendations)
+ */
+export const getHomeFeedQueryTypeDefault = `all`;
+export const getHomeFeedQueryTimeWindowDefault = `week`;
+export const getHomeFeedQueryExcludeTrackedDefault = false;
+export const getHomeFeedQueryExcludeAdultDefault = true;
+
+export const GetHomeFeedQueryParams = zod.object({
+  "type": zod.enum(['all', 'movie', 'tv']).default(getHomeFeedQueryTypeDefault),
+  "time_window": zod.enum(['day', 'week']).default(getHomeFeedQueryTimeWindowDefault),
+  "exclude_tracked": zod.coerce.boolean().default(getHomeFeedQueryExcludeTrackedDefault),
+  "exclude_adult": zod.coerce.boolean().default(getHomeFeedQueryExcludeAdultDefault)
+})
+
+export const GetHomeFeedResponse = zod.object({
+  "trending": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+}),
+  "genres": zod.object({
+  "movieGenres": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "tvGenres": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+}))
+}),
+  "popularMovies": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+}),
+  "popularTv": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+}),
+  "topRatedMovies": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+}),
+  "topRatedTv": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+}),
+  "nowPlaying": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+}),
+  "upcoming": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+}),
+  "onAir": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+}),
+  "watchlistRecommendations": zod.object({
+  "results": zod.array(zod.object({
+  "tmdbId": zod.number(),
+  "mediaType": zod.enum(['movie', 'tv']),
+  "title": zod.string(),
+  "originalTitle": zod.string().nullish(),
+  "overview": zod.string().nullish(),
+  "posterPath": zod.string().nullish(),
+  "backdropPath": zod.string().nullish(),
+  "releaseDate": zod.string().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "voteCount": zod.number().nullish(),
+  "popularity": zod.number().nullish(),
+  "genreIds": zod.array(zod.number()).optional(),
+  "adult": zod.boolean().nullish(),
+  "originalLanguage": zod.string().nullish()
+})),
+  "totalResults": zod.number(),
+  "totalPages": zod.number(),
+  "page": zod.number()
+})
+})
+
+
+/**
  * @summary Get all genres for movies and TV
  */
 export const GetGenresResponse = zod.object({
@@ -476,6 +695,7 @@ export const GetMediaDetailsResponse = zod.object({
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
+  "tags": zod.array(zod.string()).optional(),
   "overview": zod.string().nullish()
 }),zod.null()]).optional()
 })
@@ -677,6 +897,7 @@ export const GetWatchlistResponseItem = zod.object({
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
+  "tags": zod.array(zod.string()).optional(),
   "overview": zod.string().nullish()
 })
 export const GetWatchlistResponse = zod.array(GetWatchlistResponseItem)
@@ -704,7 +925,8 @@ export const UpdateWatchlistItemParams = zod.object({
 export const UpdateWatchlistItemBody = zod.object({
   "status": zod.enum(['watching', 'watched', 'want_to_watch', 'unsure', 'waiting']).optional(),
   "userRating": zod.number().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "tags": zod.array(zod.string()).optional()
 })
 
 export const UpdateWatchlistItemResponse = zod.object({
@@ -725,6 +947,7 @@ export const UpdateWatchlistItemResponse = zod.object({
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
+  "tags": zod.array(zod.string()).optional(),
   "overview": zod.string().nullish()
 })
 
@@ -765,6 +988,7 @@ export const GetWatchStatusResponse = zod.object({
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
+  "tags": zod.array(zod.string()).optional(),
   "overview": zod.string().nullish()
 }),zod.null()]).optional()
 })
@@ -1214,6 +1438,7 @@ export const GetRecentlyWatchedResponseItem = zod.object({
   "voteAverage": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
+  "tags": zod.array(zod.string()).optional(),
   "overview": zod.string().nullish()
 })
 export const GetRecentlyWatchedResponse = zod.array(GetRecentlyWatchedResponseItem)

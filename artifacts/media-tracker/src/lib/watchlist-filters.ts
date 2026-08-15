@@ -204,6 +204,29 @@ export function filterWatchlistItems(
   });
 }
 
+export function sortWatchlistItems(
+  items: WatchlistItem[],
+  sortBy: WatchlistSortBy,
+): WatchlistItem[] {
+  const sorted = [...items];
+  switch (sortBy) {
+    case "title":
+      sorted.sort((a, b) => a.title.localeCompare(b.title, "sv"));
+      break;
+    case "rating":
+      sorted.sort((a, b) => (b.voteAverage ?? 0) - (a.voteAverage ?? 0));
+      break;
+    case "release_date":
+      sorted.sort((a, b) => (b.releaseDate ?? "").localeCompare(a.releaseDate ?? ""));
+      break;
+    case "added_at":
+    default:
+      sorted.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
+      break;
+  }
+  return sorted;
+}
+
 export function toWatchlistApiParams(state: WatchlistFilterState): GetWatchlistParams {
   const params: GetWatchlistParams = {
     sort_by: state.sortBy as GetWatchlistSortBy,

@@ -401,6 +401,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/MediaSearchResult"
 
+  /home:
+    get:
+      operationId: getHomeFeed
+      tags: [search]
+      summary: Home page feed (trending, browse rows, genres, recommendations)
+      description: Single request replacing multiple browse/trending/genre calls. Uses one watchlist DB read when exclude_tracked is true.
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, movie, tv]
+            default: all
+        - name: time_window
+          in: query
+          schema:
+            type: string
+            enum: [day, week]
+            default: week
+        - name: exclude_tracked
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: exclude_adult
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Home feed sections
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeFeed"
+
   /genres:
     get:
       operationId: getGenres
@@ -1531,6 +1568,41 @@ components:
       required:
         - providers
 
+    HomeFeed:
+      type: object
+      properties:
+        trending:
+          $ref: "#/components/schemas/MediaSearchResult"
+        genres:
+          $ref: "#/components/schemas/GenreList"
+        popularMovies:
+          $ref: "#/components/schemas/MediaSearchResult"
+        popularTv:
+          $ref: "#/components/schemas/MediaSearchResult"
+        topRatedMovies:
+          $ref: "#/components/schemas/MediaSearchResult"
+        topRatedTv:
+          $ref: "#/components/schemas/MediaSearchResult"
+        nowPlaying:
+          $ref: "#/components/schemas/MediaSearchResult"
+        upcoming:
+          $ref: "#/components/schemas/MediaSearchResult"
+        onAir:
+          $ref: "#/components/schemas/MediaSearchResult"
+        watchlistRecommendations:
+          $ref: "#/components/schemas/MediaSearchResult"
+      required:
+        - trending
+        - genres
+        - popularMovies
+        - popularTv
+        - topRatedMovies
+        - topRatedTv
+        - nowPlaying
+        - upcoming
+        - onAir
+        - watchlistRecommendations
+
     ProductionCompany:
       type: object
       properties:
@@ -1714,6 +1786,10 @@ components:
           type: array
           items:
             type: integer
+        tags:
+          type: array
+          items:
+            type: string
         overview:
           type: ["string", "null"]
       required:
@@ -1755,6 +1831,10 @@ components:
           type: ["number", "null"]
         notes:
           type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
 
     WatchStatusResult:
       type: object

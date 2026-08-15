@@ -4,6 +4,7 @@ import { applyExcludeTracked, parseExcludeTrackedFromQuery } from "../lib/exclud
 import { applyExcludeAdult, parseExcludeAdultFromQuery } from "../lib/filter-adult";
 import { applyMarketFilter } from "../lib/filter-market";
 import { getWatchlistBasedRecommendations } from "../lib/watchlist-recommendations";
+import { buildHomeFeed } from "../lib/home-feed";
 import {
   SearchMediaQueryParams,
   SearchMediaResponse,
@@ -16,6 +17,8 @@ import {
   GetBrowseCategoryResponse,
   GetWatchlistRecommendationsQueryParams,
   GetWatchlistRecommendationsResponse,
+  GetHomeFeedQueryParams,
+  GetHomeFeedResponse,
   SearchByTagQueryParams,
   SearchByTagResponse,
   GetStreamingProvidersQueryParams,
@@ -177,9 +180,34 @@ router.get("/recommendations/watchlist", async (req, res): Promise<void> => {
   }
 });
 
+router.get("/home", async (req, res): Promise<void> => {
+  const parsed = GetHomeFeedQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const excludeTracked = parseExcludeTrackedFromQuery(req.query);
+  const excludeAdult = parseExcludeAdultFromQuery(req.query);
+  const { type = "all", time_window = "week" } = parsed.data;
+  try {
+    const feed = await buildHomeFeed({
+      type,
+      timeWindow: time_window,
+      excludeTracked,
+      excludeAdult,
+    });
+    res.set("Cache-Control", "private, max-age=60");
+    res.json(GetHomeFeedResponse.parse(feed));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Home feed error");
+    res.status(500).json({ error: "Failed to load home feed" });
+  }
+});
+
 router.get("/genres", async (req, res): Promise<void> => {
   try {
     const genres = await getGenres();
+    res.set("Cache-Control", "public, max-age=86400");
     res.json(GetGenresResponse.parse(genres));
   } catch (err: unknown) {
     req.log.error({ err }, "Genres error");

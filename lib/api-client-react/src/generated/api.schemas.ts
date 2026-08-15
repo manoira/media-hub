@@ -251,6 +251,7 @@ export interface WatchlistItem {
   voteAverage?: number | null;
   genreIds?: number[];
   keywordIds?: number[];
+  tags?: string[];
   /** @nullable */
   overview?: string | null;
 }
@@ -327,6 +328,19 @@ export interface WatchProvider {
 
 export interface StreamingProviderList {
   providers: WatchProvider[];
+}
+
+export interface HomeFeed {
+  trending: MediaSearchResult;
+  genres: GenreList;
+  popularMovies: MediaSearchResult;
+  popularTv: MediaSearchResult;
+  topRatedMovies: MediaSearchResult;
+  topRatedTv: MediaSearchResult;
+  nowPlaying: MediaSearchResult;
+  upcoming: MediaSearchResult;
+  onAir: MediaSearchResult;
+  watchlistRecommendations: MediaSearchResult;
 }
 
 export interface CastMember {
@@ -419,6 +433,7 @@ export interface WatchlistUpdate {
   userRating?: number | null;
   /** @nullable */
   notes?: string | null;
+  tags?: string[];
 }
 
 export interface WatchStatusResult {
@@ -968,6 +983,30 @@ exclude_tracked?: boolean;
  */
 exclude_adult?: boolean;
 };
+
+export type GetHomeFeedParams = {
+type?: GetHomeFeedType;
+time_window?: GetHomeFeedTimeWindow;
+exclude_tracked?: boolean;
+exclude_adult?: boolean;
+};
+
+export type GetHomeFeedType = typeof GetHomeFeedType[keyof typeof GetHomeFeedType];
+
+
+export const GetHomeFeedType = {
+  all: 'all',
+  movie: 'movie',
+  tv: 'tv',
+} as const;
+
+export type GetHomeFeedTimeWindow = typeof GetHomeFeedTimeWindow[keyof typeof GetHomeFeedTimeWindow];
+
+
+export const GetHomeFeedTimeWindow = {
+  day: 'day',
+  week: 'week',
+} as const;
 
 export type GetSimilarMediaParams = {
 /**

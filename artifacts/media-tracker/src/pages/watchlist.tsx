@@ -25,6 +25,7 @@ import {
   parseWatchlistSearch,
   buildWatchlistSearchParams,
   filterWatchlistItems,
+  sortWatchlistItems,
   hasActiveWatchlistFilters,
   filtersToListRules,
   type WatchlistFilterState,
@@ -70,16 +71,15 @@ export function WatchlistContent() {
     [filters, setSearchParams],
   );
 
-  const sortParams = useMemo(
-    () => ({ sort_by: filters.sortBy }),
-    [filters.sortBy],
-  );
-  const { data: watchlist, isLoading } = useGetWatchlist(sortParams, {
-    query: { queryKey: getGetWatchlistQueryKey(sortParams) },
+  const { data: watchlist, isLoading } = useGetWatchlist(undefined, {
+    query: { queryKey: getGetWatchlistQueryKey() },
   });
 
   const displayItems = useMemo(
-    () => filterAdultItems(filterWatchlistItems(watchlist ?? [], filters), hideAdult),
+    () => filterAdultItems(
+      sortWatchlistItems(filterWatchlistItems(watchlist ?? [], filters), filters.sortBy),
+      hideAdult,
+    ),
     [watchlist, filters, hideAdult],
   );
 
