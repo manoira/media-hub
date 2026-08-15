@@ -34,7 +34,7 @@ export function Navbar() {
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: unreadData } = useGetUnreadNotificationCount({
-    query: { queryKey: getGetUnreadNotificationCountQueryKey(), refetchInterval: 60_000 },
+    query: { queryKey: getGetUnreadNotificationCountQueryKey() },
   });
   const unreadCount = unreadData?.count ?? 0;
 
