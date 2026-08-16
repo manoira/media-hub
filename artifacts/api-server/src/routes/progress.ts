@@ -6,6 +6,63 @@ import { syncWatchlistStatusFromProgress } from "../lib/watchlist-status-sync";
 
 const router = Router();
 
+const BATCH_MAX_IDS = 500;
+
+function parseTmdbIds(raw: unknown): number[] | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const ids = raw
+    .split(",")
+    .map(part => Number(part.trim()))
+    .filter(id => Number.isInteger(id) && id > 0);
+  if (ids.length === 0) return null;
+  return [...new Set(ids)].slice(0, BATCH_MAX_IDS);
+}
+
+function buildProgressFromRows(
+  tmdbId: number,
+  rows: { seasonNumber: number; episodeNumber: number }[],
+  totalEpisodes: number | null = null,
+) {
+  const watched: Record<number, number[]> = {};
+  for (const row of rows) {
+    if (!watched[row.seasonNumber]) watched[row.seasonNumber] = [];
+    watched[row.seasonNumber].push(row.episodeNumber);
+  }
+  return {
+    tmdbId,
+    totalWatched: rows.length,
+    totalEpisodes,
+    watchedBySeasonNumber: watched,
+  };
+}
+
+router.get("/progress/tv/batch", async (req, res) => {
+  const tmdbIds = parseTmdbIds(req.query.ids);
+  if (!tmdbIds) {
+    res.status(400).json({ error: "Missing or invalid ids query parameter" });
+    return;
+  }
+
+  const rows = tmdbIds.length === 1
+    ? await db.select().from(episodeProgressTable).where(eq(episodeProgressTable.tmdbId, tmdbIds[0]!))
+    : await db.select().from(episodeProgressTable).where(inArray(episodeProgressTable.tmdbId, tmdbIds));
+
+  const rowsByShow = new Map<number, typeof rows>();
+  for (const id of tmdbIds) rowsByShow.set(id, []);
+  for (const row of rows) {
+    const bucket = rowsByShow.get(row.tmdbId);
+    if (bucket) bucket.push(row);
+  }
+
+  const items: Record<string, ReturnType<typeof buildProgressFromRows>> = {};
+  for (const tmdbId of tmdbIds) {
+    items[String(tmdbId)] = buildProgressFromRows(tmdbId, rowsByShow.get(tmdbId) ?? []);
+  }
+
+  res.set("Cache-Control", "private, max-age=60");
+  res.json({ items });
+});
+
 router.get("/progress/tv/:tmdbId", async (req, res) => {
   const tmdbId = Number(req.params.tmdbId);
   if (isNaN(tmdbId)) { res.status(400).json({ error: "Invalid tmdbId" }); return; }
@@ -15,18 +72,8 @@ router.get("/progress/tv/:tmdbId", async (req, res) => {
     getTvDetails(tmdbId),
   ]);
 
-  const watched: Record<number, number[]> = {};
-  for (const row of rows) {
-    if (!watched[row.seasonNumber]) watched[row.seasonNumber] = [];
-    watched[row.seasonNumber].push(row.episodeNumber);
-  }
-
-  res.json({
-    tmdbId,
-    totalWatched: rows.length,
-    totalEpisodes: tvDetails.numberOfEpisodes ?? null,
-    watchedBySeasonNumber: watched,
-  });
+  res.set("Cache-Control", "private, max-age=60");
+  res.json(buildProgressFromRows(tmdbId, rows, tvDetails.numberOfEpisodes ?? null));
 });
 
 router.get("/progress/tv/:tmdbId/season/:seasonNumber", async (req, res) => {

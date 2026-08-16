@@ -1278,6 +1278,23 @@ export const GetSeasonDetailsResponse = zod.object({
 
 
 /**
+ * @summary Get episode watch progress for multiple TV shows in one request
+ */
+export const GetTvProgressBatchQueryParams = zod.object({
+  "ids": zod.coerce.string().describe('Comma-separated TMDB TV show IDs')
+})
+
+export const GetTvProgressBatchResponse = zod.object({
+  "items": zod.record(zod.string(), zod.object({
+  "tmdbId": zod.number(),
+  "totalWatched": zod.number(),
+  "totalEpisodes": zod.number().nullish(),
+  "watchedBySeasonNumber": zod.record(zod.string(), zod.array(zod.number()))
+}))
+})
+
+
+/**
  * @summary Get episode watch progress for a TV show
  */
 export const GetTvProgressParams = zod.object({

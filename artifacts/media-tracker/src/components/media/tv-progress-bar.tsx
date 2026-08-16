@@ -1,14 +1,16 @@
-import { useGetTvProgress, getGetTvProgressQueryKey } from "@workspace/api-client-react";
+import {
+  useGetTvProgress,
+  getGetTvProgressQueryKey,
+  type TvProgress,
+} from "@workspace/api-client-react";
+import { useBatchTvProgress, useTvProgressBatchMode } from "./tv-progress-batch-provider";
 
 interface TvProgressBarProps {
   tmdbId: number;
+  progress?: TvProgress;
 }
 
-export function TvProgressBar({ tmdbId }: TvProgressBarProps) {
-  const { data } = useGetTvProgress(tmdbId, {
-    query: { queryKey: getGetTvProgressQueryKey(tmdbId) },
-  });
-
+function renderProgress(data: TvProgress | undefined) {
   if (!data) return null;
 
   const watched = data.totalWatched;
@@ -40,4 +42,18 @@ export function TvProgressBar({ tmdbId }: TvProgressBarProps) {
       )}
     </div>
   );
+}
+
+export function TvProgressBar({ tmdbId, progress }: TvProgressBarProps) {
+  const batchMode = useTvProgressBatchMode();
+  const batchProgress = useBatchTvProgress(tmdbId);
+  const { data: fetched } = useGetTvProgress(tmdbId, {
+    query: {
+      enabled: !batchMode && progress === undefined,
+      queryKey: getGetTvProgressQueryKey(tmdbId),
+    },
+  });
+
+  const data = progress ?? (batchMode ? batchProgress : fetched);
+  return renderProgress(data);
 }

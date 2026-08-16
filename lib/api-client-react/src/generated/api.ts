@@ -39,6 +39,7 @@ import type {
   GetSimilarMediaParams,
   GetStreamingProvidersParams,
   GetTrendingParams,
+  GetTvProgressBatchParams,
   GetWatchlistParams,
   GetWatchlistRecommendationsParams,
   HealthStatus,
@@ -61,6 +62,7 @@ import type {
   StreamingProviderList,
   TagSearchResult,
   TvProgress,
+  TvProgressBatch,
   UnreadNotificationCount,
   VideoList,
   WatchAllInput,
@@ -2703,6 +2705,90 @@ export function useGetSeasonDetails<TData = Awaited<ReturnType<typeof getSeasonD
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSeasonDetailsQueryOptions(tmdbId,seasonNumber,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTvProgressBatchUrl = (params: GetTvProgressBatchParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/progress/tv/batch?${stringifiedParams}` : `/api/progress/tv/batch`
+}
+
+/**
+ * @summary Get episode watch progress for multiple TV shows in one request
+ */
+export const getTvProgressBatch = async (params: GetTvProgressBatchParams, options?: RequestInit): Promise<TvProgressBatch> => {
+
+  return customFetch<TvProgressBatch>(getGetTvProgressBatchUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTvProgressBatchQueryKey = (params?: GetTvProgressBatchParams,) => {
+    return [
+    `/api/progress/tv/batch`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTvProgressBatchQueryOptions = <TData = Awaited<ReturnType<typeof getTvProgressBatch>>, TError = ErrorType<void>>(params: GetTvProgressBatchParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTvProgressBatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTvProgressBatchQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTvProgressBatch>>> = ({ signal }) => getTvProgressBatch(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTvProgressBatch>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTvProgressBatchQueryResult = NonNullable<Awaited<ReturnType<typeof getTvProgressBatch>>>
+export type GetTvProgressBatchQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get episode watch progress for multiple TV shows in one request
+ */
+
+export function useGetTvProgressBatch<TData = Awaited<ReturnType<typeof getTvProgressBatch>>, TError = ErrorType<void>>(
+ params: GetTvProgressBatchParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTvProgressBatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTvProgressBatchQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

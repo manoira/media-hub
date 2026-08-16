@@ -735,6 +735,12 @@ export interface TvProgress {
   watchedBySeasonNumber: TvProgressWatchedBySeasonNumber;
 }
 
+export type TvProgressBatchItems = {[key: string]: TvProgress};
+
+export interface TvProgressBatch {
+  items: TvProgressBatchItems;
+}
+
 export interface EpisodeWatchInput {
   seasonNumber: number;
   episodeNumber: number;
@@ -1056,6 +1062,13 @@ export const GetWatchlistSortBy = {
   rating: 'rating',
   release_date: 'release_date',
 } as const;
+
+export type GetTvProgressBatchParams = {
+/**
+ * Comma-separated TMDB TV show IDs
+ */
+ids: string;
+};
 
 export type GetRecentlyWatchedParams = {
 limit?: number;

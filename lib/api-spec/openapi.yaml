@@ -951,6 +951,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/SeasonDetails"
 
+  /progress/tv/batch:
+    get:
+      operationId: getTvProgressBatch
+      tags: [watchlist]
+      summary: Get episode watch progress for multiple TV shows in one request
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          description: Comma-separated TMDB TV show IDs
+          schema:
+            type: string
+            example: "1396,1399"
+      responses:
+        "200":
+          description: Progress map keyed by TMDB ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TvProgressBatch"
+        "400":
+          description: Invalid or missing ids parameter
+
   /progress/tv/{tmdbId}:
     get:
       operationId: getTvProgress
@@ -2241,6 +2264,16 @@ components:
         - tmdbId
         - totalWatched
         - watchedBySeasonNumber
+
+    TvProgressBatch:
+      type: object
+      properties:
+        items:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/TvProgress"
+      required:
+        - items
 
     EpisodeWatchInput:
       type: object

@@ -7,6 +7,7 @@ import {
   useMarkSeasonWatched,
   useMarkSeriesWatched,
   getGetTvProgressQueryKey,
+  getGetTvProgressBatchQueryKey,
   getGetSeasonProgressQueryKey,
 } from "@workspace/api-client-react";
 import { getTmdbImageUrl } from "@/lib/utils";
@@ -91,6 +92,7 @@ function SeasonAccordion({
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getGetTvProgressQueryKey(tmdbId) });
+    queryClient.invalidateQueries({ queryKey: getGetTvProgressBatchQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetSeasonProgressQueryKey(tmdbId, season.seasonNumber) });
   };
 
@@ -190,6 +192,7 @@ export function SeasonsPanel({ tmdbId, seasons }: SeasonsPanelProps) {
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: getGetTvProgressQueryKey(tmdbId) });
+    queryClient.invalidateQueries({ queryKey: getGetTvProgressBatchQueryKey() });
     mainSeasons.forEach(s => {
       queryClient.invalidateQueries({ queryKey: getGetSeasonProgressQueryKey(tmdbId, s.seasonNumber) });
     });

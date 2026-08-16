@@ -19,6 +19,7 @@ import { AddItemsToListPanel } from "@/components/media/add-items-to-list-panel"
 import { SharedFilterBar, type MediaTypeTab } from "@/components/lists/shared-filter-bar";
 import { useListViewMode } from "@/hooks/use-list-view-mode";
 import { WatchlistListRow } from "@/components/media/watchlist-list-row";
+import { TvProgressBatchProvider } from "@/components/media/tv-progress-batch-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,6 +88,13 @@ export function ListDetailPage() {
     if (!list?.items) return [];
     return sortItems(filterItems(list.items, searchQuery, mediaType), sortBy);
   }, [list?.items, searchQuery, mediaType, sortBy]);
+
+  const tvProgressIds = useMemo(
+    () => displayItems
+      .filter(item => item.tracked && item.mediaType === "tv")
+      .map(item => item.tmdbId),
+    [displayItems],
+  );
 
   const listMembershipKeys = useMemo(
     () => new Set(list?.items.map(item => `${item.mediaType}:${item.tmdbId}`) ?? []),
@@ -210,45 +218,47 @@ export function ListDetailPage() {
         ) : null}
 
         {displayItems.length ? (
-          viewMode === "list" ? (
-            <div className="flex flex-col gap-2">
-              {displayItems.map(item => (
-                <WatchlistListRow
-                  key={item.listItemId ?? `${item.mediaType}-${item.tmdbId}`}
-                  item={item as Parameters<typeof WatchlistListRow>[0]["item"]}
-                  showProgress={item.tracked && item.mediaType === "tv"}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {displayItems.map(item => (
-                <div key={item.listItemId ?? `${item.mediaType}-${item.tmdbId}`} className="group/item relative">
-                  <MediaCard
-                    item={item}
-                    variant="tracking"
+          <TvProgressBatchProvider tmdbIds={tvProgressIds}>
+            {viewMode === "list" ? (
+              <div className="flex flex-col gap-2">
+                {displayItems.map(item => (
+                  <WatchlistListRow
+                    key={item.listItemId ?? `${item.mediaType}-${item.tmdbId}`}
+                    item={item as Parameters<typeof WatchlistListRow>[0]["item"]}
                     showProgress={item.tracked && item.mediaType === "tv"}
-                    showStatus={item.tracked}
                   />
-                  {canRemove && item.listItemId != null ? (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute right-2 top-2 z-30 h-7 text-xs opacity-0 group-hover/item:opacity-100"
-                      onClick={() =>
-                        removeItem.mutate(
-                          { id: listId, listItemId: item.listItemId! },
-                          { onSuccess: invalidate },
-                        )
-                      }
-                    >
-                      Remove
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          )
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {displayItems.map(item => (
+                  <div key={item.listItemId ?? `${item.mediaType}-${item.tmdbId}`} className="group/item relative">
+                    <MediaCard
+                      item={item}
+                      variant="tracking"
+                      showProgress={item.tracked && item.mediaType === "tv"}
+                      showStatus={item.tracked}
+                    />
+                    {canRemove && item.listItemId != null ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute right-2 top-2 z-30 h-7 text-xs opacity-0 group-hover/item:opacity-100"
+                        onClick={() =>
+                          removeItem.mutate(
+                            { id: listId, listItemId: item.listItemId! },
+                            { onSuccess: invalidate },
+                          )
+                        }
+                      >
+                        Remove
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </TvProgressBatchProvider>
         ) : (
           <div className="rounded-2xl border border-border/50 bg-card py-20 text-center">
             <p className="text-lg text-muted-foreground">This list is empty.</p>

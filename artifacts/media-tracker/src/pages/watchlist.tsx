@@ -37,6 +37,7 @@ import { ListsSectionLayout } from "@/components/lists/lists-section-layout";
 import { StatusFilterPills } from "@/components/lists/status-filter-pills";
 import { SharedFilterBar, type MediaTypeTab } from "@/components/lists/shared-filter-bar";
 import { WatchlistFilterPanel } from "@/components/lists/watchlist-filter-panel";
+import { TvProgressBatchProvider } from "@/components/media/tv-progress-batch-provider";
 
 const YEAR_FILTER_OPTIONS = YEAR_OPTIONS.filter(isYearRangeActive).map(opt => ({
   label: opt.label,
@@ -84,6 +85,11 @@ export function WatchlistContent() {
   );
 
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
+
+  const tvProgressIds = useMemo(
+    () => displayItems.filter(item => item.mediaType === "tv").map(item => item.tmdbId),
+    [displayItems],
+  );
 
   const activeGenres = useMemo(() => {
     if (filters.mediaType === "movie") return genres?.movieGenres ?? [];
@@ -190,24 +196,26 @@ export function WatchlistContent() {
             ))}
           </div>
         ) : displayItems.length ? (
-          viewMode === "list" ? (
-            <div className="flex flex-col gap-2">
-              {displayItems.map(item => (
-                <WatchlistListRow key={item.id} item={item} showProgress={item.mediaType === "tv"} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {displayItems.map(item => (
-                <MediaCard
-                  key={item.id}
-                  item={item}
-                  variant="tracking"
-                  showProgress={item.mediaType === "tv"}
-                />
-              ))}
-            </div>
-          )
+          <TvProgressBatchProvider tmdbIds={tvProgressIds}>
+            {viewMode === "list" ? (
+              <div className="flex flex-col gap-2">
+                {displayItems.map(item => (
+                  <WatchlistListRow key={item.id} item={item} showProgress={item.mediaType === "tv"} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {displayItems.map(item => (
+                  <MediaCard
+                    key={item.id}
+                    item={item}
+                    variant="tracking"
+                    showProgress={item.mediaType === "tv"}
+                  />
+                ))}
+              </div>
+            )}
+          </TvProgressBatchProvider>
         ) : (
           <div className="rounded-2xl border border-border/50 bg-card py-20 text-center">
             <p className="text-lg text-muted-foreground">
