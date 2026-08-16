@@ -79,12 +79,13 @@ This does not affect `emmyzettergren.se` (Notes Hub) — separate Vercel project
 4. Add to watchlist — persists after reload
 5. Test on a second device — same watchlist (shared Postgres)
 
-## Migration from Render
+## Render (avvecklat)
 
-When Vercel production is verified:
+Produktion körs **endast på Vercel**. `render.yaml` är borttagen från repot.
 
-1. Pause or disable auto-deploy on Render (`media-hub-05s0.onrender.com`)
-2. Reuse the **same production** `DATABASE_URL` from Render/Neon on Vercel Production — no data migration needed if using the same Neon project
+Om du fortfarande får deploy-mail från Render efter push till `main`, har web service **`media-hub`** kvar auto-deploy i [Render Dashboard](https://dashboard.render.com). **Suspend** eller **Delete** tjänsten där — kopplingen sitter i Render-kontot, inte i GitHub-koden.
+
+Tidigare URL: `https://media-hub-05s0.onrender.com/` (inaktiv).
 
 ## Local development with Vercel
 

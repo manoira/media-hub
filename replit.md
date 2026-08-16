@@ -58,10 +58,7 @@ $env:DATABASE_URL="<dev-url>"; corepack pnpm --filter @workspace/scripts run imp
 - **Neon production host:** `ep-wandering-morning-apbbwjdd` (us-east-1). Set this in Vercel **Production** `DATABASE_URL`. Local `.env` uses dev DB only.
 - **DNS:** At Websupport/Loopia, add **A** record `media` → `76.76.21.21` (see Vercel → Domains for current value)
 
-## Production (Render — legacy)
-
-- **URL:** https://media-hub-05s0.onrender.com/
-- Pause auto-deploy on Render once Vercel production is verified.
+**Render:** Avvecklat. Suspend/delete service `media-hub` in Render Dashboard if deploy notifications still arrive after push.
 
 ## Stack
 

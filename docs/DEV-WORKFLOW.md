@@ -114,6 +114,7 @@ Skriv **`push`** eller **`/push`** i Cursor. Agenten analyserar diffen och fråg
 | My List tom, `/api/watchlist` → 500 | Schema/code mismatch — se Vercel Function Logs |
 | Browse funkar, My List inte | DB-route kraschar; TMDB OK |
 | Deploy lyckas men gammal UI | Hard refresh / cache |
+| E-post om misslyckad Render-deploy | Suspend/delete `media-hub` i Render Dashboard — prod är bara Vercel |
 
 **Loggar:** Vercel → project `media-hub` → Deployments → senaste → Functions / Logs
 
