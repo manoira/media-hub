@@ -7,9 +7,10 @@ import {
   listRulesSchema,
   type ListRules,
 } from "@workspace/db";
-import { eq, and, asc, desc, sql } from "drizzle-orm";
+import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { evaluateListRules } from "../lib/list-rules";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
+import { getCachedWatchlistSnapshot } from "../lib/watchlist-cache";
 import {
   serializeCustomListDisplayItem,
   watchlistRowToListItemValues,
@@ -165,18 +166,74 @@ async function replaceSnapshotItems(listId: number, rules: ListRules | null) {
   }
 }
 
+async function buildListSummaries(lists: (typeof customListsTable.$inferSelect)[]) {
+  if (lists.length === 0) return [];
+
+  const hasLiveSmart = lists.some(list => list.kind === "smart" && list.smartMode === "live");
+  const watchlistRows = hasLiveSmart ? (await getCachedWatchlistSnapshot()).rows : null;
+
+  const manualListIds = lists
+    .filter(list => !(list.kind === "smart" && list.smartMode === "live"))
+    .map(list => list.id);
+
+  const countByListId = new Map<number, number>();
+  const previewByListId = new Map<number, string[]>();
+
+  if (manualListIds.length > 0) {
+    const [counts, previewRows] = await Promise.all([
+      db
+        .select({
+          listId: customListItemsTable.listId,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(customListItemsTable)
+        .where(inArray(customListItemsTable.listId, manualListIds))
+        .groupBy(customListItemsTable.listId),
+      db
+        .select({
+          listId: customListItemsTable.listId,
+          posterPath: customListItemsTable.posterPath,
+        })
+        .from(customListItemsTable)
+        .where(inArray(customListItemsTable.listId, manualListIds))
+        .orderBy(desc(customListItemsTable.addedAt)),
+    ]);
+
+    for (const row of counts) countByListId.set(row.listId, row.count);
+
+    for (const row of previewRows) {
+      if (!row.posterPath) continue;
+      const posters = previewByListId.get(row.listId) ?? [];
+      if (posters.length >= 4) continue;
+      posters.push(row.posterPath);
+      previewByListId.set(row.listId, posters);
+    }
+  }
+
+  return lists.map((list) => {
+    if (list.kind === "smart" && list.smartMode === "live") {
+      const rules = parseRules(list.rules);
+      const matched = evaluateListRules(watchlistRows ?? [], rules);
+      const previewPosters = matched
+        .slice(0, 4)
+        .map(item => item.posterPath)
+        .filter((path): path is string => !!path);
+      return serializeListSummary(list, matched.length, previewPosters);
+    }
+
+    return serializeListSummary(
+      list,
+      countByListId.get(list.id) ?? 0,
+      previewByListId.get(list.id) ?? [],
+    );
+  });
+}
+
 router.get("/lists", async (req, res): Promise<void> => {
   try {
     const lists = await db.select().from(customListsTable).orderBy(asc(customListsTable.name));
-    const summaries = await Promise.all(
-      lists.map(async (list) => {
-        const [itemCount, previewPosters] = await Promise.all([
-          getListItemCount(list),
-          getListPreviewPosters(list),
-        ]);
-        return serializeListSummary(list, itemCount, previewPosters);
-      }),
-    );
+    const summaries = await buildListSummaries(lists);
+    res.set("Cache-Control", "private, max-age=60");
     res.json(GetCustomListsResponse.parse(summaries));
   } catch (err: unknown) {
     req.log.error({ err }, "GET /lists failed");
