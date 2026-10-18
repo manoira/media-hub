@@ -17,6 +17,11 @@ import { Stats } from "@/pages/stats";
 import { Browse } from "@/pages/browse";
 import { PersonDetail } from "@/pages/person-detail";
 import { Updates } from "@/pages/updates";
+import { WakoCheckPage } from "@/pages/wako-check";
+import { AccessPage } from "@/pages/access";
+import { BackupPage } from "@/pages/backup";
+import { ReleasePage } from "@/pages/release";
+import { WatchSyncPage } from "@/pages/watch-sync";
 
 const ONE_DAY_MS = 24 * 60 * 60_000;
 
@@ -49,6 +54,11 @@ function Router() {
         <Route path="/lists" component={ListsHubPage} />
         <Route path="/stats" component={Stats} />
         <Route path="/updates" component={Updates} />
+        <Route path="/wako-check" component={WakoCheckPage} />
+        <Route path="/access" component={AccessPage} />
+        <Route path="/backup" component={BackupPage} />
+        <Route path="/release" component={ReleasePage} />
+        <Route path="/watch-sync" component={WatchSyncPage} />
         <Route path="/browse" component={Browse} />
         <Route component={NotFound} />
       </Switch>

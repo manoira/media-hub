@@ -1,70 +1,34 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { db, pool, watchlistTable, episodeProgressTable } from "@workspace/db";
+import { db, pool, restoreCatalog, type CatalogBackup } from "@workspace/db";
+import { loadApiServerEnv } from "./lib/load-env.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "..", "..");
-const inFile = path.join(repoRoot, "data", "watchlist.json");
-
-type Backup = {
-  watchlist: Array<Record<string, unknown>>;
-  episodeProgress: Array<Record<string, unknown>>;
-};
-
-function toDate(value: unknown): Date | undefined {
-  if (typeof value === "string" || value instanceof Date) return new Date(value);
-  return undefined;
-}
 
 async function main() {
+  await loadApiServerEnv(repoRoot);
+  const fileArg = process.argv.slice(2).find((arg) => arg !== "--");
+  const inFile = path.resolve(repoRoot, fileArg ?? path.join("data", "local-backup.json"));
+
   console.warn(
-    "WARNING: this REPLACES all rows in the watchlist and episode_progress tables\n" +
-      "of the database in DATABASE_URL. Only point this at a DEV database.",
+    "WARNING: this REPLACES watchlist, episode progress, lists, watch events,\n" +
+      "SIMKL markers, and the list sync queue in DATABASE_URL.\n" +
+      "Point it at a copy, not the database you are using.",
   );
+  console.warn(`Reading ${inFile}`);
 
-  const raw = await readFile(inFile, "utf8");
-  const backup = JSON.parse(raw) as Backup;
-
-  await db.delete(episodeProgressTable);
-  await db.delete(watchlistTable);
-
-  if (backup.watchlist.length > 0) {
-    await db.insert(watchlistTable).values(
-      backup.watchlist.map((w) => ({
-        tmdbId: w.tmdbId as number,
-        mediaType: w.mediaType as string,
-        status: w.status as string,
-        userRating: (w.userRating as number | null) ?? null,
-        notes: (w.notes as string | null) ?? null,
-        title: w.title as string,
-        posterPath: (w.posterPath as string | null) ?? null,
-        backdropPath: (w.backdropPath as string | null) ?? null,
-        releaseDate: (w.releaseDate as string | null) ?? null,
-        voteAverage: (w.voteAverage as number | null) ?? null,
-        overview: (w.overview as string | null) ?? null,
-        genreIds: (w.genreIds as string[] | null) ?? [],
-        tags: (w.tags as string[] | null) ?? [],
-        ...(toDate(w.addedAt) ? { addedAt: toDate(w.addedAt)! } : {}),
-        ...(toDate(w.updatedAt) ? { updatedAt: toDate(w.updatedAt)! } : {}),
-      })),
-    );
-  }
-
-  if (backup.episodeProgress.length > 0) {
-    await db.insert(episodeProgressTable).values(
-      backup.episodeProgress.map((e) => ({
-        tmdbId: e.tmdbId as number,
-        seasonNumber: e.seasonNumber as number,
-        episodeNumber: e.episodeNumber as number,
-        ...(toDate(e.watchedAt) ? { watchedAt: toDate(e.watchedAt)! } : {}),
-      })),
-    );
-  }
-
-  console.log(
-    `Imported ${backup.watchlist.length} watchlist item(s) and ${backup.episodeProgress.length} episode-progress row(s).`,
-  );
+  const backup = JSON.parse(await readFile(inFile, "utf8")) as CatalogBackup;
+  await restoreCatalog(db, {
+    ...backup,
+    watchEvents: backup.watchEvents ?? [],
+    simklMarkers: backup.simklMarkers ?? [],
+    listSyncQueue: backup.listSyncQueue ?? [],
+    customLists: backup.customLists ?? [],
+    customListItems: backup.customListItems ?? [],
+  });
+  console.log(JSON.stringify(backup.counts));
 }
 
 main()

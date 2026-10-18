@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, real, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, real, timestamp, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -20,9 +20,17 @@ export const watchlistTable = pgTable("watchlist", {
   genreIds: text("genre_ids").array(),
   keywordIds: integer("keyword_ids").array(),
   tags: text("tags").array(),
+  imdbId: text("imdb_id"),
+  simklId: text("simkl_id"),
+  productionCountries: text("production_countries").array(),
+  runtimeMinutes: integer("runtime_minutes"),
+  metadataFetchedAt: timestamp("metadata_fetched_at", { withTimezone: true }),
+  statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => ({
+  uniqueMedia: unique("watchlist_media_tmdb_uidx").on(table.mediaType, table.tmdbId),
+}));
 
 export const insertWatchlistSchema = createInsertSchema(watchlistTable).omit({ id: true, addedAt: true, updatedAt: true });
 export type InsertWatchlist = z.infer<typeof insertWatchlistSchema>;

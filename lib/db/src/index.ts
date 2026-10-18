@@ -22,3 +22,11 @@ export const pool = new Pool({
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
+export {
+  acceptImdbId,
+  catalogCounts,
+  listContentHash,
+  readCatalogBackup,
+  restoreCatalog,
+} from "./catalog-backup";
+export type { CatalogBackup } from "./catalog-backup";

@@ -73,6 +73,10 @@ export function ListNewPage() {
   );
   const [tagQuery, setTagQuery] = useState("");
   const [keywordIds, setKeywordIds] = useState<number[]>(initialRules.keywordIds ?? []);
+  const [countries, setCountries] = useState<string[]>(initialRules.productionCountries ?? []);
+  const [runtimeBelow, setRuntimeBelow] = useState(initialRules.runtimeBelow ? String(initialRules.runtimeBelow) : "");
+  const [minUserRatings, setMinUserRatings] = useState<number[]>(initialRules.minUserRatings ?? []);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const createList = useCreateCustomList();
   const { data: genreData } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
@@ -97,6 +101,9 @@ export function ListNewPage() {
     if (genres.length) rules.genreIds = genres;
     if (languages.length) rules.languages = languages;
     if (minRatings.length) rules.minRatings = minRatings;
+    if (countries.length) rules.productionCountries = countries;
+    if (runtimeBelow.trim()) rules.runtimeBelow = Number(runtimeBelow);
+    if (minUserRatings.length) rules.minUserRatings = minUserRatings;
     if (yearRanges.length) rules.yearRanges = yearRanges;
     if (keywordIds.length) rules.keywordIds = keywordIds;
     return Object.keys(rules).length > 0 ? rules : {};
@@ -123,6 +130,22 @@ export function ListNewPage() {
       },
     );
   };
+
+  async function previewRules() {
+    const response = await fetch("/api/v2/rules/preview", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json", "x-media-hub-request": "1" },
+      body: JSON.stringify({ rules: buildRules() ?? {} }),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body) {
+      setPreview("The preview could not be loaded.");
+      return;
+    }
+    const samples = Array.isArray(body.samples) && body.samples.length > 0 ? ` Examples: ${body.samples.join(", ")}.` : "";
+    setPreview(`${body.count} titles match. ${body.missingCountry} are missing a country, ${body.missingRuntime} a runtime, and ${body.missingUserRating} a personal rating.${samples} ${body.logic}`);
+  }
 
   const addTag = () => {
     const trimmed = tagQuery.trim();
@@ -243,6 +266,21 @@ export function ListNewPage() {
                   TV
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Original language is separate from production country. TMDB rating is separate from your own rating.
+                Filters combine with AND. Several choices inside one filter combine with OR. Missing values are left out.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => { setMediaType("movie"); setLanguages(["sv"]); setStatuses(["watched"]); }}>
+                  Swedish watched movies
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setMediaType("movie"); setLanguages(["sv"]); setGenres([80]); setStatuses(["want_to_watch", "watching", "unsure", "waiting"]); }}>
+                  Swedish unseen crime
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setMediaType("movie"); setStatuses(["want_to_watch", "watching", "unsure", "waiting"]); setRuntimeBelow("100"); }}>
+                  Unseen movies under 100 min
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <MultiFilterMenu
                   label="Status"
@@ -257,10 +295,29 @@ export function ListNewPage() {
                   onChange={setGenres}
                 />
                 <MultiFilterMenu
-                  label="Language"
+                  label="Original language"
                   options={LANGUAGE_FILTER_OPTIONS}
                   selected={languages}
                   onChange={setLanguages}
+                />
+                <MultiFilterMenu
+                  label="Production country"
+                  options={[
+                    { label: "Sweden", value: "SE" },
+                    { label: "Denmark", value: "DK" },
+                    { label: "Norway", value: "NO" },
+                    { label: "Finland", value: "FI" },
+                    { label: "United States", value: "US" },
+                    { label: "United Kingdom", value: "GB" },
+                  ]}
+                  selected={countries}
+                  onChange={setCountries}
+                />
+                <MultiFilterMenu
+                  label="Your rating"
+                  options={RATING_FILTER_OPTIONS}
+                  selected={minUserRatings}
+                  onChange={setMinUserRatings}
                 />
                 <MultiFilterMenu
                   label="Year"
@@ -269,12 +326,22 @@ export function ListNewPage() {
                   onChange={setYearRangeKeys}
                 />
                 <MultiFilterMenu
-                  label="Min rating"
+                  label="TMDB rating"
                   options={RATING_FILTER_OPTIONS}
                   selected={minRatings}
                   onChange={setMinRatings}
                 />
               </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="runtime-below">Shorter than (minutes)</Label>
+                  <Input id="runtime-below" value={runtimeBelow} onChange={(event) => setRuntimeBelow(event.target.value)} inputMode="numeric" className="w-40" />
+                </div>
+                <Button type="button" variant="outline" onClick={() => void previewRules()}>
+                  Preview
+                </Button>
+              </div>
+              {preview ? <p className="text-sm text-muted-foreground">{preview}</p> : null}
 
               <div className="space-y-2">
                 <Label>TMDB keyword IDs (for tags)</Label>

@@ -1026,6 +1026,9 @@ export const CreateCustomListBody = zod.object({
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
   "minRatings": zod.array(zod.number()).optional(),
+  "productionCountries": zod.array(zod.string()).optional(),
+  "runtimeBelow": zod.number().optional(),
+  "minUserRatings": zod.array(zod.number()).optional(),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1059,6 +1062,9 @@ export const GetCustomListResponse = zod.object({
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
   "minRatings": zod.array(zod.number()).optional(),
+  "productionCountries": zod.array(zod.string()).optional(),
+  "runtimeBelow": zod.number().optional(),
+  "minUserRatings": zod.array(zod.number()).optional(),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1105,6 +1111,9 @@ export const UpdateCustomListBody = zod.object({
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
   "minRatings": zod.array(zod.number()).optional(),
+  "productionCountries": zod.array(zod.string()).optional(),
+  "runtimeBelow": zod.number().optional(),
+  "minUserRatings": zod.array(zod.number()).optional(),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1130,6 +1139,9 @@ export const UpdateCustomListResponse = zod.object({
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
   "minRatings": zod.array(zod.number()).optional(),
+  "productionCountries": zod.array(zod.string()).optional(),
+  "runtimeBelow": zod.number().optional(),
+  "minUserRatings": zod.array(zod.number()).optional(),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1219,6 +1231,9 @@ export const RefreshCustomListResponse = zod.object({
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
   "minRatings": zod.array(zod.number()).optional(),
+  "productionCountries": zod.array(zod.string()).optional(),
+  "runtimeBelow": zod.number().optional(),
+  "minUserRatings": zod.array(zod.number()).optional(),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()

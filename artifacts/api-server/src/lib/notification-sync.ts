@@ -7,9 +7,12 @@ import {
 } from "@workspace/db";
 import { eq, isNull, and, sql } from "drizzle-orm";
 import { getTvDetails, getWatchProviders } from "./tmdb";
+import { withTmdbSurface } from "./tmdb-cache";
 
 const SYNC_INTERVAL_MS = 15 * 60 * 1000;
 const STREAMING_COUNTRY = "SE";
+const CHECKS_PER_RUN = 20;
+let notificationSyncActive = false;
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -187,48 +190,75 @@ async function checkLaunchDate(
   await upsertMeta(item.id, { launchNotified: true });
 }
 
-export async function syncNotifications(force = false): Promise<void> {
-  const [syncState] = await db.select().from(notificationSyncStateTable).limit(1);
-  const lastSync = syncState?.lastSyncAt?.getTime() ?? 0;
-  if (!force && Date.now() - lastSync < SYNC_INTERVAL_MS) return;
+export function notificationSyncInProgress(): boolean {
+  return notificationSyncActive;
+}
 
-  const watchlist = await db.select().from(watchlistTable);
-
-  const watchingTv = watchlist.filter(
-    (item) => item.mediaType === "tv" && item.status === "watching",
-  );
-  const wantToWatch = watchlist.filter((item) => item.status === "want_to_watch");
-
-  for (const item of watchingTv) {
-    try {
-      await checkNewSeasons(item);
-    } catch {
-      // Skip TMDB failures for individual items
-    }
+export async function demonstrateNotificationLock(): Promise<{ skipped: "busy" | "interval" | null }> {
+  notificationSyncActive = true;
+  try {
+    const result = await syncNotifications(false);
+    return { skipped: result.skipped };
+  } finally {
+    notificationSyncActive = false;
   }
+}
 
-  for (const item of wantToWatch) {
-    try {
-      await checkLaunchDate(item);
-      await checkStreamingAvailable(item);
-    } catch {
-      // Skip TMDB failures for individual items
+export async function syncNotifications(force = false): Promise<{ skipped: "busy" | "interval" | null; checked: number }> {
+  if (notificationSyncActive) return { skipped: "busy", checked: 0 };
+  notificationSyncActive = true;
+  try {
+    const [syncState] = await db.select().from(notificationSyncStateTable).limit(1);
+    const lastSync = syncState?.lastSyncAt?.getTime() ?? 0;
+    if (!force && Date.now() - lastSync < SYNC_INTERVAL_MS) return { skipped: "interval", checked: 0 };
+
+    const watchlist = await db.select().from(watchlistTable);
+    const watchingTv = watchlist.filter((item) => item.mediaType === "tv" && item.status === "watching");
+    const wantToWatch = watchlist.filter((item) => item.status === "want_to_watch");
+    const cursor = syncState?.cursorOffset ?? 0;
+    const tvBatch = watchingTv.slice(cursor, cursor + CHECKS_PER_RUN);
+    const watchBatch = wantToWatch.slice(cursor, cursor + CHECKS_PER_RUN);
+    let checked = 0;
+
+    await withTmdbSurface("notifications", async () => {
+      for (const item of tvBatch) {
+        checked += 1;
+        try {
+          await checkNewSeasons(item);
+        } catch {
+          // Skip TMDB failures for individual items
+        }
+      }
+      for (const item of watchBatch) {
+        checked += 1;
+        try {
+          await checkLaunchDate(item);
+          await checkStreamingAvailable(item);
+        } catch {
+          // Skip TMDB failures for individual items
+        }
+      }
+    });
+
+    const nextCursor = Math.max(watchingTv.length, wantToWatch.length);
+    const advanced = nextCursor === 0 ? 0 : (cursor + CHECKS_PER_RUN) % nextCursor;
+    if (syncState) {
+      await db
+        .update(notificationSyncStateTable)
+        .set({ lastSyncAt: new Date(), cursorOffset: advanced })
+        .where(eq(notificationSyncStateTable.id, 1));
+    } else {
+      await db
+        .insert(notificationSyncStateTable)
+        .values({ id: 1, lastSyncAt: new Date(), cursorOffset: advanced })
+        .onConflictDoUpdate({
+          target: notificationSyncStateTable.id,
+          set: { lastSyncAt: new Date(), cursorOffset: advanced },
+        });
     }
-  }
-
-  if (syncState) {
-    await db
-      .update(notificationSyncStateTable)
-      .set({ lastSyncAt: new Date() })
-      .where(eq(notificationSyncStateTable.id, 1));
-  } else {
-    await db
-      .insert(notificationSyncStateTable)
-      .values({ id: 1, lastSyncAt: new Date() })
-      .onConflictDoUpdate({
-        target: notificationSyncStateTable.id,
-        set: { lastSyncAt: new Date() },
-      });
+    return { skipped: null, checked };
+  } finally {
+    notificationSyncActive = false;
   }
 }
 

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { Search, Film, Compass, BarChart2, Bookmark, Menu, Bell, Sparkles } from "lucide-react";
+import { Search, Film, Compass, BarChart2, Bookmark, Menu, Bell, Sparkles, Tv, KeyRound, Archive, ClipboardCheck } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -12,6 +13,10 @@ const mainNavLinks = [
   { href: "/browse", label: "Browse", icon: Compass },
   { href: "/discover", label: "Discover", icon: Sparkles },
   { href: "/stats", label: "Stats", icon: BarChart2 },
+  { href: "/wako-check", label: "Wako check", icon: Tv },
+  { href: "/access", label: "Access", icon: KeyRound },
+  { href: "/backup", label: "Backup", icon: Archive },
+  { href: "/release", label: "Release", icon: ClipboardCheck },
 ];
 
 const updatesLink = { href: "/updates", label: "Updates", icon: Bell };
@@ -33,6 +38,17 @@ function UnreadBadge({ count, className }: { count: number; className?: string }
 export function Navbar() {
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  async function signOut() {
+    await fetch("/api/session/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "x-media-hub-request": "1" },
+    });
+    setIsMobileMenuOpen(false);
+    await queryClient.invalidateQueries();
+  }
   const { data: unreadData } = useGetUnreadNotificationCount({
     query: { queryKey: getGetUnreadNotificationCountQueryKey() },
   });
@@ -90,6 +106,9 @@ export function Navbar() {
             </form>
           </div>
 
+          <Button variant="ghost" className="hidden md:inline-flex" onClick={() => void signOut()}>
+            Sign out
+          </Button>
           <Link href={updatesLink.href} className={cn("hidden md:flex items-center gap-2", navLinkClass(updatesLink.href))}>
             <updatesLink.icon className="h-4 w-4" />
             {updatesLink.label}
@@ -146,6 +165,9 @@ export function Navbar() {
                   {updatesLink.label}
                   <UnreadBadge count={unreadCount} className="ml-2" />
                 </Link>
+                <button type="button" className="py-2 text-left text-sm font-medium" onClick={() => void signOut()}>
+                  Sign out
+                </button>
               </div>
             </SheetContent>
           </Sheet>

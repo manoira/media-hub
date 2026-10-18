@@ -16,5 +16,8 @@ export interface ListRules {
   languages?: string[];
   keywordIds?: number[];
   minRatings?: number[];
+  productionCountries?: string[];
+  runtimeBelow?: number;
+  minUserRatings?: number[];
   yearRanges?: YearRange[];
 }

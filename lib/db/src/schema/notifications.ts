@@ -26,6 +26,7 @@ export const notificationMetaTable = pgTable("notification_meta", {
 export const notificationSyncStateTable = pgTable("notification_sync_state", {
   id: integer("id").primaryKey().default(1),
   lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+  cursorOffset: integer("cursor_offset").notNull().default(0),
 });
 
 export const insertNotificationSchema = createInsertSchema(notificationsTable).omit({
