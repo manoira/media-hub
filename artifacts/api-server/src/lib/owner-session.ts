@@ -1,5 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
+import { pool } from "@workspace/db";
 
 const COOKIE = "mh_session";
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -18,10 +19,6 @@ const PERSONAL_PREFIXES = [
   "/api/backup",
   "/api/v2",
 ];
-
-type Session = { expiresAt: number };
-
-const sessions = new Map<string, Session>();
 
 export function ownerPasswordConfigured(): boolean {
   return Boolean(process.env.OWNER_PASSWORD?.trim());
@@ -45,38 +42,55 @@ function readCookie(req: Request, name: string): string | null {
   return null;
 }
 
-export function readSessionToken(req: Request): string | null {
+export function sessionTokenHash(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function cookieSuffix(): string {
+  return process.env.NODE_ENV === "production" ? "; Secure" : "";
+}
+
+export async function readSessionToken(req: Request): Promise<string | null> {
   const token = readCookie(req, COOKIE);
   if (!token) return null;
-  const session = sessions.get(token);
-  if (!session || session.expiresAt <= Date.now()) {
-    if (token) sessions.delete(token);
+  const hash = sessionTokenHash(token);
+  const found = await pool.query<{ expires_at: Date }>(
+    "SELECT expires_at FROM owner_sessions WHERE token_hash = $1",
+    [hash],
+  );
+  const row = found.rows[0];
+  if (!row || new Date(row.expires_at).getTime() <= Date.now()) {
+    await pool.query("DELETE FROM owner_sessions WHERE token_hash = $1", [hash]);
     return null;
   }
   return token;
 }
 
-export function isOwnerRequest(req: Request): boolean {
-  return readSessionToken(req) !== null;
+export async function isOwnerRequest(req: Request): Promise<boolean> {
+  return (await readSessionToken(req)) !== null;
 }
 
-export function createOwnerSession(res: Response): void {
+export async function createOwnerSession(res: Response): Promise<void> {
   const token = randomBytes(32).toString("base64url");
-  sessions.set(token, { expiresAt: Date.now() + SESSION_MS });
-  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  const expiresAt = new Date(Date.now() + SESSION_MS);
+  await pool.query(
+    "INSERT INTO owner_sessions (token_hash, expires_at) VALUES ($1, $2)",
+    [sessionTokenHash(token), expiresAt],
+  );
   res.append(
     "Set-Cookie",
-    `${COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(SESSION_MS / 1000)}${secure}`,
+    `${COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(SESSION_MS / 1000)}${cookieSuffix()}`,
   );
 }
 
-export function clearOwnerSession(req: Request, res: Response): void {
+export async function clearOwnerSession(req: Request, res: Response): Promise<void> {
   const token = readCookie(req, COOKIE);
-  if (token) sessions.delete(token);
-  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  if (token) {
+    await pool.query("DELETE FROM owner_sessions WHERE token_hash = $1", [sessionTokenHash(token)]);
+  }
   res.append(
     "Set-Cookie",
-    `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secure}`,
+    `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${cookieSuffix()}`,
   );
 }
 
@@ -92,22 +106,26 @@ function requestPath(req: Request): string {
   return (req.originalUrl || req.path).split("?")[0];
 }
 
-export function ownerGate(req: Request, res: Response, next: NextFunction): void {
-  const path = requestPath(req);
-  const logout = path === "/api/session/logout";
-  if (!logout && !isPersonalPath(path)) {
+export async function ownerGate(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const path = requestPath(req);
+    const logout = path === "/api/session/logout";
+    if (!logout && !isPersonalPath(path)) {
+      next();
+      return;
+    }
+    if (!(await isOwnerRequest(req))) {
+      res.status(401).json({ error: "Sign in required." });
+      return;
+    }
+    if (req.method !== "GET" && req.method !== "HEAD" && !hasCsrfHeader(req)) {
+      res.status(403).json({ error: "This request was rejected." });
+      return;
+    }
     next();
-    return;
+  } catch (error) {
+    next(error);
   }
-  if (!isOwnerRequest(req)) {
-    res.status(401).json({ error: "Sign in required." });
-    return;
-  }
-  if (req.method !== "GET" && req.method !== "HEAD" && !hasCsrfHeader(req)) {
-    res.status(403).json({ error: "This request was rejected." });
-    return;
-  }
-  next();
 }
 
 export function assertLoginCsrf(req: Request, res: Response): boolean {

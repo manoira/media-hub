@@ -4,17 +4,20 @@ import { Button } from "@/components/ui/button";
 type SyncState = {
   exportEnabled: boolean;
   syncStatus: string;
+  statusLabel?: string;
   slug: string | null;
   lastSyncedAt: string | null;
   syncError: string | null;
   install: string[];
+  verifiedExternal?: boolean;
 };
 
 const LABELS: Record<string, string> = {
   off: "Off",
   pending: "Waiting",
   syncing: "Syncing",
-  synced: "Synced",
+  synced: "Simulated locally",
+  simulated: "Simulated locally",
   paused: "Paused",
   error: "Error",
   conflict: "Conflict",
@@ -58,19 +61,20 @@ export function ListSyncPanel({ listId }: { listId: number }) {
     <section className="rounded-lg border border-border/60 p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">Wako export</h2>
+          <h2 className="font-semibold">Local test export</h2>
           <p className="text-sm text-muted-foreground">
-            {LABELS[status] ?? status}
-            {sync.data?.lastSyncedAt ? ` · last confirmed ${new Date(sync.data.lastSyncedAt).toLocaleString()}` : ""}
+            {sync.data?.statusLabel ?? LABELS[status] ?? status}
+            {sync.data?.verifiedExternal === false ? " · not a verified My Lists sync" : ""}
+            {sync.data?.lastSyncedAt ? ` · last local write ${new Date(sync.data.lastSyncedAt).toLocaleString()}` : ""}
             {sync.data?.slug ? ` · ${sync.data.slug}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "enable" })} disabled={action.isPending}>
-            Show on TV
+            Show in local test
           </Button>
           <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "sync" })} disabled={action.isPending || !sync.data?.exportEnabled}>
-            Sync now
+            Update local test
           </Button>
           <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "pause" })} disabled={action.isPending}>
             Pause
@@ -81,7 +85,7 @@ export function ListSyncPanel({ listId }: { listId: number }) {
             onClick={() => action.mutate({ action: "delete-external", confirm: "delete-external" })}
             disabled={action.isPending}
           >
-            Remove external copy
+            Remove simulated copy
           </Button>
         </div>
       </div>

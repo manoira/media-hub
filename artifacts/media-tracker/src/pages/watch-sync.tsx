@@ -4,7 +4,8 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
 type SimklState = {
-  connected: boolean;
+  configured: boolean;
+  verified: boolean;
   pendingEvents: number;
   policy: string;
 };
@@ -51,12 +52,15 @@ export function WatchSyncPage() {
         <p className="max-w-2xl text-muted-foreground">{status.data?.policy}</p>
       </div>
       <p className="text-sm text-muted-foreground">
-        {status.data?.connected ? "A SIMKL token is stored." : "SIMKL is not connected."} {status.data ? `${status.data.pendingEvents} local watch events are recorded.` : ""}
+        {status.data?.configured
+          ? "A SIMKL token is configured in the server environment. It has not been verified."
+          : "No SIMKL token is configured."}{" "}
+        {status.data ? `${status.data.pendingEvents} local watch events are recorded.` : ""}
       </p>
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => preview.mutate()} disabled={preview.isPending}>Preview</Button>
         <Button variant="outline" asChild>
-          <Link href="/access">Add the token later</Link>
+          <Link href="/access">See where the token is set</Link>
         </Button>
       </div>
       {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}

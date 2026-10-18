@@ -4,8 +4,6 @@ import { db, watchlistTable } from "@workspace/db";
 import {
   isIntegrationProvider,
   listIntegrations,
-  revokeIntegration,
-  setIntegration,
 } from "../lib/integrations";
 
 const router: IRouter = Router();
@@ -22,44 +20,27 @@ router.get("/integrations", async (_req, res) => {
   res.json({ integrations: listIntegrations(), catalogCount: count });
 });
 
-router.put("/integrations/:provider", async (req, res) => {
-  const provider = String(req.params.provider);
+function refuseStoredSecret(res: { status: (code: number) => { json: (body: unknown) => void } }, provider: string): boolean {
   if (!isIntegrationProvider(provider)) {
     res.status(404).json({ error: "Unknown connection." });
-    return;
+    return true;
   }
-  const secret = typeof req.body?.secret === "string" ? req.body.secret.trim() : "";
-  if (secret.length < 8) {
-    res.status(400).json({ error: "Use at least 8 characters." });
-    return;
-  }
-  const integration = setIntegration(provider, secret);
-  res.json({ integration, catalogCount: await catalogCount() });
+  res.status(409).json({
+    error: "This server reads that secret from an environment variable. This request did not save or remove it.",
+  });
+  return true;
+}
+
+router.put("/integrations/:provider", (req, res) => {
+  refuseStoredSecret(res, String(req.params.provider));
 });
 
-router.post("/integrations/:provider/rotate", async (req, res) => {
-  const provider = String(req.params.provider);
-  if (!isIntegrationProvider(provider)) {
-    res.status(404).json({ error: "Unknown connection." });
-    return;
-  }
-  const secret = typeof req.body?.secret === "string" ? req.body.secret.trim() : "";
-  if (secret.length < 8) {
-    res.status(400).json({ error: "Use at least 8 characters." });
-    return;
-  }
-  const integration = setIntegration(provider, secret);
-  res.json({ integration, catalogCount: await catalogCount() });
+router.post("/integrations/:provider/rotate", (req, res) => {
+  refuseStoredSecret(res, String(req.params.provider));
 });
 
-router.delete("/integrations/:provider", async (req, res) => {
-  const provider = String(req.params.provider);
-  if (!isIntegrationProvider(provider)) {
-    res.status(404).json({ error: "Unknown connection." });
-    return;
-  }
-  const integration = revokeIntegration(provider);
-  res.json({ integration, catalogCount: await catalogCount() });
+router.delete("/integrations/:provider", (req, res) => {
+  refuseStoredSecret(res, String(req.params.provider));
 });
 
 export default router;

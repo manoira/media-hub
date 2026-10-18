@@ -28,11 +28,11 @@ function recordFailure(ip: string): void {
   current.count += 1;
 }
 
-router.get("/session", (req, res) => {
-  res.json({ authenticated: isOwnerRequest(req) });
+router.get("/session", async (req, res) => {
+  res.json({ authenticated: await isOwnerRequest(req) });
 });
 
-router.post("/session/login", (req, res) => {
+router.post("/session/login", async (req, res) => {
   if (!assertLoginCsrf(req, res)) return;
   const ip = req.ip || "local";
   if (tooManyAttempts(ip)) {
@@ -50,12 +50,12 @@ router.post("/session/login", (req, res) => {
     return;
   }
   failures.delete(ip);
-  createOwnerSession(res);
+  await createOwnerSession(res);
   res.json({ authenticated: true });
 });
 
-router.post("/session/logout", (req, res) => {
-  clearOwnerSession(req, res);
+router.post("/session/logout", async (req, res) => {
+  await clearOwnerSession(req, res);
   res.json({ authenticated: false });
 });
 

@@ -1,7 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
-  acceptImdbId,
   catalogCounts,
   db,
   listRulesSchema,
@@ -15,10 +14,10 @@ import { listIntegrations } from "../lib/integrations";
 import { demonstrateNotificationLock } from "../lib/notification-sync";
 import { mergeWatchState, practiceMergeSamples } from "../lib/simkl-sync";
 import { getCredits, getMovieDetails, getTvDetails } from "../lib/tmdb";
+import { fillMissingMetadata } from "../lib/metadata-fill";
 import { readTmdbUsage, recordLocalRead } from "../lib/tmdb-cache";
 
 const router: IRouter = Router();
-const FILL_LIMIT = 10;
 
 const hosting = {
   decision: "stay",
@@ -26,9 +25,9 @@ const hosting = {
   summary: "Stay on the current Vercel and Neon Postgres setup. A Cloudflare move stays a later choice, after the Google TV check.",
   reasons: [
     "The catalog uses Postgres arrays, jsonb rules, and unique indexes. D1 is not a drop-in replacement.",
-    "Sessions are in memory today and the export queue runs in this process. A Worker would need its own session and queue store.",
+    "Owner sessions are hashes in Postgres, so a new server instance can read the same sign-in. The export queue still runs in this process.",
     "The dev catalog is already on Neon. Moving it is a separate rehearsed restore, not part of this local pass.",
-    "My Lists keys and the SIMKL token are still unset, so hosted addon or Worker KV usage is not measured against a live account.",
+    "My Lists and SIMKL secrets are server environment variables. A value there means configured, not that the remote account was verified.",
   ],
   notDoing: "No production cutover and no shutdown of the current host.",
 };
@@ -68,28 +67,18 @@ router.post("/v2/usage/measure", async (_req, res) => {
 });
 
 router.post("/v2/metadata/fill", async (_req, res) => {
-  const rows = await db.select().from(watchlistTable).where(isNull(watchlistTable.metadataFetchedAt)).limit(FILL_LIMIT);
-  let filled = 0;
-  for (const row of rows) {
-    try {
+  const result = await fillMissingMetadata({
+    load: async (row) => {
       const details = row.mediaType === "tv" ? await getTvDetails(row.tmdbId) : await getMovieDetails(row.tmdbId);
-      const imdbId = acceptImdbId({
-        requestedTmdbId: row.tmdbId,
-        returnedTmdbId: details.tmdbId,
-        imdbId: details.imdbId,
-      });
-      await pool.query(
-        `UPDATE watchlist
-         SET production_countries = $1, runtime_minutes = $2, imdb_id = COALESCE($3, imdb_id), metadata_fetched_at = now()
-         WHERE id = $4`,
-        [details.productionCountryCodes, details.runtime, imdbId, row.id],
-      );
-      filled += 1;
-    } catch {
-      await pool.query("UPDATE watchlist SET metadata_fetched_at = now() WHERE id = $1", [row.id]);
-    }
-  }
-  res.json({ filled, remainingLookedAt: rows.length });
+      return {
+        tmdbId: details.tmdbId,
+        imdbId: details.imdbId ?? null,
+        productionCountryCodes: details.productionCountryCodes,
+        runtime: details.runtime,
+      };
+    },
+  });
+  res.json(result);
 });
 
 router.post("/v2/rules/preview", async (req, res) => {
@@ -136,18 +125,19 @@ router.post("/v2/lists/:id/sync", async (req, res) => {
 });
 
 router.get("/v2/simkl", async (_req, res) => {
-  const connected = listIntegrations().some((item) => item.provider === "simkl" && item.connected);
+  const configured = listIntegrations().some((item) => item.provider === "simkl" && item.configured);
   const events = await db.select().from(watchEventsTable);
   res.json({
-    connected,
+    configured,
+    verified: false,
     liveSync: false,
     pendingEvents: events.length,
-    policy: "SIMKL is not called while the token is unset. Unsure and waiting stay local. A series you are still watching is not marked completed. Watch dates are not invented. Notes, labels, and list membership stay put.",
+    policy: "SIMKL is not called. Unsure and waiting stay local. A series you are still watching is not marked completed. Watch dates are not invented. Notes, labels, and list membership stay put.",
   });
 });
 
 router.post("/v2/simkl/preview", async (req, res) => {
-  const connected = listIntegrations().some((item) => item.provider === "simkl" && item.connected);
+  const configured = listIntegrations().some((item) => item.provider === "simkl" && item.configured);
   const remote = Array.isArray(req.body?.remote) ? req.body.remote.slice(0, 20) : [];
   const changes = [];
   for (const entry of remote) {
@@ -175,12 +165,13 @@ router.post("/v2/simkl/preview", async (req, res) => {
     if (change) changes.push({ ...change, title: local.title, notes: local.notes, tags: local.tags });
   }
   res.json({
-    connected,
+    configured,
+    verified: false,
     liveSync: false,
     changes,
-    detail: connected
-      ? "The token is stored. This preview still uses the local stand-in and does not call SIMKL."
-      : "SIMKL is not connected. Nothing was sent.",
+    detail: configured
+      ? "A SIMKL token is configured in the server environment. It has not been verified, and this preview does not call SIMKL."
+      : "No SIMKL token is configured. Nothing was sent.",
   });
 });
 
@@ -247,7 +238,7 @@ router.post("/v2/release-check", async (_req, res) => {
     usage,
     blocked: [
       "Google TV playback and the real Wako install are still unchecked.",
-      "SIMKL and the My Lists creator key are not connected, so those services were not called.",
+      "SIMKL and the My Lists creator key are not verified, so those services were not called.",
       "Nothing has been published.",
     ],
   });

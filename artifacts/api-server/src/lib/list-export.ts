@@ -13,11 +13,45 @@ import { deleteLocalMyList, readLocalMyList, saveLocalMyList, type ProbeItem } f
 
 const MAX_ITEMS = 500;
 const MAX_BYTES = 800_000;
+export const LOCAL_EXPORT_TARGET = "local-simulator";
+export const LOCAL_EXPORT_PROFILE = "mediahub-local-test";
+const LOCAL_VISIBILITY = "private";
 
 type ExportItem = ProbeItem & { standIn: boolean };
 
-function orderedHash(items: Array<{ mediaType: string; tmdbId: number }>): string {
-  return createHash("sha256").update(items.map((item) => `${item.mediaType}:${item.tmdbId}`).join("\n")).digest("hex");
+export function exportFingerprint(input: {
+  target: string;
+  profile: string;
+  name: string;
+  visibility: string;
+  items: Array<{ imdbId: string; title: string; year: number; type: string }>;
+}): string {
+  return createHash("sha256").update(JSON.stringify({
+    target: input.target,
+    profile: input.profile,
+    name: input.name,
+    visibility: input.visibility,
+    items: input.items.map((item) => ({
+      imdbId: item.imdbId,
+      title: item.title,
+      year: item.year,
+      type: item.type,
+    })),
+  })).digest("hex");
+}
+
+export function exportStillMatches(input: {
+  storedHash: string | null;
+  storedTarget: string | null;
+  slug: string | null;
+  nextHash: string;
+  target: string;
+  remotePresent: boolean;
+}): boolean {
+  return input.storedHash === input.nextHash
+    && input.storedTarget === input.target
+    && Boolean(input.slug)
+    && input.remotePresent;
 }
 
 function stableSlug(listId: number, stored: string | null): string {
@@ -49,7 +83,7 @@ async function listRows(listId: number, kind: string, smartMode: string | null, 
       and(eq(customListItemsTable.tmdbId, watchlistTable.tmdbId), eq(customListItemsTable.mediaType, watchlistTable.mediaType)),
     )
     .where(eq(customListItemsTable.listId, listId))
-    .orderBy(asc(customListItemsTable.title), asc(customListItemsTable.tmdbId));
+    .orderBy(asc(customListItemsTable.addedAt), asc(customListItemsTable.id));
   return rows.flatMap((row) => {
     if (row.tmdbId == null || !row.mediaType) return [];
     return [{
@@ -87,14 +121,29 @@ export async function readListSync(listId: number) {
     externalVersion: list.externalVersion,
     lastSyncedAt: list.lastSyncedAt?.toISOString() ?? null,
     syncError: list.syncError,
-    target: "local-stand-in",
-    visibility: "private",
+    target: LOCAL_EXPORT_TARGET,
+    profile: LOCAL_EXPORT_PROFILE,
+    visibility: LOCAL_VISIBILITY,
+    simulated: true,
+    verifiedExternal: false,
+    statusLabel: statusLabel(list.syncStatus ?? (list.exportEnabled ? "pending" : "off")),
     install: [
-      "In Wako, add the My Lists catalog with the local test profile until a creator key is saved.",
-      "The same list keeps its slug after a rename. A new catalog row is only needed when the addon URL changes.",
-      "Pausing export leaves this list here and does not delete the external copy.",
+      "This is a local test simulator. It is not a verified sync to My Lists.",
+      "The same list keeps its slug after a rename. A missing simulated copy is written again on the next run.",
+      "Pausing leaves this list here and does not delete the simulated copy.",
     ],
   };
+}
+
+function statusLabel(status: string): string {
+  if (status === "synced" || status === "simulated") return "Simulated locally";
+  if (status === "pending") return "Waiting";
+  if (status === "syncing") return "Updating local test";
+  if (status === "paused") return "Paused";
+  if (status === "error") return "Error";
+  if (status === "conflict") return "Conflict";
+  if (status === "removed") return "Simulated copy removed";
+  return "Off";
 }
 
 let chain: Promise<unknown> = Promise.resolve();
@@ -118,7 +167,7 @@ export async function exportList(listId: number): Promise<ExportResult> {
   const [list] = await db.select().from(customListsTable).where(eq(customListsTable.id, listId));
   if (!list) return { ok: false, status: "error", detail: "That list is not in the catalog." };
   if (!list.exportEnabled) {
-    return { ok: true, status: "paused", detail: "Export is paused. The external list was left in place." };
+    return { ok: true, status: "paused", detail: "Export is paused. The simulated list was left in place." };
   }
 
   const rows = await listRows(list.id, list.kind, list.smartMode, list.rules);
@@ -135,15 +184,35 @@ export async function exportList(listId: number): Promise<ExportResult> {
     return { ok: false, status: "error", detail };
   }
 
-  const hash = orderedHash(rows.map((row) => ({ mediaType: row.mediaType, tmdbId: row.tmdbId })));
-  if (list.contentHash === hash && list.myListsSlug) {
-    if (list.syncStatus !== "synced") {
-      await db.update(customListsTable).set({ syncStatus: "synced", syncError: null }).where(eq(customListsTable.id, list.id));
+  const hash = exportFingerprint({
+    target: LOCAL_EXPORT_TARGET,
+    profile: LOCAL_EXPORT_PROFILE,
+    name: list.name,
+    visibility: LOCAL_VISIBILITY,
+    items,
+  });
+  const slug = stableSlug(list.id, list.myListsSlug);
+  const remote = readLocalMyList(slug);
+  if (exportStillMatches({
+    storedHash: list.contentHash,
+    storedTarget: list.syncTarget,
+    slug: list.myListsSlug,
+    nextHash: hash,
+    target: LOCAL_EXPORT_TARGET,
+    remotePresent: remote.ok,
+  })) {
+    if (list.syncStatus !== "simulated") {
+      await db.update(customListsTable).set({ syncStatus: "simulated", syncError: null }).where(eq(customListsTable.id, list.id));
     }
-    return { ok: true, status: "synced", detail: "The saved list already matches this content.", slug: list.myListsSlug, count: items.length };
+    return {
+      ok: true,
+      status: "simulated",
+      detail: "The local test simulator already has this list. This is not a verified sync to My Lists.",
+      slug,
+      count: items.length,
+    };
   }
 
-  const slug = stableSlug(list.id, list.myListsSlug);
   const idempotencyKey = `${list.id}:${hash}`;
   await db.insert(listSyncQueueTable).values({
     listId: list.id,
@@ -153,12 +222,12 @@ export async function exportList(listId: number): Promise<ExportResult> {
   }).onConflictDoNothing();
   await db.update(customListsTable).set({ syncStatus: "syncing", syncError: null }).where(eq(customListsTable.id, list.id));
 
-  const expectedUpdatedAt = list.externalVersion ? Number(list.externalVersion) : undefined;
+  const expectedUpdatedAt = remote.ok && list.externalVersion ? Number(list.externalVersion) : undefined;
   const saved = saveLocalMyList({
     slug,
     name: list.name,
     items,
-    expectedUpdatedAt: Number.isFinite(expectedUpdatedAt) ? expectedUpdatedAt : undefined,
+    expectedUpdatedAt: expectedUpdatedAt !== undefined && Number.isFinite(expectedUpdatedAt) ? expectedUpdatedAt : undefined,
   });
   if (!saved.ok) {
     const status = saved.status === 409 ? "conflict" : "error";
@@ -182,7 +251,8 @@ export async function exportList(listId: number): Promise<ExportResult> {
     myListsSlug: slug,
     contentHash: hash,
     externalVersion: String(saved.updatedAt),
-    syncStatus: "synced",
+    syncStatus: "simulated",
+    syncTarget: LOCAL_EXPORT_TARGET,
     syncError: null,
     lastSyncedAt: new Date(),
   }).where(eq(customListsTable.id, list.id));
@@ -190,10 +260,10 @@ export async function exportList(listId: number): Promise<ExportResult> {
   const standIns = items.filter((item) => item.standIn).length;
   return {
     ok: true,
-    status: "synced",
+    status: "simulated",
     detail: standIns > 0
-      ? `Synced ${items.length} titles to ${slug}. ${standIns} still need an IMDb id, so the local stand-in used a TMDB id.`
-      : `Synced ${items.length} titles to ${slug}.`,
+      ? `Wrote ${items.length} titles to the local test simulator as ${slug}. ${standIns} still use a TMDB stand-in. This is not a verified sync to My Lists.`
+      : `Wrote ${items.length} titles to the local test simulator as ${slug}. This is not a verified sync to My Lists.`,
     slug,
     count: items.length,
     standIns,
@@ -209,7 +279,7 @@ export async function setListExport(listId: number, action: "enable" | "pause" |
   if (!list) return { ok: false, status: "error", detail: "That list is not in the catalog." };
   if (action === "pause") {
     await db.update(customListsTable).set({ exportEnabled: false, syncStatus: "paused", syncError: null }).where(eq(customListsTable.id, listId));
-    return { ok: true, status: "paused", detail: "Export is paused. The local list and the external copy are both still there." };
+    return { ok: true, status: "paused", detail: "Export is paused. The Media Hub list and the simulated copy are both still there." };
   }
   if (action === "delete-external") {
     const slug = list.myListsSlug;
@@ -219,7 +289,7 @@ export async function setListExport(listId: number, action: "enable" | "pause" |
       syncStatus: "removed",
       syncError: null,
     }).where(eq(customListsTable.id, listId));
-    return { ok: true, status: "removed", detail: slug ? `Removed the external list ${slug}. The Media Hub list is unchanged.` : "There was no external list to remove." };
+    return { ok: true, status: "removed", detail: slug ? `Removed the simulated list ${slug}. The Media Hub list is unchanged.` : "There was no simulated list to remove." };
   }
   await db.update(customListsTable).set({ exportEnabled: true, syncStatus: "pending", syncError: null }).where(eq(customListsTable.id, listId));
   return enqueueListExport(listId);

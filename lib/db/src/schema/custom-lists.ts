@@ -35,6 +35,7 @@ export const customListsTable = pgTable("custom_lists", {
   exportEnabled: boolean("export_enabled").notNull().default(false),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
   syncError: text("sync_error"),
+  syncTarget: text("sync_target"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -39,6 +39,9 @@ In **Project → Settings → Environment Variables**:
 | `TMDB_API_KEY` | TMDB v3 API key | Production, Preview |
 | `NODE_ENV` | `production` | Production, Preview |
 | `BASE_PATH` | `/` | Production, Preview |
+| `OWNER_PASSWORD` | Owner sign-in password. Never commit it. | Production, Preview |
+| `MY_LISTS_CREATOR_KEY` | Optional. Presence means configured, not verified with My Lists. The app does not store this value. | Production, Preview |
+| `SIMKL_TOKEN` | Optional. Same rule as the creator key. | Production, Preview |
 
 Do **not** set `PORT` on Vercel.
 
