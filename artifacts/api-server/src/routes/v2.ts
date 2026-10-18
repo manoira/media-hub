@@ -22,7 +22,7 @@ const router: IRouter = Router();
 const hosting = {
   decision: "stay",
   checkedOn: "2026-10-18",
-  summary: "Stay on the current Vercel and Neon Postgres setup. A Cloudflare move stays a later choice, after the Google TV check.",
+  summary: "Media Hub stays on Vercel and Neon. A separate My Lists test install can be pointed at later. Moving Media Hub itself is not part of this work.",
   reasons: [
     "The catalog uses Postgres arrays, jsonb rules, and unique indexes. D1 is not a drop-in replacement.",
     "Owner sessions, login throttling, and the list export lock are rows in Postgres, so a second instance shares them.",

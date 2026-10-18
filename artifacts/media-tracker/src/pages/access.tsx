@@ -13,8 +13,16 @@ type Integration = {
   masked: string | null;
 };
 
+type MyListsStatus = {
+  connection: "simulated" | "configured" | "unconfigured";
+  originHost: string | null;
+  creatorName: string | null;
+  detail: string;
+};
+
 type IntegrationResponse = {
   integrations: Integration[];
+  myLists?: MyListsStatus;
   catalogCount: number;
 };
 
@@ -38,7 +46,7 @@ export function AccessPage() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Connections</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Keys stay in server environment variables. A configured key has not been checked with My Lists or SIMKL, and this page cannot save or revoke one. Watch sync stays a local preview. <Link href="/watch-sync" className="underline">Open watch sync</Link>.
+          Keys stay in server environment variables. Configured, verified, and simulated are different states. This page cannot save or revoke a secret. Watch sync stays a local preview. <Link href="/watch-sync" className="underline">Open watch sync</Link>.
         </p>
       </div>
 
@@ -62,6 +70,24 @@ export function AccessPage() {
           </section>
         ))}
       </div>
+      {connections.data?.myLists ? (
+        <section className="space-y-2 rounded-lg border border-border/60 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-semibold">My Lists</h2>
+            <Badge variant={connections.data.myLists.connection === "unconfigured" ? "outline" : "secondary"}>
+              {connections.data.myLists.connection === "simulated"
+                ? "Simulated"
+                : connections.data.myLists.connection === "configured"
+                  ? "Configured, not verified"
+                  : "Not configured"}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">{connections.data.myLists.detail}</p>
+          {connections.data.myLists.originHost ? (
+            <p className="text-sm text-muted-foreground">Origin host {connections.data.myLists.originHost}. Creator {connections.data.myLists.creatorName}. The install URL is not shown.</p>
+          ) : null}
+        </section>
+      ) : null}
       {connections.data ? (
         <p className="text-sm text-muted-foreground">Catalog still has {connections.data.catalogCount} titles.</p>
       ) : null}

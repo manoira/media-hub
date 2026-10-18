@@ -1,36 +1,32 @@
 # Kvar på v2-local-foundation
 
-Branchen är inte mergad till `main` och deployas inte som produktion. Vercel publicerar `main`. Migrationerna 006, 007, 008 och 009 är körda bara mot dev-databasen.
+Branchen är inte mergad till `main` och deployas inte som produktion. Vercel publicerar `main`. Migrationerna 006, 007, 008 och 009 är körda bara mot dev-databasen. Ingen ny migration ingick i HTTP-adaptern.
 
 ## Kontroller som är gröna här
 
 - API-typecheck, frontend-typecheck och API-bygget.
-- Beteendetester för session, miljövariabler, metadataförsök, exporthash, delad inloggningsspärr och delat exportlås.
+- Beteendetester för session, miljövariabler, metadataförsök, simulaterexport, delad inloggningsspärr och delat exportlås.
+- HTTP-adaptern mot en lokal server som talar det granskade My Lists-formatet. Inget anrop gick till mylistsaddon.com.
 
-## Vad som finns lokalt
+## Vad adaptern gör
 
-- Ägarsessioner är en hash i Postgres. Utgång, utloggning och CSRF gäller över processer.
-- Misslyckade inloggningar räknas i Postgres. Åtta försök spärrar i 15 minuter, sedan nollställs fönstret. Ett lyckat inloggande tar bort räknaren.
-- `MY_LISTS_CREATOR_KEY` och `SIMKL_TOKEN` läses från serverns miljö. Sidan kan inte spara eller återkalla dem. Konfigurerad betyder inte verifierad.
-- Metadata sätter `metadata_fetched_at` bara efter lyckad hämtning. Tre misslyckanden lämnar titeln tills räknaren nollställs. Tidigare land, längd och IMDb-id lämnas kvar vid fel.
-- Exportens hash följer namn, ordning, IMDb-id, typ, synlighet och mål. Ett saknat simulatorkopia, ett annat mål eller en ändrad version skrivs igen. Återläsning jämför antal, ordning, titel och typ.
-- Exportlåset ligger i Postgres. En lista körs av en instans i taget. Ett avbrutet jobb kan tas över tills tre försök är förbrukade.
-
-## Vad som bara är en simulator
-
-Listexporten skriver till en minneslista i den process som kör jobbet. Texten säger lokal testsimulator. Den försvinner när processen startar om, och nästa export skriver om den. Det är inte en lista hos My Lists och inte en verifierad synk.
-
-SIMKL-sidan förhandsvisar lokala ändringar. Den anropar inte SIMKL.
+- Simulator och HTTP är skilda. `MY_LISTS_MODE=simulator` är det enda simulerade läget. Saknad origin, creator name eller serverhemlighet ger fel och skriver ingen låtsaslista.
+- HTTP-läge kräver `MY_LISTS_ORIGIN`, `MY_LISTS_CREATOR_NAME` och `MY_LISTS_CREATOR_KEY`. Origin ska vara HTTPS. Loopback-HTTP finns bara för det lokala kontraktstestet. `mylistsaddon.com` avvisas. Redirects följs inte, så nyckeln skickas inte vidare till en annan origin.
+- Status skiljer unconfigured, simulated, configured och verified. Verified sätts bara efter återläsning av identiteter, ordning, antal och namn. Synligheten är privat och slug stannar `mh-<list-id>`.
+- Hashen innehåller mål och profil. En äldre `expectedUpdatedAt` blir 409 och skrivs inte över. Timeout efter en möjlig skrivning läses tillbaka innan ett begränsat nytt försök. 429 får ett begränsat antal försök. 401 och 403 försöks inte om.
+- Ett saknat giltigt IMDb-id (`tt` och 7–8 siffror) skickas inte och namnges. Media Hub hittar inte på ett id från TMDB i HTTP-läget.
+- Långsamma HTTP-anrop ligger under samma Postgres-lås. Ett utgånget lås kan tas över.
 
 ## Fortfarande ogjort
 
-- Google TV och en riktig Wako-installation är inte testade.
-- Inga riktiga anrop eller skrivningar till My Lists eller SIMKL. Nycklarna är inte inhämtade och inte verifierade.
-- Ingen Cloudflare-flytt. Appen stannar på Vercel och Neon tills ett separat driftbeslut tas.
+- Ingen egen My Lists-worker, inget konto och ingen nyckel är skapade. Variablerna är tomma. Underlaget ligger i `docs/MY-LISTS-TEST.md`.
+- TV-protokollet är inte kört: installera katalograden, ändra och töm samma lista, mät cachefördröjningen, prova en film och en serie med fjärrkontrollen. En katalograd är inte Wakos inbyggda My Lists, och en synlig rad är inte verifierad uppspelning.
+- SIMKL anropas inte.
+- Ingen Cloudflare-flytt av Media Hub. Appen stannar på Vercel och Neon.
 - Produktionsdatabasen har inte fått migrationerna 006, 007, 008 eller 009. `OWNER_PASSWORD` är inte satt för produktion.
 - Hela katalogen är inte kompletterad med land, längd och IMDb-id.
-- Jira MB-29 till MB-38 saknar acceptanstest mot TV och de riktiga tjänsterna, så de är inte klara.
+- Jira MB-29 till MB-38 saknar acceptanstest mot en riktig testinstallation, nyckel och TV, så de är inte klara.
 
 ## Nästa avgränsade steg
 
-Välj om den privata My Lists-katalogen ska ligga på en egen installation eller på den publika tjänsten, och sätt därefter en testnyckel. Det steget är fortfarande inte en produktionspublicering.
+Skapa den pinnade testinstallationen och nyckeln utanför det här repot, sätt de tre variablerna på en icke-produktiv server, och kör TV-protokollet. Det steget är fortfarande inte en produktionspublicering.

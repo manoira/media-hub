@@ -4,6 +4,7 @@ import { db, watchlistTable } from "@workspace/db";
 import {
   isIntegrationProvider,
   listIntegrations,
+  myListsConnectionStatus,
 } from "../lib/integrations";
 
 const router: IRouter = Router();
@@ -17,7 +18,7 @@ async function catalogCount(): Promise<number> {
 
 router.get("/integrations", async (_req, res) => {
   const count = await catalogCount();
-  res.json({ integrations: listIntegrations(), catalogCount: count });
+  res.json({ integrations: listIntegrations(), myLists: myListsConnectionStatus(), catalogCount: count });
 });
 
 function refuseStoredSecret(res: { status: (code: number) => { json: (body: unknown) => void } }, provider: string): boolean {

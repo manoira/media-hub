@@ -12,10 +12,10 @@ import {
 const router: IRouter = Router();
 
 const television = [
-  "Install this private list as a catalog row in the owner's Wako.",
-  "Confirm an unrelated catalog config cannot open it.",
-  "Add and remove a title on the same installed row, and write down the delay.",
-  "Open one movie and one series with the remote, including the fallback if a streaming app does not start.",
+  "Install the private catalog row from your own My Lists test install. That row is the addon manifest, not Wako's built-in My Lists.",
+  "Change the same list, then empty it, and keep the same slug. Write down how long the TV takes to show each change.",
+  "Open one movie and one series with the remote. A row on screen is not verified playback.",
+  "Keep the install URL private. This page does not publish it.",
 ];
 
 router.get("/wako-probe", (_req, res) => {
@@ -27,7 +27,7 @@ router.get("/wako-probe", (_req, res) => {
     reviewed: REVIEWED_MY_LISTS,
     television,
     hostingNote:
-      "A private list should stay on a My Lists install you control. The free Cloudflare Workers plan is enough for one personal catalog. The public site at mylistsaddon.com is simpler to try, and the list would then live on that deployment. This check does not make that choice.",
+      "Media Hub stays on Vercel and Neon. The My Lists test catalog is a separate install you control, pinned to the reviewed version. It is not deployed from this step, and mylistsaddon.com is not called.",
   });
 });
 

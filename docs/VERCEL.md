@@ -40,7 +40,10 @@ In **Project → Settings → Environment Variables**:
 | `NODE_ENV` | `production` | Production, Preview |
 | `BASE_PATH` | `/` | Production, Preview |
 | `OWNER_PASSWORD` | Owner sign-in password. Never commit it. | Production, Preview |
-| `MY_LISTS_CREATOR_KEY` | Optional. Presence means configured, not verified with My Lists. The app does not store this value. | Production, Preview |
+| `MY_LISTS_ORIGIN` | Optional later. HTTPS origin of a separate My Lists test install. Do not set this to mylistsaddon.com, and do not set it on production until that install exists. | Production, Preview |
+| `MY_LISTS_CREATOR_NAME` | Optional later. Creator profile name for that install. | Production, Preview |
+| `MY_LISTS_CREATOR_KEY` | Optional later. Server secret for that install. Presence of the key alone is not a verified sync, and the app does not store this value. | Production, Preview |
+| `MY_LISTS_MODE` | Leave unset. `simulator` is only for a local memory test. | Local |
 | `SIMKL_TOKEN` | Optional. Same rule as the creator key. | Production, Preview |
 
 Do **not** set `PORT` on Vercel.

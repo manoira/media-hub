@@ -7,8 +7,8 @@ const DEFAULT_LEASE_SECONDS = 120;
 export type ExportClaim = "claimed" | "busy" | "exhausted";
 
 function safeDetail(error: unknown): string {
-  const message = error instanceof Error ? error.message : "The local test export failed.";
-  if (/api_key|https?:|secret|token|password/i.test(message)) return "The local test export failed.";
+  const message = error instanceof Error ? error.message : "The list export failed.";
+  if (/api_key|https?:|secret|token|password|creatorKey/i.test(message)) return "The list export failed.";
   return message.slice(0, 200);
 }
 
@@ -87,14 +87,14 @@ export async function runExclusiveListJob<T extends { ok: boolean; status: strin
     return {
       ok: false,
       status: "error",
-      detail: "This local test stopped after repeated interruptions. This is not a verified sync to My Lists.",
+      detail: "This export stopped after repeated interruptions. It was not marked verified.",
     } as T;
   }
   if (claim === "busy") {
     return {
       ok: false,
       status: "error",
-      detail: "Another instance is updating this local test. This is not a verified sync to My Lists.",
+      detail: "Another instance is updating this list. It was not marked verified.",
     } as T;
   }
   try {

@@ -325,36 +325,8 @@ export function runLocalWakoProbe(): { ok: boolean; profile: string; steps: Prob
 }
 
 export async function checkHostedMyListsSave(): Promise<{ ok: boolean; detail: string }> {
-  const url = `${REVIEWED_MY_LISTS.hostedOrigin}${REVIEWED_MY_LISTS.savePath}`;
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        origin: REVIEWED_MY_LISTS.hostedOrigin,
-      },
-      body: "{}",
-      signal: AbortSignal.timeout(8000),
-    });
-    const body = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-    const rejectedCredentials = response.ok === false
-      && body?.ok === false
-      && typeof body.error === "string"
-      && /key|username|auth/i.test(body.error);
-    if (rejectedCredentials) {
-      return {
-        ok: true,
-        detail: `Hosted My Lists answered ${response.status} for an empty save. The path is live and it refused a request with no test profile. No list was created.`,
-      };
-    }
-    return {
-      ok: false,
-      detail: `Hosted My Lists answered ${response.status}. That is not the expected refusal for a save without a profile.`,
-    };
-  } catch {
-    return {
-      ok: false,
-      detail: "The hosted My Lists save path could not be reached from this machine.",
-    };
-  }
+  return {
+    ok: true,
+    detail: "mylistsaddon.com was not contacted. Creator keys are not sent there. A private test install uses MY_LISTS_ORIGIN when you choose to set it.",
+  };
 }

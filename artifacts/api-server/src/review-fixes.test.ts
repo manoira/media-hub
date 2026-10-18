@@ -138,6 +138,7 @@ describe("review fixes", { concurrency: 1 }, () => {
   const servers: Array<{ url: string; close: () => Promise<void> }> = [];
 
   before(async () => {
+    process.env.MY_LISTS_MODE = "simulator";
     assert.ok(process.env.OWNER_PASSWORD, "OWNER_PASSWORD is not set");
     servers.push(await listen(testApp()), await listen(testApp()));
   });

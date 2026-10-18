@@ -9,6 +9,7 @@ type SyncState = {
   lastSyncedAt: string | null;
   syncError: string | null;
   install: string[];
+  connection?: "simulated" | "configured" | "verified" | "unconfigured";
   verifiedExternal?: boolean;
 };
 
@@ -56,36 +57,38 @@ export function ListSyncPanel({ listId }: { listId: number }) {
   });
 
   const status = sync.data?.syncStatus ?? "off";
+  const connection = sync.data?.connection ?? "unconfigured";
+  const simulated = connection === "simulated";
+  const blocked = connection === "unconfigured";
 
   return (
     <section className="rounded-lg border border-border/60 p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">Local test export</h2>
+          <h2 className="font-semibold">{simulated ? "Local test export" : "My Lists export"}</h2>
           <p className="text-sm text-muted-foreground">
             {sync.data?.statusLabel ?? LABELS[status] ?? status}
-            {sync.data?.verifiedExternal === false ? " · not a verified My Lists sync" : ""}
-            {sync.data?.lastSyncedAt ? ` · last local write ${new Date(sync.data.lastSyncedAt).toLocaleString()}` : ""}
+            {sync.data?.lastSyncedAt ? ` · last write ${new Date(sync.data.lastSyncedAt).toLocaleString()}` : ""}
             {sync.data?.slug ? ` · ${sync.data.slug}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "enable" })} disabled={action.isPending}>
-            Show in local test
+          <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "enable" })} disabled={action.isPending || blocked}>
+            {simulated ? "Show in local test" : "Send to My Lists"}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "sync" })} disabled={action.isPending || !sync.data?.exportEnabled}>
-            Update local test
+          <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "sync" })} disabled={action.isPending || blocked || !sync.data?.exportEnabled}>
+            {simulated ? "Update local test" : "Update My Lists"}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "pause" })} disabled={action.isPending}>
+          <Button size="sm" variant="outline" onClick={() => action.mutate({ action: "pause" })} disabled={action.isPending || blocked}>
             Pause
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={() => action.mutate({ action: "delete-external", confirm: "delete-external" })}
-            disabled={action.isPending}
+            disabled={action.isPending || blocked}
           >
-            Remove simulated copy
+            {simulated ? "Remove simulated copy" : "Remove My Lists copy"}
           </Button>
         </div>
       </div>
