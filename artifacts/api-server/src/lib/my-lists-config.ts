@@ -20,10 +20,51 @@ export type MyListsTransport =
   | { kind: "http"; origin: string; originHost: string; creatorName: string; creatorKey: string; target: string; profile: string; connection: "configured" }
   | { kind: "unconfigured"; reason: string; connection: "unconfigured" };
 
-const LOOPBACK = new Set(["127.0.0.1", "localhost"]);
-
 function readEnv(name: string): string {
   return process.env[name]?.trim() ?? "";
+}
+
+function isInternalHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host === "::1") return true;
+  const parts = host.split(".").map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+  const [a, b] = parts;
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  return false;
+}
+
+export type MyListsTestInstall = {
+  origin: string;
+  creatorName: string;
+  creatorKey: string;
+};
+
+let testInstall: MyListsTestInstall | null = null;
+
+export function useMyListsTestInstall(install: MyListsTestInstall | null): void {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("A local My Lists test install cannot be enabled in production.");
+  }
+  testInstall = install;
+}
+
+function loopbackHttpOrigin(raw: string): { origin: string; host: string } | null {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" || url.username || url.password || url.search || url.hash) return null;
+  if (url.pathname !== "/" && url.pathname !== "") return null;
+  const host = url.hostname.toLowerCase();
+  if (host !== "127.0.0.1" && host !== "localhost") return null;
+  return { origin: url.origin, host };
 }
 
 export function parseMyListsOrigin(raw: string): { ok: true; origin: string; host: string } | { ok: false; reason: string } {
@@ -43,9 +84,11 @@ export function parseMyListsOrigin(raw: string): { ok: true; origin: string; hos
   if (host === "mylistsaddon.com" || host.endsWith(".mylistsaddon.com")) {
     return { ok: false, reason: "MY_LISTS_ORIGIN must be your own install. mylistsaddon.com is not used." };
   }
-  const loopback = LOOPBACK.has(host);
-  if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) {
-    return { ok: false, reason: "MY_LISTS_ORIGIN must be HTTPS. Loopback HTTP is only for the local contract test." };
+  if (url.protocol !== "https:") {
+    return { ok: false, reason: "MY_LISTS_ORIGIN must be HTTPS." };
+  }
+  if (isInternalHost(host)) {
+    return { ok: false, reason: "MY_LISTS_ORIGIN must be a public HTTPS host. An internal address is not accepted." };
   }
   return { ok: true, origin: url.origin, host };
 }
@@ -79,6 +122,27 @@ export function myListsRetryDelayMs(): number {
 }
 
 export function resolveMyListsTransport(): MyListsTransport {
+  if (process.env.NODE_ENV !== "production" && testInstall) {
+    const parsed = parseMyListsOrigin(testInstall.origin);
+    const injected = parsed.ok ? { origin: parsed.origin, host: parsed.host } : loopbackHttpOrigin(testInstall.origin);
+    if (!injected || injected.host === "mylistsaddon.com" || injected.host.endsWith(".mylistsaddon.com")) {
+      return {
+        kind: "unconfigured",
+        reason: "The local test install must be loopback HTTP or a public HTTPS host. Nothing was written.",
+        connection: "unconfigured",
+      };
+    }
+    return {
+      kind: "http",
+      origin: injected.origin,
+      originHost: injected.host,
+      creatorName: testInstall.creatorName,
+      creatorKey: testInstall.creatorKey,
+      target: injected.origin,
+      profile: testInstall.creatorName,
+      connection: "configured",
+    };
+  }
   const mode = readEnv("MY_LISTS_MODE").toLowerCase();
   if (mode === "simulator") {
     return { kind: "simulator", target: "local-simulator", profile: "mediahub-local-test", connection: "simulated" };

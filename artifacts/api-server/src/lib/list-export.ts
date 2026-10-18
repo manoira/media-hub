@@ -272,8 +272,8 @@ export async function exportList(listId: number): Promise<ExportResult> {
     const item = toProbeItem(row, transport);
     return item ? [item] : [];
   });
-  if (transport.kind === "http" && rows.length > 0 && items.length === 0) {
-    const detail = `No title on this list has an IMDb id, so nothing was written.${omittedNote(omitted)}`;
+  if (transport.kind === "http" && omitted.length > 0) {
+    const detail = `This list is not verified. Nothing was written.${omittedNote(omitted)}`;
     await mark(list.id, "error", detail);
     return { ok: false, status: "error", detail };
   }

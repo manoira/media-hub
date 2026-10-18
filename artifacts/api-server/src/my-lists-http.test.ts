@@ -4,7 +4,7 @@ import { after, before, describe, it } from "node:test";
 import { eq } from "drizzle-orm";
 import { customListItemsTable, customListsTable, db, pool } from "@workspace/db";
 import { enqueueListExport, exportList, setListExport } from "./lib/list-export";
-import { parseCreatorName, parseMyListsOrigin } from "./lib/my-lists-config";
+import { parseCreatorName, parseMyListsOrigin, resolveMyListsTransport, useMyListsTestInstall } from "./lib/my-lists-config";
 import { myListsRequestUrl } from "./lib/my-lists-http";
 import { readLocalMyList } from "./lib/my-lists-sandbox";
 
@@ -209,13 +209,10 @@ async function makeList(name: string, rows: Array<{ imdbId: string | null; title
   return list.id;
 }
 
-function useInstall(url: string) {
-  process.env.MY_LISTS_MODE = "http";
-  process.env.MY_LISTS_ORIGIN = url;
-  process.env.MY_LISTS_CREATOR_NAME = CREATOR;
-  process.env.MY_LISTS_CREATOR_KEY = SECRET;
+function useInstall(url: string, key = SECRET) {
   process.env.MY_LISTS_HTTP_TIMEOUT_MS = "10000";
   process.env.MY_LISTS_RETRY_DELAY_MS = "0";
+  useMyListsTestInstall({ origin: url, creatorName: CREATOR, creatorKey: key });
 }
 
 describe("My Lists HTTP contract", { concurrency: 1 }, () => {
@@ -246,6 +243,7 @@ describe("My Lists HTTP contract", { concurrency: 1 }, () => {
       "SELECT name, content_hash, sync_status, my_lists_slug, sync_target, export_enabled FROM custom_lists WHERE id = 2",
     );
     assert.equal(JSON.stringify(row.rows[0] ?? null), protectedList);
+    useMyListsTestInstall(null);
     restoreEnv(previous);
     await pool.end();
   });
@@ -255,10 +253,23 @@ describe("My Lists HTTP contract", { concurrency: 1 }, () => {
     assert.equal(parseMyListsOrigin("http://example.com").ok, false);
     assert.equal(parseMyListsOrigin("https://user:pass@example.com").ok, false);
     assert.equal(parseMyListsOrigin("https://example.com/lists").ok, false);
-    assert.equal(parseMyListsOrigin("http://127.0.0.1:9").ok, true);
+    assert.equal(parseMyListsOrigin("http://127.0.0.1:9").ok, false);
+    assert.equal(parseMyListsOrigin("https://10.1.1.1").ok, false);
+    assert.equal(parseMyListsOrigin("https://lists.example.test").ok, true);
     assert.equal(parseCreatorName("ab").ok, false);
     assert.throws(() => myListsRequestUrl("https://good.test", "https://evil.test/steal"));
     assert.throws(() => myListsRequestUrl("https://mylistsaddon.com", "/api/creator/lists/save"));
+
+    const nodeEnv = process.env.NODE_ENV;
+    useMyListsTestInstall({ origin: "http://10.1.1.1", creatorName: CREATOR, creatorKey: SECRET });
+    assert.equal(resolveMyListsTransport().kind, "unconfigured");
+    useMyListsTestInstall({ origin: "http://127.0.0.1:9", creatorName: CREATOR, creatorKey: SECRET });
+    process.env.NODE_ENV = "production";
+    assert.throws(() => useMyListsTestInstall({ origin: "http://127.0.0.1:9", creatorName: CREATOR, creatorKey: SECRET }));
+    assert.equal(resolveMyListsTransport().kind, "unconfigured");
+    if (nodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = nodeEnv;
+    useMyListsTestInstall(null);
   });
 
   it("writes a private list through the reviewed save and read paths", async () => {
@@ -272,9 +283,14 @@ describe("My Lists HTTP contract", { concurrency: 1 }, () => {
         { imdbId: null, title: "Missing Identifier", year: "2004-01-01", mediaType: "movie", tmdbId: 990000414 },
       ]);
       const opened = await setListExport(listId, "enable");
-      assert.equal(opened.status, "verified");
-      assert.equal(opened.slug, `mh-${listId}`);
+      assert.equal(opened.ok, false);
+      assert.match(opened.detail, /not verified/);
       assert.match(opened.detail, /Missing Identifier/);
+      assert.equal(server.lists.has(`mh-${listId}`), false);
+      await pool.query("DELETE FROM custom_list_items WHERE list_id = $1 AND title = 'Missing Identifier'", [listId]);
+      const written = await setListExport(listId, "enable");
+      assert.equal(written.status, "verified");
+      assert.equal(written.slug, `mh-${listId}`);
       assert.equal(opened.detail.includes(SECRET), false);
       const stored = server.lists.get(`mh-${listId}`);
       assert.ok(stored);
@@ -330,8 +346,7 @@ describe("My Lists HTTP contract", { concurrency: 1 }, () => {
     const forbidden = await contractServer({ statusOverride: 403 });
     const refused = await contractServer();
     try {
-      useInstall(refused.url);
-      process.env.MY_LISTS_CREATOR_KEY = "wrong-contract-key";
+      useInstall(refused.url, "wrong-contract-key");
       const refusedList = await makeList("Refused", [MOVIES[0]!]);
       const denied = await setListExport(refusedList, "enable");
       assert.equal(denied.ok, false);
@@ -410,6 +425,7 @@ describe("My Lists HTTP contract", { concurrency: 1 }, () => {
   });
 
   it("does not report a simulator success when HTTP settings are missing", async () => {
+    useMyListsTestInstall(null);
     delete process.env.MY_LISTS_MODE;
     delete process.env.MY_LISTS_ORIGIN;
     delete process.env.MY_LISTS_CREATOR_NAME;
