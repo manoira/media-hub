@@ -116,7 +116,7 @@ Installations-URL, creator key och origin är hemligheter. Lägg dem inte i git,
 
 ## TV-protokoll
 
-Fysiskt prov 18 oktober 2026: ägaren installerade den sparade länken i Wako på Google TV. Två katalograder syntes, filmer och serier, men inga titlar. Det är ett misslyckat TV-test. Uppspelning är inte verifierad, och TV:n är inte klar.
+Fysiskt prov 18 oktober 2026: ägaren installerade den sparade länken i Wako på Google TV. Två katalograder syntes, filmer och serier, men inga titlar. De två första publiceringarna lämnade titlarna osynliga. Efter version `ec34c0d6-0a4c-459f-a8e6-3b68078f5e33` stängde ägaren Wako och öppnade samma rad igen. Ägaren bekräftade att titlarna syns. Uppspelning är inte verifierad.
 
 Länken pekade redan rätt: profil `hubcloudtest`, lista `mh-52`, katalog-id `mh-52-movies` (`Fixture movies`) och `mh-52-series` (`Fixture series`). Samma anrop som Wako gör, med och utan `skip=0`, svarade 200 på under en halv sekund. Filmkatalogen hade The Matrix och Spirited Away. Seriekatalogen hade The Bear. Nyckeln fanns inte i svaren. Tidsgränsen på 10 sekunder var inte orsaken.
 
@@ -126,10 +126,9 @@ Nästa avläsning visade att katalogerna redan var snabba och hade de tre titlar
 
 Testworkern publicerades om igen, version `ec34c0d6-0a4c-459f-a8e6-3b68078f5e33`, ovanpå pin `b9c0a951`. Patchen är `deploy/my-lists-test/custom-list-poster.patch`. Egna listor får nu JPEG-affisch på `.../img.jpg`, år som fyrsiffrig text, och `showId` bara på serier. Saknas vanlig metadata för ett `tt`-id byggs den från den installerade listan. Efteråt svarade filmkatalogen 200 på 541 ms med The Matrix och Spirited Away, seriekatalogen 200 på 238 ms med The Bear, och båda meta-anropen hade namn och poster. Nyckeln fanns inte i svaren. Installationsfilen är oförändrad.
 
-Ägaren ska stänga Wako helt och öppna samma redan installerade rad igen. Ingen ny länk.
+Ägaren använde samma redan installerade rad. Ingen ny länk.
 
 Kvar, och inte gjort:
 
-1. Bekräfta på TV:n att The Matrix, Spirited Away och The Bear syns efter omstarten. TV:n är inte klar förrän det är sett.
-2. Ändra samma lista och töm den. Skriv upp sekunderna. Slug ska stanna `mh-52`.
-3. Öppna en film och en serie med fjärrkontrollen. Att raden syns är inte verifierad uppspelning.
+1. Ändra samma lista och töm den. Skriv upp sekunderna. Slug ska stanna `mh-52`.
+2. Öppna en film och en serie med fjärrkontrollen. Att titlarna syns är inte verifierad uppspelning.
