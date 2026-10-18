@@ -1,0 +1,28 @@
+# Isolated My Lists catalog test. Not Media Hub, and not a production worker.
+# The ids below are sentinels. They do not name a real KV namespace or D1
+# database. Replace them only in an untracked copy after those resources are
+# created, and never commit the real ids.
+#
+# No custom domain, no route, no cron, no secrets, and no paid-plan budgets.
+
+name = "mediahub-mylists-test"
+main = "worker_entry_combined.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+preview_urls = false
+
+[[kv_namespaces]]
+binding = "CONFIGS"
+id = "00000000000000000000000000000000"
+preview_id = "00000000000000000000000000000000"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mediahub-mylists-test"
+database_id = "00000000-0000-0000-0000-000000000000"
+preview_database_id = "00000000-0000-0000-0000-000000000000"
+
+[vars]
+BULK_RESOLVE_SUBREQUEST_BUDGET = "48"
+DETAILS_BATCH_SUBREQUEST_BUDGET = "48"
+CRON_SUBREQUEST_BUDGET = "48"

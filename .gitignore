@@ -17,6 +17,7 @@ node_modules
 .env.*.local
 .local/
 data/local-backup.json
+deploy/my-lists-test/wrangler.local.toml
 
 # IDEs and editors
 /.idea
