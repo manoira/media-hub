@@ -28,30 +28,30 @@ Körningen står i `docs/MY-LISTS-TEST.md`. Den skapade en isolerad privat testl
 - List-API:t och katalogen är olika ytor. Filmkatalogen visade filmerna, seriekatalogen visade serien. Utan ägarnyckel syntes inte den levande privata listan. En titel utan id fanns kvar i list-API:t och saknades i katalogen.
 - Ett dataanrop hämtade manifestet som JSON. En webbläsarnavigering, anropad mot den pinnade worker-modulen, svarade 302 till `/{config}/configure` utan nyckel i adressen. Samma header genom den lokala Miniflare-proxyn gav fortfarande JSON 200, så redirecten är belagd mot modulen och inte genom proxyn.
 
-## Cloudflare-testinstallationen är förberedd, inte skapad
+## Cloudflare-testinstallationen är publicerad, tom
 
-`deploy/my-lists-test/wrangler.toml` namnger en egen worker, `mediahub-mylists-test`, på `workers.dev`. Den har ingen route, ingen egen domän och ingen cron. KV-bindingen `CONFIGS` och D1-bindingen `DB` pekar på id-platshållare, inte på en riktig databas. `scripts/my-lists-cloudflare-prepare.mjs` kontrollerar den pinnade SHA:n, att `schema.sql` bara får namnges mot den nya tomma databasen `mediahub-mylists-test`, och kompilerar workern med `wrangler deploy --dry-run`. Dry-run laddar inte upp något.
+`https://mediahub-mylists-test.emmyznet.workers.dev` är den separata testworkern `mediahub-mylists-test`, publicerad 18 oktober 2026 från pin `b9c0a951787019f5d30065b5c2e7e5492472d3e2` på kontot under emmyznet@gmail.com. Den har KV `mediahub-mylists-test-CONFIGS` bunden som `CONFIGS` och en ny D1 `mediahub-mylists-test` bunden som `DB`. `schema.sql` kördes en gång mot den nya tomma databasen. Version `7d2d169b-de1e-4ab6-bcec-3cee83de4555` tar all trafik. Cron är av, det finns ingen egen domän och inga hemligheter. Budgetarna är 48. Ingen betald plan slogs på.
 
-Körningen 18 oktober 2026: pin `b9c0a951787019f5d30065b5c2e7e5492472d3e2`, artefakt 4 284 418 byte, sha256 `15d980a92a0b81231d7a8c56fc505759c365aa91d40ddb6a3c1d0672f6a0a3a6`, bundle 3 709 359 byte, `authenticated no`, `uploaded no`. Wrangler är inte inloggad. Inget konto, ingen KV, ingen D1, ingen worker och ingen profil är skapad.
+Resurs-id:n ligger bara i gitignorerade `deploy/my-lists-test/wrangler.local.toml`. Den committade konfigurationen har fortfarande platshållare. Detaljerna står i `docs/MY-LISTS-TEST.md`.
 
-Media Hubs `MY_LISTS_*` är fortfarande tomma. Exporten är unconfigured, inte simulated och inte verified. Konfigurationen nämner inte `mh-2` och inte någon Neon-databas. Free-plan: budgetarna är 48, cron är av, och ingen betald plan slås på.
+`GET /manifest.json` svarade JSON 200 med version 1.5.5. En navigering svarade 302 till `/configure` utan nyckel i adressen. `GET /` är den tomma konfiguratorn. Det är inte en verifierad privat katalog. Ingen profil och ingen Creator Key finns. Media Hubs `MY_LISTS_*` är fortfarande tomma, så exporten är unconfigured, inte simulated och inte verified.
 
 ## Fortfarande ogjort
 
-- Wrangler är inte autentiserad. Den publika HTTPS-adressen finns därför inte ännu. Nästa åtgärd är att ägaren loggar in på det Cloudflare-konto som ska äga just den här testworkern, och sedan kör skapandekommandona i `docs/MY-LISTS-TEST.md`. Ingen profil och ingen beständig nyckel skapas före det.
+- Ingen privat Creator-profil och ingen beständig testnyckel. De tre `MY_LISTS_*`-variablerna är inte satta, inte ens på en icke-produktiv server.
+- Privat katalog, fel nyckel och en titel utan IMDb-id är inte körda mot den publika adressen.
 - Ingen fysisk Google TV- eller Wako-verifiering är gjord. Ingen uppspelning är provad. En katalograd är inte verifierad uppspelning.
 - SIMKL anropas inte.
 - Ingen Cloudflare-flytt av Media Hub. Appen stannar på Vercel och Neon.
 - Produktionsdatabasen har inte fått migrationerna 006, 007, 008 eller 009. `OWNER_PASSWORD` är inte satt för produktion.
 - Hela katalogen är inte kompletterad med land, längd och IMDb-id.
-- Jira MB-29 till MB-38 saknar acceptanstest mot en riktig testinstallation, nyckel och TV, så de är inte klara.
+- Jira MB-29 till MB-38 saknar acceptanstest mot profil, nyckel och TV, så de är inte klara.
 
 ## Nästa avgränsade steg
 
-1. Ägaren kör `npx wrangler login` mot det Cloudflare-konto som ska äga `mediahub-mylists-test`. Det kontot är inte Media Hubs Vercel-projekt. Skapa inget konto härifrån.
-2. Skapa sedan, och först då, en ny KV och en ny tom D1 med kommandona i `docs/MY-LISTS-TEST.md`. Kör `schema.sql` bara mot `mediahub-mylists-test`. Kör inte migrationerna efter det, och kör inte `schema.sql` mot någon befintlig databas.
-3. Deploy till `workers.dev` utan cron, utan egen domän och utan hemligheter. Adressen blir `https://mediahub-mylists-test.<subdomän>.workers.dev`.
-4. Skapa en privat profil där. Sätt de tre Media Hub-variablerna bara på en icke-produktiv server. Tills de är satta förblir exporten unconfigured.
-5. Kör kontrollprotokollet, inklusive HTTPS, ägarprofil, privat katalog och serverhemligheter. Den fysiska TV-kontrollen kommer sist och är inte körd.
+1. Skapa en privat Creator Profile på `https://mediahub-mylists-test.emmyznet.workers.dev`. Nyckeln visas en gång. Spara den bara i den icke-produktiva Media Hub-serverns miljö.
+2. Sätt `MY_LISTS_ORIGIN` till den adressen, plus `MY_LISTS_CREATOR_NAME` och `MY_LISTS_CREATOR_KEY`, bara där. Sätt dem inte i Vercel-produktion. Tills de är satta förblir exporten unconfigured.
+3. Kör resten av kontrollprotokollet mot en ny lista, inte `mh-2`: export av de tre fixturtitlarna, fel nyckel, titel utan IMDb-id, och att den privata katalogen kräver ägarnyckeln.
+4. Den fysiska TV-kontrollen kommer sist och är inte körd.
 
 Det steget är fortfarande inte en produktionspublicering.
