@@ -40,7 +40,7 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 ## Fortfarande ogjort
 
-- Ingen fysisk Google TV- eller Wako-verifiering är gjord. Ingen uppspelning är provad. En katalograd är inte verifierad uppspelning. Instruktionen står i `docs/MY-LISTS-TEST.md` och är inte utförd.
+- Fysiskt Wako-prov på Google TV misslyckades: katalograderna syntes, titlarna inte. Svaret saknade poster. Testworkern är publicerad om med den enda katalogändringen. TV:n är inte klar förrän ägaren ser titlarna. Ingen uppspelning är provad.
 - SIMKL anropas inte.
 - Ingen Cloudflare-flytt av Media Hub. Appen stannar på Vercel och Neon.
 - Produktionsdatabasen har inte fått migrationerna 006, 007, 008 eller 009. `OWNER_PASSWORD` är inte satt för produktion.
@@ -49,8 +49,8 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 ## Nästa avgränsade steg
 
-1. Installera den lokala länken i Wako på den fysiska TV:n. Använd inte den tomma konfiguratorn.
-2. Kontrollera att `Cloud fixture renamed` syns med de tre fixturtitlarna. Ändra listan, töm den, och skriv upp hur många sekunder TV:n behöver. Slug ska stanna `mh-52`.
-3. Öppna en film och en serie med fjärrkontrollen. Det är fortfarande inte gjort, och det är inte verifierad uppspelning förrän det är gjort.
+1. Uppdatera den redan installerade Wako-raden. Installera inte en ny länk. Bekräfta att The Matrix, Spirited Away och The Bear syns.
+2. Ändra listan, töm den, och skriv upp hur många sekunder TV:n behöver. Slug ska stanna `mh-52`.
+3. Öppna en film och en serie med fjärrkontrollen. Det är inte verifierad uppspelning förrän det är gjort.
 
 Det steget är fortfarande inte en produktionspublicering.

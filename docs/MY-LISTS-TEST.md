@@ -116,10 +116,16 @@ Installations-URL, creator key och origin är hemligheter. Lägg dem inte i git,
 
 ## TV-protokoll
 
-Det här är inte kört. Ingen fysisk Google TV, ingen Wako-installation och ingen uppspelning har verifierats.
+Fysiskt prov 18 oktober 2026: ägaren installerade den sparade länken i Wako på Google TV. Två katalograder syntes, filmer och serier, men inga titlar. Det är ett misslyckat TV-test. Uppspelning är inte verifierad, och TV:n är inte klar.
 
-1. Öppna den lokala installationslänken i `artifacts/api-server/.env.my-lists-install.local` på datorn och installera den raden i Wako. Använd inte den tomma konfiguratorn på `workers.dev`, inte `mylistsaddon.com` och inte Wakos inbyggda My Lists.
-2. Kontrollera att `Cloud fixture renamed` syns, med The Matrix, Spirited Away och The Bear.
-3. Ändra samma lista i Media Hub och vänta. Skriv upp hur många sekunder TV:n behöver. Töm den sedan och skriv upp det också. Slug ska stanna `mh-52`.
-4. Öppna en film och en serie med fjärrkontrollen. Att raden syns är inte verifierad uppspelning.
-5. Klistra inte in installationslänken i chatten, i git eller i en delad anteckning.
+Länken pekade redan rätt: profil `hubcloudtest`, lista `mh-52`, katalog-id `mh-52-movies` (`Fixture movies`) och `mh-52-series` (`Fixture series`). Samma anrop som Wako gör, med och utan `skip=0`, svarade 200 på under en halv sekund. Filmkatalogen hade The Matrix och Spirited Away. Seriekatalogen hade The Bear. Nyckeln fanns inte i svaren. Tidsgränsen på 10 sekunder var inte orsaken.
+
+Orsaken var svaret: varje post hade id, typ och namn, men inget `poster`. Stremios katalogposter kräver poster, och Wakos katalograd är en postrad. Den inbakade kopian i länken är tom. De levande titlarna kom från den privata listan, utan bildadress. Övriga kataloger i samma worker fyller redan i `https://images.metahub.space/poster/medium/` plus IMDb-id. Den raden saknades för egna listor.
+
+Testworkern publicerades om med bara den ändringen, version `4d5f1169-23bd-4805-89c9-a32f47f1d10a`, ovanpå pin `b9c0a951`. Patchen är `deploy/my-lists-test/custom-list-poster.patch`. Efteråt hade samma katalogsvar poster, samma tre titlar, och tog 141–288 ms. Installationsfilen är oförändrad. Ägaren ska uppdatera den redan installerade raden i Wako, inte installera en ny länk.
+
+Kvar, och inte gjort:
+
+1. Bekräfta på TV:n att The Matrix, Spirited Away och The Bear syns efter uppdateringen.
+2. Ändra samma lista och töm den. Skriv upp sekunderna. Slug ska stanna `mh-52`.
+3. Öppna en film och en serie med fjärrkontrollen. Att raden syns är inte verifierad uppspelning.

@@ -1,0 +1,13 @@
+diff --git a/worker_entry_combined.js b/worker_entry_combined.js
+index 226c12a..49bc9ae 100644
+--- a/worker_entry_combined.js
++++ b/worker_entry_combined.js
+@@ -14522,7 +14522,7 @@ async function fetchCustomListCatalog(entry, skip = 0, keys = {}) {
+       showId: it.showId || (!it.isMovie && (it.imdbId || it.id)),
+       type: entry.type || (it.kind === 'series' || it.type === 'series' || it.type === 'tv' ? 'series' : 'movie'),
+       name: it.title || it.name || it.showTitle,
+-      poster: it.poster || it.showPoster || undefined,
++      poster: it.poster || it.showPoster || (String(it.imdbId || it.id || '').startsWith('tt') ? 'https://images.metahub.space/poster/medium/' + (it.imdbId || it.id) + '/img' : undefined),
+       releaseInfo: it.year || undefined,
+       seasonNum: it.seasonNum != null ? it.seasonNum : (it.season != null ? it.season : undefined),
+       episodeNum: it.episodeNum != null ? it.episodeNum : (it.episode != null ? it.episode : undefined),
