@@ -90,7 +90,7 @@ Alternativ: kör SQL i Neon-konsolen (t.ex. `lib/db/migrations/*.sql`).
 
 **Regel:** lokal dev = dev-DB. Prod-DB = bara medveten migrering.
 
-Vad som återstår på `v2-local-foundation` står i `docs/V2-REMAINING.md`. Migration `008` ska inte köras mot produktion förrän den branchen ska publiceras.
+Vad som återstår på `v2-local-foundation` står i `docs/V2-REMAINING.md`. Migrationerna 006–009 ska inte köras mot produktion förrän den branchen ska publiceras.
 
 ---
 

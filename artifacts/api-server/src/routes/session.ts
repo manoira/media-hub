@@ -7,26 +7,9 @@ import {
   ownerPasswordConfigured,
   passwordMatches,
 } from "../lib/owner-session";
+import { clearLoginFailures, recordLoginFailure, tooManyLoginAttempts } from "../lib/login-limit";
 
 const router: IRouter = Router();
-const failures = new Map<string, { count: number; resetAt: number }>();
-
-function tooManyAttempts(ip: string): boolean {
-  const now = Date.now();
-  const current = failures.get(ip);
-  if (!current || current.resetAt <= now) return false;
-  return current.count >= 8;
-}
-
-function recordFailure(ip: string): void {
-  const now = Date.now();
-  const current = failures.get(ip);
-  if (!current || current.resetAt <= now) {
-    failures.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 });
-    return;
-  }
-  current.count += 1;
-}
 
 router.get("/session", async (req, res) => {
   res.json({ authenticated: await isOwnerRequest(req) });
@@ -35,7 +18,7 @@ router.get("/session", async (req, res) => {
 router.post("/session/login", async (req, res) => {
   if (!assertLoginCsrf(req, res)) return;
   const ip = req.ip || "local";
-  if (tooManyAttempts(ip)) {
+  if (await tooManyLoginAttempts(ip)) {
     res.status(429).json({ error: "Too many sign-in attempts. Wait a few minutes." });
     return;
   }
@@ -45,11 +28,11 @@ router.post("/session/login", async (req, res) => {
   }
   const password = typeof req.body?.password === "string" ? req.body.password : "";
   if (!passwordMatches(password)) {
-    recordFailure(ip);
+    await recordLoginFailure(ip);
     res.status(401).json({ error: "That password was not accepted." });
     return;
   }
-  failures.delete(ip);
+  await clearLoginFailures(ip);
   await createOwnerSession(res);
   res.json({ authenticated: true });
 });

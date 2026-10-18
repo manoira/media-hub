@@ -5,6 +5,7 @@ import {
   customListItemsTable,
   customListsTable,
   episodeProgressTable,
+  listExportLocksTable,
   listSyncQueueTable,
   simklMarkersTable,
   watchEventsTable,
@@ -94,6 +95,7 @@ export async function readCatalogBackup(database: Database): Promise<CatalogBack
 
 export async function restoreCatalog(database: Database, backup: CatalogBackup): Promise<void> {
   await database.delete(listSyncQueueTable);
+  await database.delete(listExportLocksTable);
   await database.delete(customListItemsTable);
   await database.delete(customListsTable);
   await database.delete(watchEventsTable);

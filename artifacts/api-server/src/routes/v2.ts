@@ -25,7 +25,7 @@ const hosting = {
   summary: "Stay on the current Vercel and Neon Postgres setup. A Cloudflare move stays a later choice, after the Google TV check.",
   reasons: [
     "The catalog uses Postgres arrays, jsonb rules, and unique indexes. D1 is not a drop-in replacement.",
-    "Owner sessions are hashes in Postgres, so a new server instance can read the same sign-in. The export queue still runs in this process.",
+    "Owner sessions, login throttling, and the list export lock are rows in Postgres, so a second instance shares them.",
     "The dev catalog is already on Neon. Moving it is a separate rehearsed restore, not part of this local pass.",
     "My Lists and SIMKL secrets are server environment variables. A value there means configured, not that the remote account was verified.",
   ],

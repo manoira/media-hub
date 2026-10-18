@@ -70,15 +70,19 @@ export async function fillMissingMetadata(options: {
       );
       filled += 1;
     } catch (error) {
-      await pool.query(
-        `UPDATE watchlist
-         SET metadata_attempt_count = metadata_attempt_count + 1,
-             metadata_attempted_at = now(),
-             metadata_last_error = $2
-         WHERE id = $1
-           AND metadata_fetched_at IS NULL`,
-        [row.id, safeError(error)],
-      );
+      try {
+        await pool.query(
+          `UPDATE watchlist
+           SET metadata_attempt_count = metadata_attempt_count + 1,
+               metadata_attempted_at = now(),
+               metadata_last_error = $2
+           WHERE id = $1
+             AND metadata_fetched_at IS NULL`,
+          [row.id, safeError(error)],
+        );
+      } catch {
+        // The title stays unfetched, so a later batch can retry it.
+      }
       failed += 1;
     }
   }

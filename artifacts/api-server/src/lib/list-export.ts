@@ -9,6 +9,7 @@ import {
   type ListRules,
 } from "@workspace/db";
 import { evaluateListRules } from "./list-rules";
+import { runExclusiveListJob } from "./export-lock";
 import { deleteLocalMyList, readLocalMyList, saveLocalMyList, type ProbeItem } from "./my-lists-sandbox";
 
 const MAX_ITEMS = 500;
@@ -146,12 +147,25 @@ function statusLabel(status: string): string {
   return "Off";
 }
 
-let chain: Promise<unknown> = Promise.resolve();
+function payloadMatches(
+  remote: { ok: boolean; name?: string; items?: Array<{ imdbId: string; title: string; type: string }> },
+  name: string,
+  items: ExportItem[],
+): boolean {
+  return Boolean(
+    remote.ok
+    && remote.name === name
+    && remote.items
+    && remote.items.length === items.length
+    && remote.items.every((item, index) => {
+      const expected = items[index];
+      return item.imdbId === expected?.imdbId && item.title === expected?.title && item.type === expected?.type;
+    }),
+  );
+}
 
 export function enqueueListExport(listId: number): Promise<ExportResult> {
-  const run = chain.then(() => exportList(listId));
-  chain = run.then(() => undefined, () => undefined);
-  return run;
+  return runExclusiveListJob(listId, () => exportList(listId));
 }
 
 type ExportResult = {
@@ -212,6 +226,24 @@ export async function exportList(listId: number): Promise<ExportResult> {
       count: items.length,
     };
   }
+  if (!list.contentHash && remote.ok && payloadMatches(remote, list.name, items)) {
+    await db.update(customListsTable).set({
+      myListsSlug: slug,
+      contentHash: hash,
+      externalVersion: String(remote.updatedAt),
+      syncStatus: "simulated",
+      syncTarget: LOCAL_EXPORT_TARGET,
+      syncError: null,
+      lastSyncedAt: new Date(),
+    }).where(eq(customListsTable.id, list.id));
+    return {
+      ok: true,
+      status: "simulated",
+      detail: "The local test simulator already had this list, so the saved version was recorded again. This is not a verified sync to My Lists.",
+      slug,
+      count: items.length,
+    };
+  }
 
   const idempotencyKey = `${list.id}:${hash}`;
   await db.insert(listSyncQueueTable).values({
@@ -232,7 +264,7 @@ export async function exportList(listId: number): Promise<ExportResult> {
   if (!saved.ok) {
     const status = saved.status === 409 ? "conflict" : "error";
     const detail = saved.status === 409
-      ? "The external list changed. Media Hub did not overwrite it."
+      ? "The simulated list changed. Media Hub did not overwrite it."
       : saved.error;
     await db.update(listSyncQueueTable).set({ status }).where(eq(listSyncQueueTable.idempotencyKey, idempotencyKey));
     await mark(list.id, status, detail);
@@ -240,9 +272,10 @@ export async function exportList(listId: number): Promise<ExportResult> {
   }
 
   const read = readLocalMyList(slug);
-  const sameOrder = Boolean(read.ok && read.items && read.items.every((item, index) => item.imdbId === items[index]?.imdbId));
-  if (!read.ok || !read.items || read.items.length !== items.length || !sameOrder) {
-    const detail = "The list was written, but reading it back did not match the order or count.";
+  const sameOrder = payloadMatches(read, list.name, items);
+  if (!read.ok || !sameOrder) {
+    const detail = "The list was written, but reading it back did not match the order, titles, or count.";
+    await db.update(listSyncQueueTable).set({ status: "error" }).where(eq(listSyncQueueTable.idempotencyKey, idempotencyKey));
     await mark(list.id, "error", detail);
     return { ok: false, status: "error", detail, slug };
   }

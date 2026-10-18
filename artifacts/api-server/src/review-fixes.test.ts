@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import express from "express";
@@ -22,6 +22,8 @@ import {
   exportStillMatches,
   setListExport,
 } from "./lib/list-export";
+import { claimExport, EXPORT_ATTEMPT_LIMIT, runExclusiveListJob } from "./lib/export-lock";
+import { loginSubjectHash } from "./lib/login-limit";
 import { METADATA_ATTEMPT_LIMIT, fillMissingMetadata } from "./lib/metadata-fill";
 import { deleteLocalMyList, readLocalMyList, saveLocalMyList } from "./lib/my-lists-sandbox";
 import { ownerGate, sessionTokenHash } from "./lib/owner-session";
@@ -90,6 +92,34 @@ function rowsInAnotherProcess(hash: string): Promise<number> {
   });
 }
 
+function claimFromAnotherProcess(listId: number): Promise<string> {
+  const moduleUrl = pathToFileURL(path.join(repoRoot, "artifacts", "api-server", "src", "lib", "export-lock.ts")).href;
+  const script = `
+    import { claimExport } from ${JSON.stringify(moduleUrl)};
+    import { pool } from "@workspace/db";
+    const result = await claimExport(Number(process.env.LIST_ID), "other-process", 30);
+    process.stdout.write(result);
+    await pool.end();
+  `;
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+      cwd: path.join(repoRoot, "scripts"),
+      env: { ...process.env, LIST_ID: String(listId) },
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => { stdout += String(chunk); });
+    child.stderr.on("data", (chunk) => { stderr += String(chunk); });
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr.replace(/postgres(?:ql)?:\/\/\S+/gi, "postgresql://redacted") || `export probe exited ${code}`));
+        return;
+      }
+      resolve(stdout.trim());
+    });
+  });
+}
+
 async function insertWatch(tmdbId: number, title: string, imdbId: string | null): Promise<number> {
   await pool.query("DELETE FROM watchlist WHERE media_type = 'movie' AND tmdb_id = $1", [tmdbId]);
   const inserted = await pool.query<{ id: number }>(
@@ -125,6 +155,9 @@ describe("review fixes", { concurrency: 1 }, () => {
     }
     for (const hash of sessionHashes) {
       await pool.query("DELETE FROM owner_sessions WHERE token_hash = $1", [hash]);
+    }
+    for (const ip of ["127.0.0.1", "::ffff:127.0.0.1", "::1", "local"]) {
+      await pool.query("DELETE FROM login_failures WHERE subject_hash = $1", [loginSubjectHash(ip)]);
     }
     await pool.end();
   });
@@ -406,6 +439,7 @@ describe("review fixes", { concurrency: 1 }, () => {
     }).where(eq(customListsTable.id, list.id));
     const conflict = await exportList(list.id);
     assert.equal(conflict.status, "conflict");
+    assert.match(conflict.detail, /simulated list/);
     assert.equal(readLocalMyList(slug).name, "Externally renamed");
 
     deleteLocalMyList(slug);
@@ -413,5 +447,120 @@ describe("review fixes", { concurrency: 1 }, () => {
     createdListIds.pop();
     await pool.query("DELETE FROM watchlist WHERE id = $1", [watchId]);
     createdWatchIds.pop();
+  });
+
+  it("counts sign-in failures across servers and resets when the window expires", async () => {
+    const [first, second] = servers;
+    assert.ok(first && second);
+    const wrong = JSON.stringify({ password: "incorrect-password" });
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const response = await fetch(`${first.url}/api/session/login`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-media-hub-request": "1" },
+        body: wrong,
+      });
+      assert.equal(response.status, 401);
+    }
+    const blocked = await fetch(`${second.url}/api/session/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-media-hub-request": "1" },
+      body: wrong,
+    });
+    assert.equal(blocked.status, 429);
+    const stored = await pool.query<{ subject_hash: string; failure_count: number }>(
+      "SELECT subject_hash, failure_count FROM login_failures WHERE failure_count >= 8",
+    );
+    assert.equal(stored.rows.length, 1);
+    assert.equal(stored.rows[0]?.failure_count, 8);
+    assert.equal(JSON.stringify(stored.rows).includes("incorrect-password"), false);
+
+    await pool.query("UPDATE login_failures SET reset_at = now() - interval '1 minute' WHERE subject_hash = $1", [stored.rows[0]?.subject_hash]);
+    const reset = await fetch(`${second.url}/api/session/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-media-hub-request": "1" },
+      body: wrong,
+    });
+    assert.equal(reset.status, 401);
+    const reopened = await pool.query<{ failure_count: number }>(
+      "SELECT failure_count FROM login_failures WHERE subject_hash = $1",
+      [stored.rows[0]?.subject_hash],
+    );
+    assert.equal(reopened.rows[0]?.failure_count, 1);
+
+    const accepted = await fetch(`${first.url}/api/session/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-media-hub-request": "1" },
+      body: JSON.stringify({ password: process.env.OWNER_PASSWORD }),
+    });
+    assert.equal(accepted.status, 200);
+    sessionHashes.push(sessionTokenHash(decodeURIComponent(cookiePair(accepted).slice("mh_session=".length))));
+    const cleared = await pool.query(
+      "SELECT 1 FROM login_failures WHERE subject_hash = $1",
+      [stored.rows[0]?.subject_hash],
+    );
+    assert.equal(cleared.rowCount, 0);
+  });
+
+  it("runs one export at a time and resumes an interrupted lock", async () => {
+    const [list] = await db.insert(customListsTable).values({ name: "Review lock", kind: "manual" }).returning();
+    assert.ok(list);
+    createdListIds.push(list.id);
+    let active = 0;
+    let peak = 0;
+    const held = { ok: true, status: "simulated", detail: "held" };
+    await Promise.all([0, 1].map(() => runExclusiveListJob(list.id, async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      active -= 1;
+      return held;
+    })));
+    assert.equal(peak, 1);
+
+    await pool.query(
+      `INSERT INTO list_export_locks (list_id, owner, status, attempt_count, expires_at)
+       VALUES ($1, 'dead-worker', 'running', 1, now() - interval '1 minute')
+       ON CONFLICT (list_id) DO UPDATE SET owner = 'dead-worker', status = 'running', attempt_count = 1, expires_at = now() - interval '1 minute'`,
+      [list.id],
+    );
+    let resumed = 0;
+    const recovered = await runExclusiveListJob(list.id, async () => {
+      resumed += 1;
+      return held;
+    });
+    assert.equal(resumed, 1);
+    assert.equal(recovered.status, "simulated");
+    const afterRecovery = await pool.query<{ status: string; attempt_count: number }>(
+      "SELECT status, attempt_count FROM list_export_locks WHERE list_id = $1",
+      [list.id],
+    );
+    assert.equal(afterRecovery.rows[0]?.status, "done");
+    assert.equal(afterRecovery.rows[0]?.attempt_count, 0);
+
+    await pool.query(
+      `UPDATE list_export_locks
+       SET owner = 'dead-worker', status = 'running', attempt_count = $2, expires_at = now() - interval '1 minute'
+       WHERE list_id = $1`,
+      [list.id, EXPORT_ATTEMPT_LIMIT],
+    );
+    let blocked = 0;
+    const stopped = await runExclusiveListJob(list.id, async () => {
+      blocked += 1;
+      return held;
+    });
+    assert.equal(blocked, 0);
+    assert.equal(stopped.status, "error");
+
+    await pool.query("DELETE FROM list_export_locks WHERE list_id = $1", [list.id]);
+    const heldByParent = await claimExport(list.id, "parent-worker", 30);
+    assert.equal(heldByParent, "claimed");
+    const other = await claimFromAnotherProcess(list.id);
+    assert.equal(other, "busy");
+    await pool.query("UPDATE list_export_locks SET expires_at = now() - interval '1 minute' WHERE list_id = $1", [list.id]);
+    const taken = await claimFromAnotherProcess(list.id);
+    assert.equal(taken, "claimed");
+
+    await db.delete(customListsTable).where(eq(customListsTable.id, list.id));
+    createdListIds.pop();
   });
 });

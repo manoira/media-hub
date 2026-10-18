@@ -19,6 +19,7 @@
 
 export * from "./watchlist";
 export * from "./owner-sessions";
+export * from "./guards";
 export * from "./episode-progress";
 export * from "./custom-lists";
 export * from "./notifications";
