@@ -120,12 +120,16 @@ Fysiskt prov 18 oktober 2026: ägaren installerade den sparade länken i Wako p�
 
 Länken pekade redan rätt: profil `hubcloudtest`, lista `mh-52`, katalog-id `mh-52-movies` (`Fixture movies`) och `mh-52-series` (`Fixture series`). Samma anrop som Wako gör, med och utan `skip=0`, svarade 200 på under en halv sekund. Filmkatalogen hade The Matrix och Spirited Away. Seriekatalogen hade The Bear. Nyckeln fanns inte i svaren. Tidsgränsen på 10 sekunder var inte orsaken.
 
-Orsaken var svaret: varje post hade id, typ och namn, men inget `poster`. Stremios katalogposter kräver poster, och Wakos katalograd är en postrad. Den inbakade kopian i länken är tom. De levande titlarna kom från den privata listan, utan bildadress. Övriga kataloger i samma worker fyller redan i `https://images.metahub.space/poster/medium/` plus IMDb-id. Den raden saknades för egna listor.
+Första gissningen var att varje post hade id, typ och namn, men inget `poster`. Den inbakade kopian i länken är tom, och de levande titlarna kom från den privata listan utan bildadress. Version `4d5f1169-23bd-4805-89c9-a32f47f1d10a` fyllde i en Metahub-adress som slutade på `/img`. Den adressen är WebP utan filändelse. Ägaren såg fortfarande inga titlar efter den publiceringen.
 
-Testworkern publicerades om med bara den ändringen, version `4d5f1169-23bd-4805-89c9-a32f47f1d10a`, ovanpå pin `b9c0a951`. Patchen är `deploy/my-lists-test/custom-list-poster.patch`. Efteråt hade samma katalogsvar poster, samma tre titlar, och tog 141–288 ms. Installationsfilen är oförändrad. Ägaren ska uppdatera den redan installerade raden i Wako, inte installera en ny länk.
+Nästa avläsning visade att katalogerna redan var snabba och hade de tre titlarna. Det som Wako hämtar när en post öppnas, `/meta/movie/tt0133093.json` och `/meta/series/tt14452776.json`, svarade `{ "meta": null }` på under en sekund. Orsaken är att testworkern inte har någon TMDB-nyckel, och den vanliga metadatafunktionen avbryter direkt utan nyckel. Manifestet annonserar ändå meta för IMDb-id, så Wako äger de anropen. Ingen TMDB-nyckel lades till.
+
+Testworkern publicerades om igen, version `ec34c0d6-0a4c-459f-a8e6-3b68078f5e33`, ovanpå pin `b9c0a951`. Patchen är `deploy/my-lists-test/custom-list-poster.patch`. Egna listor får nu JPEG-affisch på `.../img.jpg`, år som fyrsiffrig text, och `showId` bara på serier. Saknas vanlig metadata för ett `tt`-id byggs den från den installerade listan. Efteråt svarade filmkatalogen 200 på 541 ms med The Matrix och Spirited Away, seriekatalogen 200 på 238 ms med The Bear, och båda meta-anropen hade namn och poster. Nyckeln fanns inte i svaren. Installationsfilen är oförändrad.
+
+Ägaren ska stänga Wako helt och öppna samma redan installerade rad igen. Ingen ny länk.
 
 Kvar, och inte gjort:
 
-1. Bekräfta på TV:n att The Matrix, Spirited Away och The Bear syns efter uppdateringen.
+1. Bekräfta på TV:n att The Matrix, Spirited Away och The Bear syns efter omstarten. TV:n är inte klar förrän det är sett.
 2. Ändra samma lista och töm den. Skriv upp sekunderna. Slug ska stanna `mh-52`.
 3. Öppna en film och en serie med fjärrkontrollen. Att raden syns är inte verifierad uppspelning.

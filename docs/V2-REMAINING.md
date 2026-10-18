@@ -40,7 +40,7 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 ## Fortfarande ogjort
 
-- Fysiskt Wako-prov på Google TV misslyckades: katalograderna syntes, titlarna inte. Svaret saknade poster. Testworkern är publicerad om med den enda katalogändringen. TV:n är inte klar förrän ägaren ser titlarna. Ingen uppspelning är provad.
+- Fysiskt Wako-prov på Google TV har misslyckats två gånger: katalograderna syns, titlarna inte. Affischfältet räckte inte. Meta-anropen svarade `meta: null` eftersom testworkern saknar TMDB-nyckel. Version `ec34c0d6-0a4c-459f-a8e6-3b68078f5e33` bygger metadata från listan i stället. TV:n är inte klar förrän ägaren ser titlarna. Ingen uppspelning är provad.
 - SIMKL anropas inte.
 - Ingen Cloudflare-flytt av Media Hub. Appen stannar på Vercel och Neon.
 - Produktionsdatabasen har inte fått migrationerna 006, 007, 008 eller 009. `OWNER_PASSWORD` är inte satt för produktion.
@@ -49,7 +49,7 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 ## Nästa avgränsade steg
 
-1. Uppdatera den redan installerade Wako-raden. Installera inte en ny länk. Bekräfta att The Matrix, Spirited Away och The Bear syns.
+1. Stäng Wako helt och öppna samma redan installerade rad. Installera inte en ny länk. Bekräfta att The Matrix, Spirited Away och The Bear syns.
 2. Ändra listan, töm den, och skriv upp hur många sekunder TV:n behöver. Slug ska stanna `mh-52`.
 3. Öppna en film och en serie med fjärrkontrollen. Det är inte verifierad uppspelning förrän det är gjort.
 
