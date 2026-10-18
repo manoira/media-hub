@@ -1,6 +1,6 @@
 # Egen My Lists-testinstallation
 
-Media Hub stannar på Vercel och Neon. My Lists-testet är en separat worker på `workers.dev`. Ingen Creator-profil, ingen Creator Key och ingen SIMKL-koppling ingår. `mylistsaddon.com` anropas inte. Den publika tomma konfiguratorn är inte en verifierad privat katalog.
+Media Hub stannar på Vercel och Neon. My Lists-testet är en separat worker på `workers.dev`. En privat testprofil finns bara där, och nyckeln ligger bara i den gitignorerade lokala serverfilen. Ingen SIMKL-koppling ingår. `mylistsaddon.com` anropas inte. Den publika tomma konfiguratorn är inte en verifierad privat katalog.
 
 Pinnad kod: My Lists 1.5.5, commit `b9c0a951787019f5d30065b5c2e7e5492472d3e2` (26 september 2026, "Every list updates live"). Följ inte nyare `main`.
 
@@ -82,24 +82,29 @@ Verifiering samma dag:
 - `GET /manifest.json` utan `Sec-Fetch-Mode: navigate` svarade 200 JSON, addon-id `app.my-list`, version `1.5.5`, utan creator key.
 - Samma adress med `Sec-Fetch-Mode: navigate` svarade 302 till `https://mediahub-mylists-test.emmyznet.workers.dev/configure`, utan nyckel i adressen.
 
-En publik tom konfigurator är inte en verifierad privat katalog. Media Hubs `MY_LISTS_*` är fortfarande tomma, så exporten är unconfigured.
+En publik tom konfigurator är inte en verifierad privat katalog. Profilen och de tre `MY_LISTS_*`-variablerna finns bara i den lokala icke-produktiva serverfilen. De är inte satta i Vercel.
 
 ## Kontrollprotokoll
 
-Gör inte detta mot `mh-2` eller mot produktionsdatabasen. Skapa en ny Media Hub-lista när profilen finns. Låt `MY_LISTS_*` vara tomma tills den punkten, så statusen inte blir simulated eller verified i förtid.
+Kört 18 oktober 2026 mot dev-databasen `ep-nameless-bread` och testworkern. Listan `mh-2` var oförändrad. Inga befintliga katalograder togs bort. Fyra syntetiska katalograder lades till, så antalet gick från 1250 till 1254. Ingen andra profil skapades.
 
-HTTPS, kontrollerat 18 oktober 2026 mot den tomma tjänsten:
+Första exportförsöket av `mh-52` avbröts av klientens tidsgräns på 10 sekunder medan workern var kall. Fjärrlistan fanns inte efter det avbrottet, så inget skrevs. Omkörningen använde 30 sekunder, läste tillståndet först och skapade inga dubbletter. Inget anrop hänger.
+
+HTTPS, kontrollerat mot den tomma tjänsten samma dag:
 
 1. `GET /manifest.json` utan `Sec-Fetch-Mode: navigate` svarade JSON 200 från `mediahub-mylists-test.emmyznet.workers.dev`.
 2. En navigering med `Sec-Fetch-Mode: navigate` svarade 302 till `/configure` på samma värd, utan creator key i adressen.
-3. `MY_LISTS_ORIGIN` är ännu inte satt. När den sätts ska den vara `https://mediahub-mylists-test.emmyznet.workers.dev`, utan sökväg. HTTP, interna adresser och `mylistsaddon.com` ska fortfarande avvisas.
+3. `MY_LISTS_ORIGIN` är `https://mediahub-mylists-test.emmyznet.workers.dev`, utan sökväg, bara i den lokala serverfilen.
 
-Ägarprofil och privat katalog:
+Ägarprofil och privat katalog, verifierat:
 
-1. Skapa en privat Creator Profile på testworkern. Nyckeln visas en gång. Lägg den bara i servermiljön på den icke-produktiva Media Hub-processen, aldrig i git eller i Vercel-produktion.
-2. Exportera en ny lista med `tt0133093`, `tt0245429` och `tt14452776`. Slug ska bli `mh-<nytt id>`, inte `mh-2`. Synlighet privat. Återläsning krävs för verified.
-3. Fel nyckel ger 401 och skriver inget. En titel utan giltigt IMDb-id gör hela listan till error, inte verified.
-4. Filmkatalogen visar filmerna och seriekatalogen visar serien när install-configen bär ägarnyckeln. Utan nyckel ska den levande privata listan inte komma ut. List-API:t är en annan yta än katalogen.
+1. En profil, `hubcloudtest`, skapades en gång. Nyckeln sparades direkt i `artifacts/api-server/.env`. Den skrivs inte här.
+2. Listan `Cloud fixture renamed`, id 52, exporterades som `mh-52`. Synlighet privat. Återläsningen matchade namn, ordning och de tre titlarna `tt14452776`, `tt0133093`, `tt0245429` efter namnbyte och ny ordning. Status verified.
+3. Fel nyckel gav avvisning och skapade ingen lista. Listan `Cloud missing id` har en titel utan IMDb-id. Exporten blev error, inte verified, och `mh-51` finns inte på workern.
+4. Med ägarnyckel i installationsconfigen visade filmkatalogen `tt0133093` och `tt0245429`, och seriekatalogen visade `tt14452776`. Utan nyckel kom bara locktiteln `tt0000001`, inte den levande privata listan. Fel nyckel på `/api/save` gav 401.
+5. Konfliktprovet mot `mh-54` lämnade fjärrnamnet `Changed on the worker`. Media Hub skrev inte över det.
+
+Installationslänken ligger i gitignorerade `artifacts/api-server/.env.my-lists-install.local`. Den innehåller inte nyckeln, men länken själv är en hemlighet och står inte här.
 
 Serverhemligheter:
 
@@ -113,7 +118,8 @@ Installations-URL, creator key och origin är hemligheter. Lägg dem inte i git,
 
 Det här är inte kört. Ingen fysisk Google TV, ingen Wako-installation och ingen uppspelning har verifierats.
 
-1. Installera katalograden från testinstallationens manifest i Wako. Det är addons katalograd, inte Wakos inbyggda My Lists.
-2. Ändra samma lista och töm den sedan. Slug ska vara oförändrad. Skriv upp hur många sekunder TV:n behöver för att visa varje ändring.
-3. Öppna en film och en serie med fjärrkontrollen. Att raden syns är inte verifierad uppspelning.
-4. Behandla installations-URL:en som en hemlighet.
+1. Öppna den lokala installationslänken i `artifacts/api-server/.env.my-lists-install.local` på datorn och installera den raden i Wako. Använd inte den tomma konfiguratorn på `workers.dev`, inte `mylistsaddon.com` och inte Wakos inbyggda My Lists.
+2. Kontrollera att `Cloud fixture renamed` syns, med The Matrix, Spirited Away och The Bear.
+3. Ändra samma lista i Media Hub och vänta. Skriv upp hur många sekunder TV:n behöver. Töm den sedan och skriv upp det också. Slug ska stanna `mh-52`.
+4. Öppna en film och en serie med fjärrkontrollen. Att raden syns är inte verifierad uppspelning.
+5. Klistra inte in installationslänken i chatten, i git eller i en delad anteckning.

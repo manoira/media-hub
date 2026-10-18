@@ -28,30 +28,29 @@ Körningen står i `docs/MY-LISTS-TEST.md`. Den skapade en isolerad privat testl
 - List-API:t och katalogen är olika ytor. Filmkatalogen visade filmerna, seriekatalogen visade serien. Utan ägarnyckel syntes inte den levande privata listan. En titel utan id fanns kvar i list-API:t och saknades i katalogen.
 - Ett dataanrop hämtade manifestet som JSON. En webbläsarnavigering, anropad mot den pinnade worker-modulen, svarade 302 till `/{config}/configure` utan nyckel i adressen. Samma header genom den lokala Miniflare-proxyn gav fortfarande JSON 200, så redirecten är belagd mot modulen och inte genom proxyn.
 
-## Cloudflare-testinstallationen är publicerad, tom
+## Cloudflare-testinstallationen har en privat testprofil
 
-`https://mediahub-mylists-test.emmyznet.workers.dev` är den separata testworkern `mediahub-mylists-test`, publicerad 18 oktober 2026 från pin `b9c0a951787019f5d30065b5c2e7e5492472d3e2` på kontot under emmyznet@gmail.com. Den har KV `mediahub-mylists-test-CONFIGS` bunden som `CONFIGS` och en ny D1 `mediahub-mylists-test` bunden som `DB`. `schema.sql` kördes en gång mot den nya tomma databasen. Version `7d2d169b-de1e-4ab6-bcec-3cee83de4555` tar all trafik. Cron är av, det finns ingen egen domän och inga hemligheter. Budgetarna är 48. Ingen betald plan slogs på.
+`https://mediahub-mylists-test.emmyznet.workers.dev` är testworkern. Profilen `hubcloudtest` skapades en gång. Nyckeln och de tre `MY_LISTS_*`-variablerna ligger bara i den lokala serverfilen, inte i Vercel och inte i git. Exporten av `mh-52` är verified över HTTPS. Detaljerna står i `docs/MY-LISTS-TEST.md`.
 
-Resurs-id:n ligger bara i gitignorerade `deploy/my-lists-test/wrangler.local.toml`. Den committade konfigurationen har fortfarande platshållare. Detaljerna står i `docs/MY-LISTS-TEST.md`.
+Första skrivförsöket mot `mh-52` avbröts efter 10 sekunder. Inget fanns på workern då. Omkörningen med 30 sekunder passerade utan en ny profil. Ett senare läsanrop, begränsat till 15 sekunder, svarade 200 och visade två privata listor: `mh-52` med tre titlar och `mh-54` med konfliktnamnet orört. Inget anrop blockerades.
 
-`GET /manifest.json` svarade JSON 200 med version 1.5.5. En navigering svarade 302 till `/configure` utan nyckel i adressen. `GET /` är den tomma konfiguratorn. Det är inte en verifierad privat katalog. Ingen profil och ingen Creator Key finns. Media Hubs `MY_LISTS_*` är fortfarande tomma, så exporten är unconfigured, inte simulated och inte verified.
+Den privata katalogen kräver ägarnyckeln. Utan nyckel syntes bara en locktitel. Fel nyckel skrev inget. En titel utan IMDb-id stoppade hela exporten. `mh-2` och de tidigare 1250 katalograderna är kvar. Fyra syntetiska rader lades till.
+
+Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.env.my-lists-install.local`.
 
 ## Fortfarande ogjort
 
-- Ingen privat Creator-profil och ingen beständig testnyckel. De tre `MY_LISTS_*`-variablerna är inte satta, inte ens på en icke-produktiv server.
-- Privat katalog, fel nyckel och en titel utan IMDb-id är inte körda mot den publika adressen.
-- Ingen fysisk Google TV- eller Wako-verifiering är gjord. Ingen uppspelning är provad. En katalograd är inte verifierad uppspelning.
+- Ingen fysisk Google TV- eller Wako-verifiering är gjord. Ingen uppspelning är provad. En katalograd är inte verifierad uppspelning. Instruktionen står i `docs/MY-LISTS-TEST.md` och är inte utförd.
 - SIMKL anropas inte.
 - Ingen Cloudflare-flytt av Media Hub. Appen stannar på Vercel och Neon.
 - Produktionsdatabasen har inte fått migrationerna 006, 007, 008 eller 009. `OWNER_PASSWORD` är inte satt för produktion.
 - Hela katalogen är inte kompletterad med land, längd och IMDb-id.
-- Jira MB-29 till MB-38 saknar acceptanstest mot profil, nyckel och TV, så de är inte klara.
+- Jira MB-29 till MB-38 är inte klara. HTTPS-protokollet är kört, men den fysiska TV-kontrollen är inte gjord.
 
 ## Nästa avgränsade steg
 
-1. Skapa en privat Creator Profile på `https://mediahub-mylists-test.emmyznet.workers.dev`. Nyckeln visas en gång. Spara den bara i den icke-produktiva Media Hub-serverns miljö.
-2. Sätt `MY_LISTS_ORIGIN` till den adressen, plus `MY_LISTS_CREATOR_NAME` och `MY_LISTS_CREATOR_KEY`, bara där. Sätt dem inte i Vercel-produktion. Tills de är satta förblir exporten unconfigured.
-3. Kör resten av kontrollprotokollet mot en ny lista, inte `mh-2`: export av de tre fixturtitlarna, fel nyckel, titel utan IMDb-id, och att den privata katalogen kräver ägarnyckeln.
-4. Den fysiska TV-kontrollen kommer sist och är inte körd.
+1. Installera den lokala länken i Wako på den fysiska TV:n. Använd inte den tomma konfiguratorn.
+2. Kontrollera att `Cloud fixture renamed` syns med de tre fixturtitlarna. Ändra listan, töm den, och skriv upp hur många sekunder TV:n behöver. Slug ska stanna `mh-52`.
+3. Öppna en film och en serie med fjärrkontrollen. Det är fortfarande inte gjort, och det är inte verifierad uppspelning förrän det är gjort.
 
 Det steget är fortfarande inte en produktionspublicering.
