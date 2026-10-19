@@ -1,4 +1,5 @@
 import { acceptImdbId, pool } from "@workspace/db";
+import { isTmdbBudgetError } from "./tmdb-budget";
 
 export const METADATA_ATTEMPT_LIMIT = 3;
 export const METADATA_FILL_LIMIT = 10;
@@ -22,7 +23,7 @@ export async function fillMissingMetadata(options: {
   limit?: number;
   ids?: number[];
   load: (row: { id: number; tmdbId: number; mediaType: string }) => Promise<MetadataSource>;
-}): Promise<{ filled: number; failed: number; lookedAt: number }> {
+}): Promise<{ filled: number; failed: number; lookedAt: number; stopped: "budget" | null }> {
   const limit = options.limit ?? METADATA_FILL_LIMIT;
   const scoped = options.ids ?? [];
   const selected = await pool.query<Candidate>(
@@ -45,6 +46,7 @@ export async function fillMissingMetadata(options: {
 
   let filled = 0;
   let failed = 0;
+  let stopped: "budget" | null = null;
   for (const row of selected.rows) {
     try {
       const details = await options.load({
@@ -70,6 +72,10 @@ export async function fillMissingMetadata(options: {
       );
       filled += 1;
     } catch (error) {
+      if (isTmdbBudgetError(error)) {
+        stopped = "budget";
+        break;
+      }
       try {
         await pool.query(
           `UPDATE watchlist
@@ -87,5 +93,5 @@ export async function fillMissingMetadata(options: {
     }
   }
 
-  return { filled, failed, lookedAt: selected.rows.length };
+  return { filled, failed, lookedAt: selected.rows.length, stopped };
 }

@@ -6,20 +6,6 @@ const COOKIE = "mh_session";
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 const CSRF_HEADER = "x-media-hub-request";
 
-const PERSONAL_PREFIXES = [
-  "/api/watchlist",
-  "/api/lists",
-  "/api/progress",
-  "/api/notifications",
-  "/api/stats",
-  "/api/wako-probe",
-  "/api/recommendations",
-  "/api/integrations",
-  "/api/home",
-  "/api/backup",
-  "/api/v2",
-];
-
 export function ownerPasswordConfigured(): boolean {
   return Boolean(process.env.OWNER_PASSWORD?.trim());
 }
@@ -46,8 +32,9 @@ export function sessionTokenHash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-function cookieSuffix(): string {
-  return process.env.NODE_ENV === "production" ? "; Secure" : "";
+export function sessionCookieAttributes(nodeEnv = process.env.NODE_ENV): string {
+  const secure = nodeEnv === "production" ? "; Secure" : "";
+  return `HttpOnly; SameSite=Lax; Path=/${secure}`;
 }
 
 export async function readSessionToken(req: Request): Promise<string | null> {
@@ -79,7 +66,7 @@ export async function createOwnerSession(res: Response): Promise<void> {
   );
   res.append(
     "Set-Cookie",
-    `${COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(SESSION_MS / 1000)}${cookieSuffix()}`,
+    `${COOKIE}=${encodeURIComponent(token)}; ${sessionCookieAttributes()}; Max-Age=${Math.floor(SESSION_MS / 1000)}`,
   );
 }
 
@@ -90,12 +77,14 @@ export async function clearOwnerSession(req: Request, res: Response): Promise<vo
   }
   res.append(
     "Set-Cookie",
-    `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${cookieSuffix()}`,
+    `${COOKIE}=; ${sessionCookieAttributes()}; Max-Age=0`,
   );
 }
 
-function isPersonalPath(path: string): boolean {
-  return PERSONAL_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+function isPublicApi(method: string, path: string): boolean {
+  if (method === "GET" && (path === "/api/healthz" || path === "/api/session")) return true;
+  if (method === "POST" && path === "/api/session/login") return true;
+  return false;
 }
 
 function hasCsrfHeader(req: Request): boolean {
@@ -109,8 +98,7 @@ function requestPath(req: Request): string {
 export async function ownerGate(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const path = requestPath(req);
-    const logout = path === "/api/session/logout";
-    if (!logout && !isPersonalPath(path)) {
+    if (isPublicApi(req.method, path)) {
       next();
       return;
     }

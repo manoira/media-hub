@@ -1,2 +1,3 @@
-// Zod schemas only. The generated type barrel repeats two schema names, so it is exposed at @workspace/api-zod/types.
+// Zod schemas. Generated type aliases live at @workspace/api-zod/types.
+// Two of those aliases reuse schema names, so this entry does not re-export them.
 export * from "./generated/api";

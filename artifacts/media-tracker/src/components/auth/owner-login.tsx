@@ -46,7 +46,7 @@ export function OwnerLogin() {
           <Film className="h-6 w-6 text-primary" />
           <h1 className="text-3xl font-bold tracking-tight">Private catalog</h1>
           <p className="text-sm text-muted-foreground">
-            Sign in to read or change your lists. Search metadata stays available to the server, but the catalog does not.
+            Sign in to open your lists, search, and title details.
           </p>
         </div>
         <div className="space-y-2">

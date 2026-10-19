@@ -15,6 +15,7 @@ import { demonstrateNotificationLock } from "../lib/notification-sync";
 import { mergeWatchState, practiceMergeSamples } from "../lib/simkl-sync";
 import { getCredits, getMovieDetails, getTvDetails } from "../lib/tmdb";
 import { fillMissingMetadata } from "../lib/metadata-fill";
+import { withManualTmdbBudget } from "../lib/tmdb-budget";
 import { readTmdbUsage, recordLocalRead } from "../lib/tmdb-cache";
 
 const router: IRouter = Router();
@@ -67,7 +68,7 @@ router.post("/v2/usage/measure", async (_req, res) => {
 });
 
 router.post("/v2/metadata/fill", async (_req, res) => {
-  const result = await fillMissingMetadata({
+  const result = await withManualTmdbBudget(() => fillMissingMetadata({
     load: async (row) => {
       const details = row.mediaType === "tv" ? await getTvDetails(row.tmdbId) : await getMovieDetails(row.tmdbId);
       return {
@@ -77,7 +78,7 @@ router.post("/v2/metadata/fill", async (_req, res) => {
         runtime: details.runtime,
       };
     },
-  });
+  }));
   res.json(result);
 });
 

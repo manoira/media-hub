@@ -1,13 +1,15 @@
 import {
   db,
+  pool,
   watchlistTable,
   notificationsTable,
   notificationMetaTable,
   notificationSyncStateTable,
 } from "@workspace/db";
-import { eq, isNull, and, sql } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 import { getTvDetails, getWatchProviders } from "./tmdb";
 import { withTmdbSurface } from "./tmdb-cache";
+import { isTmdbBudgetError, MANUAL_TMDB_DAILY_LIMIT, remainingManualTmdbBudget, withManualTmdbBudget } from "./tmdb-budget";
 
 const SYNC_INTERVAL_MS = 15 * 60 * 1000;
 const STREAMING_COUNTRY = "SE";
@@ -194,7 +196,22 @@ export function notificationSyncInProgress(): boolean {
   return notificationSyncActive;
 }
 
-export async function demonstrateNotificationLock(): Promise<{ skipped: "busy" | "interval" | null }> {
+export type NotificationSyncResult = {
+  skipped: "busy" | "interval" | "budget" | null;
+  checked: number;
+  remaining: number;
+  limit: number;
+};
+
+async function syncResult(
+  skipped: NotificationSyncResult["skipped"],
+  checked: number,
+): Promise<NotificationSyncResult> {
+  const remaining = await remainingManualTmdbBudget().catch(() => 0);
+  return { skipped, checked, remaining, limit: MANUAL_TMDB_DAILY_LIMIT };
+}
+
+export async function demonstrateNotificationLock(): Promise<{ skipped: "busy" | "interval" | "budget" | null }> {
   notificationSyncActive = true;
   try {
     const result = await syncNotifications(false);
@@ -204,13 +221,15 @@ export async function demonstrateNotificationLock(): Promise<{ skipped: "busy" |
   }
 }
 
-export async function syncNotifications(force = false): Promise<{ skipped: "busy" | "interval" | null; checked: number }> {
-  if (notificationSyncActive) return { skipped: "busy", checked: 0 };
+export async function syncNotifications(force = false): Promise<NotificationSyncResult> {
+  if (notificationSyncActive) return syncResult("busy", 0);
+  const remainingBefore = await remainingManualTmdbBudget().catch(() => 0);
+  if (remainingBefore <= 0) return syncResult("budget", 0);
   notificationSyncActive = true;
   try {
     const [syncState] = await db.select().from(notificationSyncStateTable).limit(1);
     const lastSync = syncState?.lastSyncAt?.getTime() ?? 0;
-    if (!force && Date.now() - lastSync < SYNC_INTERVAL_MS) return { skipped: "interval", checked: 0 };
+    if (!force && Date.now() - lastSync < SYNC_INTERVAL_MS) return syncResult("interval", 0);
 
     const watchlist = await db.select().from(watchlistTable);
     const watchingTv = watchlist.filter((item) => item.mediaType === "tv" && item.status === "watching");
@@ -219,26 +238,29 @@ export async function syncNotifications(force = false): Promise<{ skipped: "busy
     const tvBatch = watchingTv.slice(cursor, cursor + CHECKS_PER_RUN);
     const watchBatch = wantToWatch.slice(cursor, cursor + CHECKS_PER_RUN);
     let checked = 0;
+    let budgetHit = false;
 
-    await withTmdbSurface("notifications", async () => {
+    await withManualTmdbBudget(() => withTmdbSurface("notifications", async () => {
       for (const item of tvBatch) {
+        if (budgetHit) break;
         checked += 1;
         try {
           await checkNewSeasons(item);
-        } catch {
-          // Skip TMDB failures for individual items
+        } catch (error) {
+          if (isTmdbBudgetError(error)) budgetHit = true;
         }
       }
       for (const item of watchBatch) {
+        if (budgetHit) break;
         checked += 1;
         try {
           await checkLaunchDate(item);
           await checkStreamingAvailable(item);
-        } catch {
-          // Skip TMDB failures for individual items
+        } catch (error) {
+          if (isTmdbBudgetError(error)) budgetHit = true;
         }
       }
-    });
+    }));
 
     const nextCursor = Math.max(watchingTv.length, wantToWatch.length);
     const advanced = nextCursor === 0 ? 0 : (cursor + CHECKS_PER_RUN) % nextCursor;
@@ -256,7 +278,7 @@ export async function syncNotifications(force = false): Promise<{ skipped: "busy
           set: { lastSyncAt: new Date(), cursorOffset: advanced },
         });
     }
-    return { skipped: null, checked };
+    return syncResult(budgetHit ? "budget" : null, checked);
   } finally {
     notificationSyncActive = false;
   }
@@ -270,11 +292,10 @@ export async function listNotifications() {
 }
 
 export async function getUnreadCount(): Promise<number> {
-  const rows = await db
-    .select({ id: notificationsTable.id })
-    .from(notificationsTable)
-    .where(isNull(notificationsTable.readAt));
-  return rows.length;
+  const found = await pool.query<{ count: number }>(
+    "SELECT count(*)::int AS count FROM notifications WHERE read_at IS NULL",
+  );
+  return found.rows[0]?.count ?? 0;
 }
 
 export async function markAllNotificationsRead(): Promise<void> {

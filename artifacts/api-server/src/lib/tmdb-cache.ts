@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { db, pool, tmdbCacheTable, tmdbMeterTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { isTmdbBudgetError, manualBudgetActive, pruneTmdbCache, takeManualTmdbBudget, TmdbBudgetError } from "./tmdb-budget";
 
 const surfaceStore = new AsyncLocalStorage<string>();
 const inflight = new Map<string, Promise<unknown>>();
@@ -100,6 +101,7 @@ async function writeCache(key: string, payload: unknown): Promise<void> {
     target: tmdbCacheTable.cacheKey,
     set: { payload, fetchedAt: now, expiresAt, staleUntil },
   });
+  await pruneTmdbCache().catch(() => undefined);
 }
 
 export async function cachedTmdb<T>(path: string, params: Record<string, string>, load: () => Promise<T>): Promise<T> {
@@ -117,11 +119,16 @@ export async function cachedTmdb<T>(path: string, params: Record<string, string>
   const promise = (async () => {
     const started = Date.now();
     try {
+      if (manualBudgetActive()) {
+        const allowed = await takeManualTmdbBudget();
+        if (!allowed) throw new TmdbBudgetError();
+      }
       const payload = await load();
       await writeCache(key, payload).catch(() => undefined);
       await meter(surface, { misses: 1, external: 1, durationMs: Date.now() - started }).catch(() => undefined);
       return payload;
     } catch (err) {
+      if (isTmdbBudgetError(err)) throw err;
       if (cached?.stale) {
         await meter(surface, { stale: 1, errors: 1, durationMs: Date.now() - started }).catch(() => undefined);
         return cached.payload as T;

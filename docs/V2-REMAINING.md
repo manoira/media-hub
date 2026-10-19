@@ -1,6 +1,12 @@
 # Kvar på v2-local-foundation
 
-Branchen är inte mergad till `main` och deployas inte som produktion. `vercel.json` pekar inte ut en branch. Vercel publicerar `main`. Migrationerna 006, 007, 008 och 009 är körda bara mot dev-databasen. Ingen ny migration ingick i det här steget.
+Nästa release är en privat katalog på dator och mobil. Egna listor stannar i Media Hubs databas. TV, My Lists, SIMKL och Trakt är pausade och ingen kod för dem är raderad.
+
+Branchen är inte mergad till `main` och deployas inte som produktion. `vercel.json` pekar inte ut en branch. Vercel publicerar `main` (`3c0ae94`). Senaste kända produktionsdeploy är READY med `live: false`. `https://media.emmyzettergren.se/` och `/api/healthz` svarade HTTP 402. Projekt- och teamanrop visade ingen pausorsak. Billing svarade 404 `costs_not_found`.
+
+Produktionsblockerare, och bara den: ägaren behöver öppna Vercel-projektet för Media Hub, sidan Usage, och läsa den text som förklarar Pause eller kvot. Ingen ny inloggning görs härifrån, och ingen betald uppgradering.
+
+Migrationerna 006, 007, 008 och 009 är körda bara mot dev-databasen. Produktionsbackup och migrering väntar tills 402-orsaken är känd.
 
 ## Kontroller som är gröna här
 
@@ -49,7 +55,8 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 ## Nästa avgränsade steg
 
-1. Ändra listan, töm den, och skriv upp hur många sekunder TV:n behöver. Slug ska stanna `mh-52`.
-2. Öppna en film och en serie med fjärrkontrollen. Det är inte verifierad uppspelning förrän det är gjort.
+1. Ägaren läser Usage/Pause-texten i Vercel-panelen för Media Hub. Det är blockeraren för produktionspublicering.
+2. Därefter backup, återställning mot en separat kopia, och migrationerna 006–009 på den kopian.
+3. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
 
 Det steget är fortfarande inte en produktionspublicering.

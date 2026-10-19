@@ -1025,10 +1025,10 @@ export const CreateCustomListBody = zod.object({
   "genreIds": zod.array(zod.number()).optional(),
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
-  "minRatings": zod.array(zod.number()).optional(),
-  "productionCountries": zod.array(zod.string()).optional(),
-  "runtimeBelow": zod.number().optional(),
-  "minUserRatings": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional().describe('TMDB vote average. OR within the selected thresholds; the lowest selected threshold is used.'),
+  "productionCountries": zod.array(zod.string()).optional().describe('Production country ISO codes, separate from original language. OR within the list.'),
+  "runtimeBelow": zod.number().optional().describe('Keep titles whose stored runtime is shorter than this many minutes.'),
+  "minUserRatings": zod.array(zod.number()).optional().describe('Personal rating, separate from the TMDB vote. The lowest selected threshold is used.'),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1061,10 +1061,10 @@ export const GetCustomListResponse = zod.object({
   "genreIds": zod.array(zod.number()).optional(),
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
-  "minRatings": zod.array(zod.number()).optional(),
-  "productionCountries": zod.array(zod.string()).optional(),
-  "runtimeBelow": zod.number().optional(),
-  "minUserRatings": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional().describe('TMDB vote average. OR within the selected thresholds; the lowest selected threshold is used.'),
+  "productionCountries": zod.array(zod.string()).optional().describe('Production country ISO codes, separate from original language. OR within the list.'),
+  "runtimeBelow": zod.number().optional().describe('Keep titles whose stored runtime is shorter than this many minutes.'),
+  "minUserRatings": zod.array(zod.number()).optional().describe('Personal rating, separate from the TMDB vote. The lowest selected threshold is used.'),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1110,10 +1110,10 @@ export const UpdateCustomListBody = zod.object({
   "genreIds": zod.array(zod.number()).optional(),
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
-  "minRatings": zod.array(zod.number()).optional(),
-  "productionCountries": zod.array(zod.string()).optional(),
-  "runtimeBelow": zod.number().optional(),
-  "minUserRatings": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional().describe('TMDB vote average. OR within the selected thresholds; the lowest selected threshold is used.'),
+  "productionCountries": zod.array(zod.string()).optional().describe('Production country ISO codes, separate from original language. OR within the list.'),
+  "runtimeBelow": zod.number().optional().describe('Keep titles whose stored runtime is shorter than this many minutes.'),
+  "minUserRatings": zod.array(zod.number()).optional().describe('Personal rating, separate from the TMDB vote. The lowest selected threshold is used.'),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1138,10 +1138,10 @@ export const UpdateCustomListResponse = zod.object({
   "genreIds": zod.array(zod.number()).optional(),
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
-  "minRatings": zod.array(zod.number()).optional(),
-  "productionCountries": zod.array(zod.string()).optional(),
-  "runtimeBelow": zod.number().optional(),
-  "minUserRatings": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional().describe('TMDB vote average. OR within the selected thresholds; the lowest selected threshold is used.'),
+  "productionCountries": zod.array(zod.string()).optional().describe('Production country ISO codes, separate from original language. OR within the list.'),
+  "runtimeBelow": zod.number().optional().describe('Keep titles whose stored runtime is shorter than this many minutes.'),
+  "minUserRatings": zod.array(zod.number()).optional().describe('Personal rating, separate from the TMDB vote. The lowest selected threshold is used.'),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1230,10 +1230,10 @@ export const RefreshCustomListResponse = zod.object({
   "genreIds": zod.array(zod.number()).optional(),
   "languages": zod.array(zod.string()).optional(),
   "keywordIds": zod.array(zod.number()).optional(),
-  "minRatings": zod.array(zod.number()).optional(),
-  "productionCountries": zod.array(zod.string()).optional(),
-  "runtimeBelow": zod.number().optional(),
-  "minUserRatings": zod.array(zod.number()).optional(),
+  "minRatings": zod.array(zod.number()).optional().describe('TMDB vote average. OR within the selected thresholds; the lowest selected threshold is used.'),
+  "productionCountries": zod.array(zod.string()).optional().describe('Production country ISO codes, separate from original language. OR within the list.'),
+  "runtimeBelow": zod.number().optional().describe('Keep titles whose stored runtime is shorter than this many minutes.'),
+  "minUserRatings": zod.array(zod.number()).optional().describe('Personal rating, separate from the TMDB vote. The lowest selected threshold is used.'),
   "yearRanges": zod.array(zod.object({
   "min": zod.number().optional(),
   "max": zod.number().optional()
@@ -1477,12 +1477,13 @@ export const GetRecentlyWatchedResponse = zod.array(GetRecentlyWatchedResponseIt
 
 
 /**
+ * Returns saved notifications. This request never calls TMDB.
  * @summary List update notifications
  */
-export const getNotificationsQueryRefreshDefault = true;
+export const getNotificationsQueryRefreshDefault = false;
 
 export const GetNotificationsQueryParams = zod.object({
-  "refresh": zod.coerce.boolean().default(getNotificationsQueryRefreshDefault).describe('Force a notification sync before listing')
+  "refresh": zod.coerce.boolean().default(getNotificationsQueryRefreshDefault).describe('Ignored. Listing never calls TMDB. Use POST \/notifications\/refresh.')
 })
 
 export const GetNotificationsResponseItem = zod.object({
@@ -1504,6 +1505,18 @@ export const GetNotificationsResponse = zod.array(GetNotificationsResponseItem)
  */
 export const GetUnreadNotificationCountResponse = zod.object({
   "count": zod.number()
+})
+
+
+/**
+ * Manual TMDB check. At most 20 watching shows and 20 want-to-watch titles, and at most 40 external TMDB requests per day together with metadata fill.
+ * @summary Check a limited batch of saved titles
+ */
+export const RefreshNotificationsResponse = zod.object({
+  "skipped": zod.string().nullable(),
+  "checked": zod.number(),
+  "remaining": zod.number(),
+  "limit": zod.number()
 })
 
 
