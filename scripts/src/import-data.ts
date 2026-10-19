@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { db, pool, restoreCatalog, type CatalogBackup } from "@workspace/db";
+import { db, fileRestoreDecision, pool, restoreCatalog, type CatalogBackup } from "@workspace/db";
 import { loadApiServerEnv } from "./lib/load-env.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -9,6 +9,13 @@ const repoRoot = path.resolve(here, "..", "..");
 
 async function main() {
   await loadApiServerEnv(repoRoot);
+  const decision = fileRestoreDecision({
+    nodeEnv: process.env.NODE_ENV,
+    databaseUrl: process.env.DATABASE_URL,
+  });
+  if (!decision.allowed) {
+    throw new Error(decision.reason);
+  }
   const fileArg = process.argv.slice(2).find((arg) => arg !== "--");
   const inFile = path.resolve(repoRoot, fileArg ?? path.join("data", "local-backup.json"));
 

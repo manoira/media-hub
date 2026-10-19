@@ -1,4 +1,6 @@
 import { cachedTmdb } from "./tmdb-cache";
+import { chargeManualHttpAttempt } from "./tmdb-budget";
+import { eachTmdbHttpAttempt } from "./tmdb-attempts";
 import { getProviderLink, resolveWatchProviderLinks } from "./watch-provider-links";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
@@ -44,23 +46,11 @@ function getApiKey(): string {
   return key;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function fetchTmdbResponse(url: URL): Promise<Response> {
-  let lastStatus = 0;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (response.status !== 429 && response.status < 500) return response;
-      lastStatus = response.status;
-    } catch {
-      lastStatus = 0;
-    }
-    await sleep(Math.min(2000, 300 * (attempt + 1)));
-  }
-  throw Object.assign(new Error(lastStatus ? `TMDB ${lastStatus}` : "TMDB request failed"), { status: lastStatus || 504 });
+  return eachTmdbHttpAttempt(
+    () => chargeManualHttpAttempt(),
+    () => fetch(url, { signal: AbortSignal.timeout(8000) }),
+  );
 }
 
 async function tmdbFetch<T>(path: string, params: Record<string, string | number | boolean | undefined> = {}): Promise<T> {

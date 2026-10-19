@@ -29,4 +29,5 @@ export {
   readCatalogBackup,
   restoreCatalog,
 } from "./catalog-backup";
+export { fileRestoreDecision } from "./file-restore-guard";
 export type { CatalogBackup } from "./catalog-backup";

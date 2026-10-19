@@ -2,11 +2,32 @@
 
 Nästa release är en privat katalog på dator och mobil. Egna listor stannar i Media Hubs databas. TV, My Lists, SIMKL och Trakt är pausade och ingen kod för dem är raderad.
 
-Branchen är inte mergad till `main` och deployas inte som produktion. `vercel.json` pekar inte ut en branch. Vercel publicerar `main` (`3c0ae94`). Senaste kända produktionsdeploy är READY med `live: false`. `https://media.emmyzettergren.se/` och `/api/healthz` svarade HTTP 402. Projekt- och teamanrop visade ingen pausorsak. Billing svarade 404 `costs_not_found`.
+Branchen är inte mergad till `main` och deployas inte som produktion. `vercel.json` har ingen branchpinne och ingen cron. Vercel publicerar `main` (`3c0ae94`). Senaste kända produktionsdeploy är READY med `live: false`. `https://media.emmyzettergren.se/` och `/api/healthz` svarade HTTP 402. Det är en yttre blockerare. Ingen ny Vercel- eller Neon-anslutning görs härifrån.
 
-Produktionsblockerare, och bara den: ägaren behöver öppna Vercel-projektet för Media Hub, sidan Usage, och läsa den text som förklarar Pause eller kvot. Ingen ny inloggning görs härifrån, och ingen betald uppgradering.
+## Privat katalog — läge 19 okt 2026
 
-Migrationerna 006, 007, 008 och 009 är körda bara mot dev-databasen. Produktionsbackup och migrering väntar tills 402-orsaken är känd.
+Klart i branchen:
+
+- Inloggning krävs för sök, bläddring, detaljer, listor och uppdateringar. Hälsa, sessionsläsning och inloggning är öppna.
+- Updates läser sparade rader. Sidan anropar inte TMDB. Knappen Check for updates delar dagsbudgeten på 40.
+- Dagsbudgeten räknar varje HTTP-försök, även omsändning efter 429, 5xx eller avbrott, upp till tre försök. En träff i färsk cache räknas inte. Budgeten gäller bara manuell uppdatering och metadatafyllning.
+- TMDB-cache gallras vid skrivning: rader äldre än stale-fönstret (7 dagar om inget annat är satt), högst 400 rader, och högst 8 MB nyttolast. Ingen cron.
+- Servern läser inte `data/watchlist.json` eller `data/local-backup.json` om databasen saknas. Importskriptet vägrar när `NODE_ENV` är production eller när värden är produktionsvärden `ep-wandering-morning`.
+- Produktionsmiljöns namn, utan värden: `NODE_ENV`, `BASE_PATH`, `DATABASE_URL` och `TMDB_API_KEY` finns. `OWNER_PASSWORD` och `ALLOWED_ORIGINS` saknas. `MY_LISTS_*` och `SIMKL_TOKEN` saknas, vilket är rätt för den här releasen.
+
+TMDB-vägar som går genom samma HTTP-försök, och därför räknas när den delade budgeten är aktiv:
+
+- `POST /notifications/refresh`: `/tv/{id}` och `/{movie|tv}/{id}/watch/providers`.
+- `POST /v2/metadata/fill`: `/movie/{id}` eller `/tv/{id}`, högst tio titlar.
+
+Övriga anrop använder samma cache och samma tre försök, men förbrukar inte dagsbudgeten: sök, discover, trending, genrer, populärt, topplista, biograf, liknande, credits, videos, säsong, person, nyckelord och en titel som läggs till i katalogen. Listor och filter läser bara sparade kolumner.
+
+Inte klart, och inte påstått som verifierat:
+
+- Ingen separat testdatabas finns. Backup, restore och migrationerna 006–009 är inte körda mot en kopia. SQL-filerna är additiva (`CREATE TABLE IF NOT EXISTS`, inget `DROP TABLE` och ingen `DELETE` mot watchlist). Dev-databasen och produktionsdatabasen är orörda.
+- Ägaren behöver läsa Usage/Pause-texten i Vercel.
+- Ägaren sätter själv `OWNER_PASSWORD` och `ALLOWED_ORIGINS` i Vercel. Inget lösenord hittas på här.
+- Produktionsmigrering, merge och publicering är inte gjorda.
 
 ## Kontroller som är gröna här
 
@@ -56,7 +77,8 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 ## Nästa avgränsade steg
 
 1. Ägaren läser Usage/Pause-texten i Vercel-panelen för Media Hub. Det är blockeraren för produktionspublicering.
-2. Därefter backup, återställning mot en separat kopia, och migrationerna 006–009 på den kopian.
-3. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
+2. Ägaren sätter `OWNER_PASSWORD` och `ALLOWED_ORIGINS` i Vercel. Ingen av dem finns där idag.
+3. Ägaren pekar ut en redan befintlig tom testdatabas, skild från både dev och produktion. Först då kan backup, restore och migrationerna 006–009 provas. Ingen sådan databas finns i repot, och ingen ny molnresurs skapas här.
+4. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
 
 Det steget är fortfarande inte en produktionspublicering.

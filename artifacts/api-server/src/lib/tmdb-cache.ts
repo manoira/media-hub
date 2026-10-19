@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { db, pool, tmdbCacheTable, tmdbMeterTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { isTmdbBudgetError, manualBudgetActive, pruneTmdbCache, takeManualTmdbBudget, TmdbBudgetError } from "./tmdb-budget";
+import { isTmdbBudgetError, pruneTmdbCache } from "./tmdb-budget";
 
 const surfaceStore = new AsyncLocalStorage<string>();
 const inflight = new Map<string, Promise<unknown>>();
@@ -119,10 +119,6 @@ export async function cachedTmdb<T>(path: string, params: Record<string, string>
   const promise = (async () => {
     const started = Date.now();
     try {
-      if (manualBudgetActive()) {
-        const allowed = await takeManualTmdbBudget();
-        if (!allowed) throw new TmdbBudgetError();
-      }
       const payload = await load();
       await writeCache(key, payload).catch(() => undefined);
       await meter(surface, { misses: 1, external: 1, durationMs: Date.now() - started }).catch(() => undefined);

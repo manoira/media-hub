@@ -1,8 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { pool } from "@workspace/db";
+import { planCacheEvictions } from "./cache-eviction";
 
 export const MANUAL_TMDB_DAILY_LIMIT = 40;
-const CACHE_ROW_LIMIT = 400;
 
 const budgetStore = new AsyncLocalStorage<true>();
 
@@ -48,6 +48,13 @@ export async function takeManualTmdbBudget(): Promise<boolean> {
   return takeBudget(manualBudgetSurface(), MANUAL_TMDB_DAILY_LIMIT);
 }
 
+/** Counts one HTTP attempt. Search and detail pages do not enter this context. */
+export async function chargeManualHttpAttempt(): Promise<void> {
+  if (!manualBudgetActive()) return;
+  const allowed = await takeManualTmdbBudget();
+  if (!allowed) throw new TmdbBudgetError();
+}
+
 export async function remainingManualTmdbBudget(now = new Date()): Promise<number> {
   const found = await pool.query<{ external: number }>(
     "SELECT external FROM tmdb_meter WHERE surface = $1",
@@ -58,12 +65,24 @@ export async function remainingManualTmdbBudget(now = new Date()): Promise<numbe
 }
 
 export async function pruneTmdbCache(): Promise<void> {
-  await pool.query("DELETE FROM tmdb_cache WHERE stale_until < now()");
-  await pool.query(
-    `DELETE FROM tmdb_cache
-     WHERE cache_key IN (
-       SELECT cache_key FROM tmdb_cache ORDER BY fetched_at DESC OFFSET $1
-     )`,
-    [CACHE_ROW_LIMIT],
+  const found = await pool.query<{
+    cache_key: string;
+    bytes: number;
+    fetched_at: Date;
+    stale_until: Date;
+  }>(
+    `SELECT cache_key, pg_column_size(payload)::int AS bytes, fetched_at, stale_until
+     FROM tmdb_cache`,
   );
+  const drop = planCacheEvictions(
+    found.rows.map((row) => ({
+      key: row.cache_key,
+      bytes: row.bytes,
+      fetchedAt: row.fetched_at.getTime(),
+      staleUntil: row.stale_until.getTime(),
+    })),
+    Date.now(),
+  );
+  if (drop.length === 0) return;
+  await pool.query("DELETE FROM tmdb_cache WHERE cache_key = ANY($1::text[])", [drop]);
 }

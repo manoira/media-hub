@@ -1,4 +1,4 @@
-import { db, pool, catalogCounts, readCatalogBackup, restoreCatalog } from "@workspace/db";
+import { catalogCounts, db, fileRestoreDecision, pool, readCatalogBackup, restoreCatalog } from "@workspace/db";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadApiServerEnv } from "./lib/load-env.js";
@@ -13,6 +13,13 @@ function sameCounts(left: Record<string, number>, right: Record<string, number>)
 
 async function main() {
   await loadApiServerEnv(repoRoot);
+  const decision = fileRestoreDecision({
+    nodeEnv: process.env.NODE_ENV,
+    databaseUrl: process.env.DATABASE_URL,
+  });
+  if (!decision.allowed) {
+    throw new Error(decision.reason);
+  }
   const before = await catalogCounts(db);
   const backup = await readCatalogBackup(db);
 
