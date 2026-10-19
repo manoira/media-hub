@@ -22,6 +22,7 @@ import { AccessPage } from "@/pages/access";
 import { BackupPage } from "@/pages/backup";
 import { ReleasePage } from "@/pages/release";
 import { WatchSyncPage } from "@/pages/watch-sync";
+import { getGetWatchlistQueryKey } from "@workspace/api-client-react";
 
 const ONE_DAY_MS = 24 * 60 * 60_000;
 
@@ -36,6 +37,15 @@ const queryClient = new QueryClient({
       gcTime: ONE_DAY_MS,
     },
   },
+});
+
+queryClient.setQueryDefaults(getGetWatchlistQueryKey(), {
+  staleTime: 0,
+  refetchOnWindowFocus: true,
+});
+queryClient.setQueryDefaults(["owner-session"], {
+  staleTime: 0,
+  refetchOnWindowFocus: true,
 });
 
 function Router() {

@@ -2,7 +2,9 @@
 
 Nästa release är en privat katalog på dator och mobil. Egna listor stannar i Media Hubs databas. TV, My Lists, SIMKL och Trakt är pausade och ingen kod för dem är raderad.
 
-Branchen är inte mergad till `main` och deployas inte som produktion. `vercel.json` har ingen branchpinne och ingen cron. Vercel publicerar `main` (`3c0ae94`). Senaste kända produktionsdeploy är READY med `live: false`. `https://media.emmyzettergren.se/` och `/api/healthz` svarade HTTP 402. Det är en yttre blockerare. Ingen ny Vercel- eller Neon-anslutning görs härifrån.
+Branchen är inte mergad till `main` och deployas inte som produktion. `vercel.json` har ingen branchpinne och ingen cron. Vercel publicerar fortfarande `main` (`3c0ae94`).
+
+Kontot är åter öppnat. Usage visade paus 24 augusti på grund av Fast Origin Transfer: 29,79 GB av den vanliga gränsen 10 GB under 1–31 augusti, nästan helt media-hub. Samma period: 628 000 funktionsanrop, 2,5 miljoner CDN-anrop och 4 timmar 38 minuter CPU. 19 september–19 oktober var origintrafiken 0 byte. Ägaren godkände en kostnadsfri återaktivering. Vercel har avblockerat kontot och tillfälligt höjt gränsen tre gånger i 30 dagar. Ingen betald uppgradering. `https://media.emmyzettergren.se/api/healthz` svarar `{"status":"ok"}`. Dimensioneringen siktar på de vanliga 10 GB, inte på den tillfälliga höjningen.
 
 ## Privat katalog — läge 19 okt 2026
 
@@ -22,12 +24,30 @@ TMDB-vägar som går genom samma HTTP-försök, och därför räknas när den de
 
 Övriga anrop använder samma cache och samma tre försök, men förbrukar inte dagsbudgeten: sök, discover, trending, genrer, populärt, topplista, biograf, liknande, credits, videos, säsong, person, nyckelord och en titel som läggs till i katalogen. Listor och filter läser bara sparade kolumner.
 
+## Origintrafik
+
+Verifierat i koden, inte i Vercels per-sökvägslogg: affischer och bakgrunder laddas direkt från `image.tmdb.org`, inte genom funktionen. Ingen cron och ingen polling. Genrer är den enda publika cachen, och de innehåller ingen katalog. Full katalog, listor, avsnittsprogress och uppdateringar är privata.
+
+Syntetisk mätning av 1250 titlar, utan databas och utan TMDB. Ett pass är katalog, ett filter, listor, en lista och Updates:
+
+| Svar | Före | Efter |
+| --- | ---: | ---: |
+| Hela katalogen | 1 056 720 byte | 711 720 byte |
+| Discover, nio rader | 125 302 byte | 80 302 byte |
+| Hela passet | 1 142 132 byte, 9 svar | 783 323 byte, 9 svar |
+| Oförändrad katalog igen | samma kropp | 304, 0 byte |
+
+Kortare beskrivning, ingen bakgrundsbild och inga nyckelords-id i listvärdena står för minskningen. Anteckningar, status och betyg är kvar. Avsnittsprogress i passet är 43 811 byte och skickas oförändrad, eftersom siffrorna är själva synken. En öppnad säsong är cirka 5 KB och ingår inte i passet.
+
+29,79 GB fördelat på 628 000 anrop är i snitt ungefär 47 KB per anrop. En hel katalog är omkring 1 MB, så den kan inte ha varit varje anrop. Utan per-sökvägslogg går det inte att säga hur många procent som var katalogen. Det är en slutsats, inte en mätning från Vercel.
+
+Katalog och session hämtas igen när fönstret får fokus, så ett statusbyte eller en ny inloggning inte ligger kvar ett dygn. Övriga vyer behåller dygnscachen. En oförändrad katalog blir 304.
+
 Inte klart, och inte påstått som verifierat:
 
 - Ingen separat testdatabas finns. Backup, restore och migrationerna 006–009 är inte körda mot en kopia. SQL-filerna är additiva (`CREATE TABLE IF NOT EXISTS`, inget `DROP TABLE` och ingen `DELETE` mot watchlist). Dev-databasen och produktionsdatabasen är orörda.
-- Ägaren behöver läsa Usage/Pause-texten i Vercel.
 - Ägaren sätter själv `OWNER_PASSWORD` och `ALLOWED_ORIGINS` i Vercel. Inget lösenord hittas på här.
-- Produktionsmigrering, merge och publicering är inte gjorda.
+- Produktionsmigrering, merge och publicering är inte gjorda. Det som svarar på domänen är fortfarande `main`.
 
 ## Kontroller som är gröna här
 
@@ -76,9 +96,8 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 ## Nästa avgränsade steg
 
-1. Ägaren läser Usage/Pause-texten i Vercel-panelen för Media Hub. Det är blockeraren för produktionspublicering.
-2. Ägaren sätter `OWNER_PASSWORD` och `ALLOWED_ORIGINS` i Vercel. Ingen av dem finns där idag.
-3. Ägaren pekar ut en redan befintlig tom testdatabas, skild från både dev och produktion. Först då kan backup, restore och migrationerna 006–009 provas. Ingen sådan databas finns i repot, och ingen ny molnresurs skapas här.
-4. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
+1. Ägaren sätter `OWNER_PASSWORD` och `ALLOWED_ORIGINS` i Vercel. Ingen av dem finns där idag.
+2. Ägaren pekar ut en redan befintlig tom testdatabas, skild från både dev och produktion. Först då kan backup, restore och migrationerna 006–009 provas. Ingen sådan databas finns i repot, och ingen ny molnresurs skapas här.
+3. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
 
 Det steget är fortfarande inte en produktionspublicering.

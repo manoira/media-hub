@@ -369,6 +369,7 @@ export async function customFetch<T = unknown>(
     method,
     headers,
     credentials: init.credentials ?? "include",
+    cache: init.cache ?? (method === "GET" || method === "HEAD" ? "no-cache" : "default"),
   });
 
   if (!response.ok) {

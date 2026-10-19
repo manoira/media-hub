@@ -17,6 +17,7 @@ const router: IRouter = Router();
 router.get("/notifications", async (req, res): Promise<void> => {
   try {
     const rows = await listNotifications();
+    res.set("Cache-Control", "private, no-cache");
     res.json(GetNotificationsResponse.parse(rows.map(serializeNotification)));
   } catch (err: unknown) {
     req.log.error({ err }, "Notifications list error");
@@ -37,6 +38,7 @@ router.post("/notifications/refresh", async (req, res): Promise<void> => {
 router.get("/notifications/unread-count", async (_req, res): Promise<void> => {
   try {
     const count = await getUnreadCount();
+    res.set("Cache-Control", "private, no-cache");
     res.json(GetUnreadNotificationCountResponse.parse({ count }));
   } catch (err: unknown) {
     res.status(500).json({ error: "Failed to get unread count" });

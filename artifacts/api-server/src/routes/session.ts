@@ -11,6 +11,11 @@ import { clearLoginFailures, recordLoginFailure, tooManyLoginAttempts } from "..
 
 const router: IRouter = Router();
 
+router.use((_req, res, next) => {
+  res.set("Cache-Control", "private, no-store");
+  next();
+});
+
 router.get("/session", async (req, res) => {
   res.json({ authenticated: await isOwnerRequest(req) });
 });

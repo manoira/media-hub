@@ -1,6 +1,7 @@
 import { cachedTmdb } from "./tmdb-cache";
 import { chargeManualHttpAttempt } from "./tmdb-budget";
 import { eachTmdbHttpAttempt } from "./tmdb-attempts";
+import { clipCardOverview } from "./card-overview";
 import { getProviderLink, resolveWatchProviderLinks } from "./watch-provider-links";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
@@ -142,9 +143,9 @@ export function normalizeMediaItem(item: TmdbMovie, mediaTypeOverride?: string) 
       isTv ? item.name : item.title,
     ),
     originalTitle: item.original_title ?? item.original_name ?? null,
-    overview: item.overview ?? null,
+    overview: clipCardOverview(item.overview),
     posterPath: item.poster_path ?? null,
-    backdropPath: item.backdrop_path ?? null,
+    backdropPath: null,
     releaseDate: item.release_date ?? item.first_air_date ?? null,
     voteAverage: item.vote_average ?? null,
     voteCount: item.vote_count ?? null,
