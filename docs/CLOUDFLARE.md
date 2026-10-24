@@ -19,11 +19,15 @@ Det gröna testet är `artifacts/api-server/src/cloudflare-worker.test.ts`. Det 
 - Exportlåset, i ett minne som bara liknar SQL, ger claimed, busy, claimed inuti en transaktion, och claimed igen efter rollback.
 - En statisk HTML-sida och dess skript serveras.
 
-`pino-http` kraschar i workerd på `stringifySym`. Wrangler-konfigurationen aliasar därför `pino-http` till en tom middleware. Node-servern använder fortfarande riktig `pino-http`. Harnessen sätter `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false`, så den lokala `.env` inte följer med. Databasadressen i harnessen är `127.0.0.1:9` och en fixtur.
+`pino-http` kraschar i workerd på `stringifySym`. Wrangler-konfigurationen aliasar därför `pino-http` till en kort logg som skriver metod, sökväg och status, utan query, cookie eller kropp. Node-servern använder fortfarande riktig `pino-http`. Harnessen sätter `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false`, så den lokala `.env` inte följer med. Fixturtestet använder `127.0.0.1:9`.
+
+I Workers stängs varje poolad databasanslutning efter en fråga. Ett andra anrop mot en kvarhållen pool hängde sig i workerd. Transaktioner använder en egen klient som stängs i samma anrop.
 
 ## Gränser
 
-Källa: Cloudflare Workers limits, sidan senast uppdaterad 12 oktober 2026. Free: 100 000 requests per dag, 10 ms CPU per HTTP-anrop, 128 MB minne, 50 subrequests, och obegränsad väntetid så länge klienten är ansluten. Betald plan har inget requesttak och 30 sekunder CPU som standard. `limits.cpu_ms` sätts inte här. 10 ms är inte mätt mot Express, Zod och en katalog på omkring 1 MB. Lokal workerd bevisar inte att ett anrop ryms i 10 ms.
+Källa: Cloudflare Workers limits, sidan senast uppdaterad 12 oktober 2026. Free: 100 000 requests per dag, 10 ms CPU per HTTP-anrop, 128 MB minne, 50 subrequests, och obegränsad väntetid så länge klienten är ansluten. Betald plan har inget requesttak och 30 sekunder CPU som standard. `limits.cpu_ms` sätts inte här.
+
+Lokal mätning mot den återställda testytan, 24 oktober: en fråga efter 1254 beskrivningar tog 354 ms väggklocka, och `JSON.stringify` av den texten tog 1 ms för 349 472 byte. Väggklockan är inte Cloudflares debiterade CPU. 10 ms-gränsen är därför inte bevisad för ett helt Express- och Zod-svar.
 
 ## Databas
 
@@ -39,4 +43,8 @@ Befintliga lokala uppgifter räckte mot båda värdarna. Lösenordet skrevs inte
 
 Båda grenarna hade redan objekten från migrationerna 006–009. Ingen migrationsfil kördes. Antalen var lika före och efter, bland annat 1254 watchlist-rader, 7140 avsnittsrader, 9 listor och 14 listrader.
 
-En export skrevs till gitignorerade `data/mediahub-v2-test-20261024-export.json`: 3 212 466 byte, SHA-256 `8fc27390fe02de23ebda456c19f255d4603740d1d58f23b2f0c3c8143d7a0045`, 15 tabeller. Ingen restore provades. Det finns ingen separat tom yta, och testkopian är en datakopia. Backup är därför inte verifierad.
+En export från testkopian, inte från verifierad Vercel-produktion, ligger i gitignorerade `data/mediahub-v2-test-20261024-export.json`: 3 212 466 byte, SHA-256 `8fc27390fe02de23ebda456c19f255d4603740d1d58f23b2f0c3c8143d7a0045`, 15 tabeller. Vercel-produktionens databasvärd är olöst. `DATABASE_URL` där är sensitive och går inte att läsa tillbaka.
+
+Lokal Postgres saknades. En ny tom databas, `mediahub_restore_empty`, skapades på testgrenen `br-proud-smoke-asy4fsyv`. Exporten återställdes dit. Antalen matchade, bland annat 1254 watchlist-rader och 7140 avsnittsrader. Identitetshashen för watchlist var `f9b5c4b06a30aab73a68f5b737d3e9eeb098747d67ee78e9d9e69ed796662d10` både i filen och i databasen. Samma gällde avsnittsidentiteterna, `35ada9b5b6d7516df5216b28185f86e2a2c74729f43fab85d93c96ef5f4be2af`. Originalgrenen och testkopians `neondb` hade oförändrade antal. Det här är inte en Vercel-produktionsbackup.
+
+Workern läste samma tomma databas. Inloggning med en tillfällig testhemlighet, CSRF och `HttpOnly`-cookie fungerade. Samma cookie syntes som inloggad i ett andra anrop. Nio listor kom tillbaka med `private, no-cache`. Ett exportlås togs inuti en transaktion och rullades tillbaka utan att raden ändrades. En syntetisk titel gick från `planned` till `watched` mellan två anrop och togs sedan bort. Watchlist var 1254 igen.

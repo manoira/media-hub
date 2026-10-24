@@ -47,7 +47,7 @@ Katalog och session hämtas igen när fönstret får fokus, så ett statusbyte e
 
 Inte klart, och inte påstått som verifierat:
 
-- Backup är inte verifierad. 24 oktober fanns en riktig export från testkopian, men ingen restore till en separat tom yta. Exportfilen är gitignorerad och är inte en backupmarkering.
+- Vercel-produktionens databas är olöst. Exporten och restore-provet gäller testkopian från `ep-nameless-bread`, inte en verifierad produktionsbackup. Restore till `mediahub_restore_empty` på `br-proud-smoke-asy4fsyv` matchade antal och identitetshashar. Originalgrenen skrevs inte.
 - `OWNER_PASSWORD` saknas i Vercel. Inget lösenord hittas på här.
 - Produktionsmigrering, merge, DNS-byte och publicering är inte gjorda. Det som svarar på domänen är fortfarande `main`.
 
@@ -99,8 +99,8 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 ## Nästa avgränsade steg
 
 1. Ägaren sätter `OWNER_PASSWORD` i Vercel. `ALLOWED_ORIGINS` är redan satt till `https://media.emmyzettergren.se`.
-2. En tom yta, skild från både originalgrenen och testkopian, behövs innan restore kan provas. Ingen sådan yta finns, och ingen ny molnresurs skapas här.
-3. Workers Free har 10 ms CPU per HTTP-anrop. Det är inte mätt mot en riktig katalog. Hyperdrive är inte skapad, och workern anropar inte Neon.
+2. Vercel-produktionens värd måste bevisas innan den källan säkerhetskopieras. Den går inte att läsa ur Vercels sensitive `DATABASE_URL`.
+3. Workers Free har 10 ms CPU per HTTP-anrop. En lokal serialisering av beskrivningarna tog 1 ms, men det är väggklocka, inte debiterad CPU. Hyperdrive är inte skapad. Workern har läst den återställda testytan, inte originalet.
 4. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
 
 Det steget är fortfarande inte en produktionspublicering.

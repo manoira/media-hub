@@ -93,6 +93,13 @@ test("file restore is refused for production and allowed only for another host",
     databaseUrl: "postgres://ep-nameless-bread-example.neon.tech/app",
   });
   assert.equal(dev.allowed, true);
+  const { emptyRestoreTargetDecision, testCopyReadDecision } = await import(guardUrl);
+  assert.equal(emptyRestoreTargetDecision("postgres://ep-nameless-bread-askzdueh.example/neondb").allowed, false);
+  assert.equal(emptyRestoreTargetDecision("postgres://ep-wandering-morning-example.neon.tech/neondb").allowed, false);
+  assert.equal(emptyRestoreTargetDecision("postgres://ep-misty-boat-as4ssnx0-pooler.c-4.eu-central-1.aws.neon.tech/neondb").allowed, false);
+  assert.equal(emptyRestoreTargetDecision("postgres://ep-misty-boat-as4ssnx0-pooler.c-4.eu-central-1.aws.neon.tech/mediahub_restore_empty").allowed, true);
+  assert.equal(testCopyReadDecision("postgres://ep-nameless-bread-askzdueh.example/neondb").allowed, false);
+  assert.equal(testCopyReadDecision("postgres://ep-misty-boat-as4ssnx0-pooler.c-4.eu-central-1.aws.neon.tech/neondb").allowed, true);
 });
 
 test("migrations 006-009 are additive and were not applied to a separate database", async () => {
