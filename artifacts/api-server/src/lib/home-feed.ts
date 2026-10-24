@@ -13,14 +13,26 @@ import { filterExcludedTracked } from "./exclude-tracked";
 import { getCachedWatchlistSnapshot } from "./watchlist-cache";
 import { getWatchlistBasedRecommendations } from "./watchlist-recommendations";
 
-type MediaSearchResult = {
-  results: Array<{ mediaType: string; tmdbId: number }>;
+type HomeCard = {
+  mediaType: string;
+  tmdbId: number;
+  adult?: boolean | null;
+  originalLanguage?: string | null;
+  title?: string | null;
+  originalTitle?: string | null;
+  overview?: string | null;
+  genreIds?: number[] | null;
+  voteCount?: number | null;
+};
+
+type HomePage = {
+  results: HomeCard[];
   totalResults: number;
   totalPages: number;
   page: number;
 };
 
-function applyHomeFilters<T extends MediaSearchResult>(
+function applyHomeFilters<T extends HomePage>(
   result: T,
   tracked: Set<string>,
   excludeTracked: boolean,

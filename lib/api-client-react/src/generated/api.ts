@@ -48,6 +48,7 @@ import type {
   MediaMetadata,
   MediaSearchResult,
   NotificationItem,
+  NotificationRefresh,
   PersonCreditsResult,
   PersonDetails,
   PersonSearchResult,
@@ -3432,6 +3433,7 @@ export const getGetNotificationsUrl = (params?: GetNotificationsParams,) => {
 }
 
 /**
+ * Returns saved notifications. This request never calls TMDB.
  * @summary List update notifications
  */
 export const getNotifications = async (params?: GetNotificationsParams, options?: RequestInit): Promise<NotificationItem[]> => {
@@ -3576,6 +3578,77 @@ export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof 
 
 
 
+
+export const getRefreshNotificationsUrl = () => {
+
+
+
+
+  return `/api/notifications/refresh`
+}
+
+/**
+ * Manual TMDB check. At most 20 watching shows and 20 want-to-watch titles, and at most 40 external TMDB requests per day together with metadata fill.
+ * @summary Check a limited batch of saved titles
+ */
+export const refreshNotifications = async ( options?: RequestInit): Promise<NotificationRefresh> => {
+
+  return customFetch<NotificationRefresh>(getRefreshNotificationsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRefreshNotificationsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshNotifications>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshNotifications>>, TError,void, TContext> => {
+
+const mutationKey = ['refreshNotifications'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshNotifications>>, void> = () => {
+
+
+          return  refreshNotifications(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshNotificationsMutationResult = NonNullable<Awaited<ReturnType<typeof refreshNotifications>>>
+
+    export type RefreshNotificationsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Check a limited batch of saved titles
+ */
+export const useRefreshNotifications = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshNotifications>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshNotifications>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRefreshNotificationsMutationOptions(options));
+    }
 
 export const getMarkNotificationsReadUrl = () => {
 

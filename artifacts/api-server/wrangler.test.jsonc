@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "media-hub-v2-test",
+  "main": "src/cloudflare-entry.ts",
+  "compatibility_date": "2026-10-24",
+  "workers_dev": true,
+  "preview_urls": false,
+  "alias": {
+    "pino-http": "./src/lib/pino-http-stub.ts"
+  },
+  "assets": {
+    "directory": "../media-tracker/dist/public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "BASE_PATH": "/"
+  }
+}

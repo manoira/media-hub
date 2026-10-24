@@ -20,6 +20,7 @@ import { SharedFilterBar, type MediaTypeTab } from "@/components/lists/shared-fi
 import { useListViewMode } from "@/hooks/use-list-view-mode";
 import { WatchlistListRow } from "@/components/media/watchlist-list-row";
 import { TvProgressBatchProvider } from "@/components/media/tv-progress-batch-provider";
+import { ListSyncPanel } from "@/components/lists/list-sync-panel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -196,6 +197,8 @@ export function ListDetailPage() {
             </DropdownMenu>
           </div>
         </div>
+
+        <ListSyncPanel listId={listId} />
 
         <SharedFilterBar
           mediaType={mediaType}

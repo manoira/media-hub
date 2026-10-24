@@ -15,6 +15,13 @@ export interface ListRules {
   genreIds?: number[];
   languages?: string[];
   keywordIds?: number[];
+  /** TMDB vote average. OR within the selected thresholds; the lowest selected threshold is used. */
   minRatings?: number[];
+  /** Production country ISO codes, separate from original language. OR within the list. */
+  productionCountries?: string[];
+  /** Keep titles whose stored runtime is shorter than this many minutes. */
+  runtimeBelow?: number;
+  /** Personal rating, separate from the TMDB vote. The lowest selected threshold is used. */
+  minUserRatings?: number[];
   yearRanges?: YearRange[];
 }

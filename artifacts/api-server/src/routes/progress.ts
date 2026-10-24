@@ -59,7 +59,7 @@ router.get("/progress/tv/batch", async (req, res) => {
     items[String(tmdbId)] = buildProgressFromRows(tmdbId, rowsByShow.get(tmdbId) ?? []);
   }
 
-  res.set("Cache-Control", "private, max-age=60");
+  res.set("Cache-Control", "private, no-cache");
   res.json({ items });
 });
 
@@ -72,7 +72,7 @@ router.get("/progress/tv/:tmdbId", async (req, res) => {
     getTvDetails(tmdbId),
   ]);
 
-  res.set("Cache-Control", "private, max-age=60");
+  res.set("Cache-Control", "private, no-cache");
   res.json(buildProgressFromRows(tmdbId, rows, tvDetails.numberOfEpisodes ?? null));
 });
 

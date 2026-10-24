@@ -1,9 +1,12 @@
 import { Router, type IRouter } from "express";
-import { db, watchlistTable } from "@workspace/db";
+import { db, pool, watchEventsTable, watchlistTable } from "@workspace/db";
 import { eq, and, desc, asc, inArray, gte, sql, type SQL } from "drizzle-orm";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
 import { fetchKeywords, getMovieDetails, getTvDetails } from "../lib/tmdb";
 import { invalidateWatchlistCache } from "../lib/watchlist-cache";
+import { recordLocalRead } from "../lib/tmdb-cache";
+import { acceptImdbId } from "@workspace/db";
+import { catalogEtag, notModified } from "../lib/private-cache";
 import {
   GetWatchlistQueryParams,
   GetWatchlistResponse,
@@ -106,6 +109,13 @@ async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
       overview: details.overview,
       genreIds: details.genres.map(g => String(g.id)),
       keywordIds,
+      productionCountries: details.productionCountryCodes,
+      runtimeMinutes: details.runtime,
+      imdbId: acceptImdbId({
+        requestedTmdbId: tmdbId,
+        returnedTmdbId: details.tmdbId,
+        imdbId: details.imdbId,
+      }),
     };
   } catch {
     return { keywordIds };
@@ -117,6 +127,7 @@ const serializeItem = serializeWatchlistItem;
 const router: IRouter = Router();
 
 router.get("/watchlist", async (req, res): Promise<void> => {
+  const started = Date.now();
   try {
   const parsed = GetWatchlistQueryParams.safeParse(normalizeArrayQuery(req.query as Record<string, unknown>));
   if (!parsed.success) {
@@ -169,12 +180,24 @@ router.get("/watchlist", async (req, res): Promise<void> => {
     : desc(watchlistTable.addedAt);
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const unfiltered = !whereClause;
+  if (unfiltered) {
+    const stamp = await pool.query<{ count: number; latest: Date | null }>(
+      "SELECT count(*)::int AS count, max(updated_at) AS latest FROM watchlist",
+    );
+    const etag = catalogEtag(stamp.rows[0]?.count ?? 0, stamp.rows[0]?.latest ?? null, sort_by);
+    if (notModified(req, res, etag)) return;
+  } else {
+    res.set("Cache-Control", "private, no-cache");
+  }
 
   const items = whereClause
     ? await db.select().from(watchlistTable).where(whereClause).orderBy(orderBy)
     : await db.select().from(watchlistTable).orderBy(orderBy);
 
-  res.json(GetWatchlistResponse.parse(items.map(serializeItem)));
+  await recordLocalRead("list", Date.now() - started).catch(() => undefined);
+  const serialized = items.map(serializeItem);
+  res.json(unfiltered ? serialized : GetWatchlistResponse.parse(serialized));
   } catch (err: unknown) {
     req.log.error({ err }, "GET /watchlist failed");
     res.status(500).json({ error: "Failed to load watchlist" });
@@ -223,6 +246,10 @@ router.post("/watchlist", async (req, res): Promise<void> => {
     overview: tmdbData?.overview ?? null,
     genreIds: tmdbData?.genreIds ?? [],
     keywordIds: tmdbData?.keywordIds ?? [],
+    productionCountries: tmdbData?.productionCountries ?? null,
+    runtimeMinutes: tmdbData?.runtimeMinutes ?? null,
+    imdbId: tmdbData?.imdbId ?? null,
+    metadataFetchedAt: new Date(),
   }).returning();
 
   invalidateWatchlistCache();
@@ -241,11 +268,30 @@ router.patch("/watchlist/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const updateData: Partial<{ status: string; userRating: number | null; notes: string | null; tags: string[] | null }> = {};
+  const [current] = await db
+    .select()
+    .from(watchlistTable)
+    .where(eq(watchlistTable.id, params.data.id));
+  if (!current) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const updateData: Partial<{
+    status: string;
+    userRating: number | null;
+    notes: string | null;
+    tags: string[] | null;
+    statusChangedAt: Date;
+    updatedAt: Date;
+  }> = {};
+  updateData.updatedAt = new Date();
   if (body.data.status !== undefined) updateData.status = body.data.status;
   if (body.data.userRating !== undefined) updateData.userRating = body.data.userRating ?? null;
   if (body.data.notes !== undefined) updateData.notes = body.data.notes ?? null;
   if (body.data.tags !== undefined) updateData.tags = body.data.tags;
+  const statusChanged = body.data.status !== undefined && body.data.status !== current.status;
+  if (statusChanged) updateData.statusChangedAt = new Date();
 
   const [updated] = await db
     .update(watchlistTable)
@@ -256,6 +302,16 @@ router.patch("/watchlist/:id", async (req, res): Promise<void> => {
   if (!updated) {
     res.status(404).json({ error: "Not found" });
     return;
+  }
+  const becameWatched = statusChanged && body.data.status === "watched";
+  const leftWatched = statusChanged && current.status === "watched" && body.data.status !== "watched";
+  if (becameWatched || leftWatched) {
+    await db.insert(watchEventsTable).values({
+      tmdbId: current.tmdbId,
+      mediaType: current.mediaType,
+      action: becameWatched ? "watched" : "unwatched",
+      occurredAt: new Date(),
+    });
   }
   invalidateWatchlistCache();
   res.json(UpdateWatchlistItemResponse.parse(serializeItem(updated)));

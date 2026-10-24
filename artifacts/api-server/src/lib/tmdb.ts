@@ -1,3 +1,7 @@
+import { cachedTmdb } from "./tmdb-cache";
+import { chargeManualHttpAttempt } from "./tmdb-budget";
+import { eachTmdbHttpAttempt } from "./tmdb-attempts";
+import { clipCardOverview } from "./card-overview";
 import { getProviderLink, resolveWatchProviderLinks } from "./watch-provider-links";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
@@ -43,19 +47,30 @@ function getApiKey(): string {
   return key;
 }
 
+async function fetchTmdbResponse(url: URL): Promise<Response> {
+  return eachTmdbHttpAttempt(
+    () => chargeManualHttpAttempt(),
+    () => fetch(url, { signal: AbortSignal.timeout(8000) }),
+  );
+}
+
 async function tmdbFetch<T>(path: string, params: Record<string, string | number | boolean | undefined> = {}): Promise<T> {
-  const url = new URL(`${TMDB_BASE}${path}`);
-  url.searchParams.set("api_key", getApiKey());
-  url.searchParams.set("language", params.language !== undefined ? String(params.language) : getTmdbLanguage());
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && k !== "language") url.searchParams.set(k, String(v));
+  const query: Record<string, string> = {
+    language: params.language !== undefined ? String(params.language) : getTmdbLanguage(),
+  };
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && key !== "language") query[key] = String(value);
   }
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw Object.assign(new Error(`TMDB ${res.status}: ${text}`), { status: res.status });
-  }
-  return res.json() as Promise<T>;
+  return cachedTmdb(path, query, async () => {
+    const url = new URL(`${TMDB_BASE}${path}`);
+    url.searchParams.set("api_key", getApiKey());
+    for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
+    const res = await fetchTmdbResponse(url);
+    if (!res.ok) {
+      throw Object.assign(new Error(`TMDB ${res.status}`), { status: res.status });
+    }
+    return res.json() as Promise<T>;
+  });
 }
 
 interface TmdbMovie {
@@ -128,9 +143,9 @@ export function normalizeMediaItem(item: TmdbMovie, mediaTypeOverride?: string) 
       isTv ? item.name : item.title,
     ),
     originalTitle: item.original_title ?? item.original_name ?? null,
-    overview: item.overview ?? null,
+    overview: clipCardOverview(item.overview),
     posterPath: item.poster_path ?? null,
-    backdropPath: item.backdrop_path ?? null,
+    backdropPath: null,
     releaseDate: item.release_date ?? item.first_air_date ?? null,
     voteAverage: item.vote_average ?? null,
     voteCount: item.vote_count ?? null,
@@ -344,7 +359,7 @@ export async function getMovieDetails(tmdbId: number) {
     budget?: number; revenue?: number; homepage?: string; imdb_id?: string;
     original_language?: string; adult?: boolean;
     spoken_languages?: { english_name: string }[];
-    production_countries?: { name: string }[];
+    production_countries?: { iso_3166_1?: string; name: string }[];
     production_companies?: TmdbCompany[];
     genres?: TmdbGenre[];
   }>(`/movie/${tmdbId}`);
@@ -372,6 +387,7 @@ export async function getMovieDetails(tmdbId: number) {
     adult: data.adult ?? null,
     spokenLanguages: (data.spoken_languages ?? []).map(l => l.english_name),
     productionCountries: (data.production_countries ?? []).map(c => c.name),
+    productionCountryCodes: (data.production_countries ?? []).map(c => c.iso_3166_1).filter((code): code is string => Boolean(code)),
     productionCompanies: (data.production_companies ?? []).map(c => ({
       id: c.id, name: c.name, logoPath: c.logo_path ?? null, originCountry: c.origin_country,
     })),
@@ -394,7 +410,7 @@ export async function getTvDetails(tmdbId: number) {
     number_of_seasons?: number; number_of_episodes?: number;
     episode_run_time?: number[];
     spoken_languages?: { english_name: string }[];
-    production_countries?: { name: string }[];
+    production_countries?: { iso_3166_1?: string; name: string }[];
     production_companies?: TmdbCompany[];
     genres?: TmdbGenre[];
     networks?: TmdbNetwork[];
@@ -416,7 +432,7 @@ export async function getTvDetails(tmdbId: number) {
     voteAverage: data.vote_average ?? null,
     voteCount: data.vote_count ?? null,
     popularity: data.popularity ?? null,
-    runtime: null,
+    runtime: data.episode_run_time?.[0] ?? null,
     budget: null,
     revenue: null,
     homepage: data.homepage ?? null,
@@ -425,6 +441,7 @@ export async function getTvDetails(tmdbId: number) {
     adult: data.adult ?? null,
     spokenLanguages: (data.spoken_languages ?? []).map(l => l.english_name),
     productionCountries: (data.production_countries ?? []).map(c => c.name),
+    productionCountryCodes: (data.production_countries ?? []).map(c => c.iso_3166_1).filter((code): code is string => Boolean(code)),
     productionCompanies: (data.production_companies ?? []).map(c => ({
       id: c.id, name: c.name, logoPath: c.logo_path ?? null, originCountry: c.origin_country,
     })),

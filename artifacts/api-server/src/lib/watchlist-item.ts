@@ -1,4 +1,5 @@
 import type { watchlistTable } from "@workspace/db";
+import { clipCardOverview } from "./card-overview";
 
 export function serializeWatchlistItem(item: typeof watchlistTable.$inferSelect) {
   return {
@@ -12,14 +13,14 @@ export function serializeWatchlistItem(item: typeof watchlistTable.$inferSelect)
     updatedAt: item.updatedAt.toISOString(),
     title: item.title,
     posterPath: item.posterPath ?? null,
-    backdropPath: item.backdropPath ?? null,
+    backdropPath: null,
     releaseDate: item.releaseDate ?? null,
     originalLanguage: item.originalLanguage ?? null,
     adult: item.adult ?? null,
     voteAverage: item.voteAverage ?? null,
     genreIds: (item.genreIds ?? []).map(Number),
-    keywordIds: item.keywordIds ?? [],
+    keywordIds: [] as number[],
     tags: item.tags ?? [],
-    overview: item.overview ?? null,
+    overview: clipCardOverview(item.overview),
   };
 }

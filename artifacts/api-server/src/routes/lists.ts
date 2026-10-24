@@ -233,7 +233,7 @@ router.get("/lists", async (req, res): Promise<void> => {
   try {
     const lists = await db.select().from(customListsTable).orderBy(asc(customListsTable.name));
     const summaries = await buildListSummaries(lists);
-    res.set("Cache-Control", "private, max-age=60");
+    res.set("Cache-Control", "private, no-cache");
     res.json(GetCustomListsResponse.parse(summaries));
   } catch (err: unknown) {
     req.log.error({ err }, "GET /lists failed");
@@ -305,6 +305,7 @@ router.get("/lists/:id", async (req, res): Promise<void> => {
     }
 
     const detail = await buildListDetail(list);
+    res.set("Cache-Control", "private, no-cache");
     res.json(GetCustomListResponse.parse(detail));
   } catch (err: unknown) {
     req.log.error({ err }, "GET /lists/:id failed");

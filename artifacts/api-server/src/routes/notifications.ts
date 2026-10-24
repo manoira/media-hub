@@ -7,23 +7,17 @@ import {
   serializeNotification,
 } from "../lib/notification-sync";
 import {
-  GetNotificationsQueryParams,
   GetNotificationsResponse,
   GetUnreadNotificationCountResponse,
+  RefreshNotificationsResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
 router.get("/notifications", async (req, res): Promise<void> => {
-  const parsed = GetNotificationsQueryParams.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
   try {
-    await syncNotifications(parsed.data.refresh === true);
     const rows = await listNotifications();
+    res.set("Cache-Control", "private, no-cache");
     res.json(GetNotificationsResponse.parse(rows.map(serializeNotification)));
   } catch (err: unknown) {
     req.log.error({ err }, "Notifications list error");
@@ -31,9 +25,20 @@ router.get("/notifications", async (req, res): Promise<void> => {
   }
 });
 
+router.post("/notifications/refresh", async (req, res): Promise<void> => {
+  try {
+    const result = await syncNotifications(true);
+    res.json(RefreshNotificationsResponse.parse(result));
+  } catch (err: unknown) {
+    req.log.error({ err }, "Notifications refresh error");
+    res.status(500).json({ error: "Failed to check for updates" });
+  }
+});
+
 router.get("/notifications/unread-count", async (_req, res): Promise<void> => {
   try {
     const count = await getUnreadCount();
+    res.set("Cache-Control", "private, no-cache");
     res.json(GetUnreadNotificationCountResponse.parse({ count }));
   } catch (err: unknown) {
     res.status(500).json({ error: "Failed to get unread count" });

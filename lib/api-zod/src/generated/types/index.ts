@@ -70,6 +70,7 @@ export * from './network';
 export * from './notificationItem';
 export * from './notificationItemKind';
 export * from './notificationItemMediaType';
+export * from './notificationRefresh';
 export * from './personCredit';
 export * from './personCreditMediaType';
 export * from './personCreditsResult';

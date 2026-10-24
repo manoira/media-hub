@@ -1151,13 +1151,14 @@ paths:
       operationId: getNotifications
       tags: [notifications]
       summary: List update notifications
+      description: Returns saved notifications. This request never calls TMDB.
       parameters:
         - name: refresh
           in: query
-          description: Force a notification sync before listing
+          description: Ignored. Listing never calls TMDB. Use POST /notifications/refresh.
           schema:
             type: boolean
-            default: true
+            default: false
       responses:
         "200":
           description: Notifications
@@ -1181,6 +1182,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/UnreadNotificationCount"
 
+  /notifications/refresh:
+    post:
+      operationId: refreshNotifications
+      tags: [notifications]
+      summary: Check a limited batch of saved titles
+      description: Manual TMDB check. At most 20 watching shows and 20 want-to-watch titles, and at most 40 external TMDB requests per day together with metadata fill.
+      responses:
+        "200":
+          description: Check status. Saved notifications stay on GET /notifications.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationRefresh"
+
   /notifications/mark-read:
     post:
       operationId: markNotificationsRead
@@ -1192,6 +1207,23 @@ paths:
 
 components:
   schemas:
+    NotificationRefresh:
+      type: object
+      properties:
+        skipped:
+          type: ["string", "null"]
+        checked:
+          type: integer
+        remaining:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - skipped
+        - checked
+        - remaining
+        - limit
+
     HealthStatus:
       type: object
       properties:
@@ -1896,6 +1928,20 @@ components:
             type: integer
         minRatings:
           type: array
+          description: TMDB vote average. OR within the selected thresholds; the lowest selected threshold is used.
+          items:
+            type: number
+        productionCountries:
+          type: array
+          description: Production country ISO codes, separate from original language. OR within the list.
+          items:
+            type: string
+        runtimeBelow:
+          type: integer
+          description: Keep titles whose stored runtime is shorter than this many minutes.
+        minUserRatings:
+          type: array
+          description: Personal rating, separate from the TMDB vote. The lowest selected threshold is used.
           items:
             type: number
         yearRanges:
