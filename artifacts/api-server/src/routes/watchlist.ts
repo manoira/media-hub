@@ -196,7 +196,8 @@ router.get("/watchlist", async (req, res): Promise<void> => {
     : await db.select().from(watchlistTable).orderBy(orderBy);
 
   await recordLocalRead("list", Date.now() - started).catch(() => undefined);
-  res.json(GetWatchlistResponse.parse(items.map(serializeItem)));
+  const serialized = items.map(serializeItem);
+  res.json(unfiltered ? serialized : GetWatchlistResponse.parse(serialized));
   } catch (err: unknown) {
     req.log.error({ err }, "GET /watchlist failed");
     res.status(500).json({ error: "Failed to load watchlist" });

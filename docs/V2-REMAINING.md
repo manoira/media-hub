@@ -91,7 +91,7 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 - Ägaren har sett titlarna i Wako på Google TV efter version `ec34c0d6-0a4c-459f-a8e6-3b68078f5e33`. De två tidigare publiceringarna visade bara katalograderna. Uppspelning är inte provad, och tiden för en liständring är inte mätt.
 - SIMKL anropas inte.
-- Media Hub är inte publicerad på Cloudflare. Lokal Workers-körning är grön. DNS och den levande sajten är kvar på Vercel. Neon är kvar som databas. Se `docs/CLOUDFLARE.md`.
+- Produktion är inte publicerad på Cloudflare. Testworkern `https://media-hub-v2-test.emmyznet.workers.dev` läser bara `mediahub_restore_empty`. DNS och den levande sajten är kvar på Vercel. Se `docs/CLOUDFLARE.md`.
 - `OWNER_PASSWORD` är inte satt för produktion.
 - Hela katalogen är inte kompletterad med land, längd och IMDb-id.
 - Jira MB-29 till MB-38 är inte klara. HTTPS-protokollet är kört och ägaren har sett titlarna på TV:n. Uppspelning är inte gjord.
@@ -100,7 +100,7 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 1. Ägaren sätter `OWNER_PASSWORD` i Vercel. `ALLOWED_ORIGINS` är redan satt till `https://media.emmyzettergren.se`.
 2. Vercel-produktionens värd måste bevisas innan den källan säkerhetskopieras. Den går inte att läsa ur Vercels sensitive `DATABASE_URL`.
-3. Workers Free har 10 ms CPU per HTTP-anrop. En lokal serialisering av beskrivningarna tog 1 ms, men det är väggklocka, inte debiterad CPU. Hyperdrive är inte skapad. Workern har läst den återställda testytan, inte originalet.
+3. Workers Free har 10 ms CPU per HTTP-anrop. På testadressen mätte `wrangler tail` 148 ms CPU för hela katalogen, och 98 ms efter att ofiltrerad katalog slutade köra Zod. 304 utan kropp var 12–14 ms CPU. Väggklockan var omkring 1,5 s och är inte CPU. Gratisnivån höll inte. Ingen betald uppgradering gjordes. Hyperdrive är inte skapad. Workern läser den återställda testytan, inte originalet.
 4. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
 
 Det steget är fortfarande inte en produktionspublicering.

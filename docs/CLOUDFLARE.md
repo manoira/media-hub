@@ -1,6 +1,6 @@
 # Cloudflare Workers som nästa publiceringsmål
 
-24 oktober 2026. Den levande sajten är kvar på Vercel `main`. DNS är oförändrad. Ingen worker är publicerad och `wrangler deploy` ska inte köras från de här filerna.
+24 oktober 2026. Den levande sajten är kvar på Vercel `main`. DNS är oförändrad. `artifacts/api-server/wrangler.jsonc` publiceras inte. Den separata testworkern är `media-hub-v2-test` och styrs av `artifacts/api-server/wrangler.test.jsonc`.
 
 ## Vad som är provat lokalt
 
@@ -27,11 +27,28 @@ I Workers stängs varje poolad databasanslutning efter en fråga. Ett andra anro
 
 Källa: Cloudflare Workers limits, sidan senast uppdaterad 12 oktober 2026. Free: 100 000 requests per dag, 10 ms CPU per HTTP-anrop, 128 MB minne, 50 subrequests, och obegränsad väntetid så länge klienten är ansluten. Betald plan har inget requesttak och 30 sekunder CPU som standard. `limits.cpu_ms` sätts inte här.
 
-Lokal mätning mot den återställda testytan, 24 oktober: en fråga efter 1254 beskrivningar tog 354 ms väggklocka, och `JSON.stringify` av den texten tog 1 ms för 349 472 byte. Väggklockan är inte Cloudflares debiterade CPU. 10 ms-gränsen är därför inte bevisad för ett helt Express- och Zod-svar.
+Lokal mätning mot den återställda testytan, 24 oktober: en fråga efter 1254 beskrivningar tog 354 ms väggklocka, och `JSON.stringify` av den texten tog 1 ms för 349 472 byte. Väggklockan är inte Cloudflares debiterade CPU.
+
+## Live-test på workers.dev
+
+`https://media-hub-v2-test.emmyznet.workers.dev` är en ny worker, skild från `mediahub-mylists-test`. Den ligger på workers.dev, utan DNS-route. Statisk frontend och API publicerades med Wrangler 4.152.0, inloggad som emmyznet@gmail.com. Hemligheterna `DATABASE_URL`, `OWNER_PASSWORD` och `ALLOWED_ORIGINS` ligger bara på workern. Anslutningen pekar på databasen `mediahub_restore_empty` på grenen `br-proud-smoke-asy4fsyv`, direktvärd, inte pooler. Den pekar inte på `neondb`, originalgrenen eller Vercel. Tillfälligt ägarlösenord ligger i gitignorerad lokal fil. Inget lösenord, ingen token och ingen anslutningssträng ligger i git.
+
+Kontot rapporterar `usage_model` `standard`. Anropen fick `outcome` `ok`. Inget fel 1102 syntes, och `limits.cpu_ms` är inte satt. Ingen betald uppgradering gjordes. `cpuTime` från `wrangler tail` är millisekunder CPU. `wallTime` är väntetid och räknas inte som CPU.
+
+Verifierat mot den adressen:
+
+- `GET /` och den byggda skriptfilen svarade 200.
+- Oinloggad `GET /api/watchlist` och `GET /api/lists` svarade 401.
+- Inloggning utan CSRF svarade 403. Med CSRF svarade 200, och cookien hade `HttpOnly` och `Secure` utan `Domain`.
+- Nio listor svarade 200 med `private, no-cache`.
+- En egen testrad gick från `planned` till `watched`. En andra session läste `entry.status` som `watched`. Raden och dess `watch_events` togs bort. Watchlist var 1254 igen.
+- Ofiltrerad katalog, 1254 rader, svarade 200 med `private, no-cache`. Samma anrop med `If-None-Match` svarade 304 och 0 byte.
+
+CPU före ändringen, version `03eea340`: ofiltrerad katalog 148 ms CPU och 1687 ms vägg, 304 var 12 ms CPU, autentiserade listor 199 ms CPU. Efter att ofiltrerad katalog hoppar över `GetWatchlistResponse.parse`, version `356d1320`: samma katalog 98 ms CPU och 1497 ms vägg, 304 var 14 ms CPU. Filtrerade svar parsar fortfarande. 98 ms och 14 ms är båda över Free-planens 10 ms. En till kodändring når inte den gränsen, eftersom redan 304 utan kropp ligger över 10 ms. Gratisnivån håller därför inte för den här katalogen. Ingen plan byttes.
 
 ## Databas
 
-Postgres stannar på Neon. Officiell väg från en worker är `pg` 8.16.3 eller nyare via Hyperdrive. Repot har `pg` 8.20.0. Hyperdrive är inte skapad. Workern anropar inte Neon.
+Postgres stannar på Neon. Officiell väg från en worker är `pg` 8.16.3 eller nyare via Hyperdrive. Repot har `pg` 8.20.0. Hyperdrive är inte skapad. Den lokala harnessen anropar inte Neon. Testworkern ovan anropar bara `mediahub_restore_empty`.
 
 ## Neon 24 oktober 2026
 
@@ -47,4 +64,4 @@ En export från testkopian, inte från verifierad Vercel-produktion, ligger i gi
 
 Lokal Postgres saknades. En ny tom databas, `mediahub_restore_empty`, skapades på testgrenen `br-proud-smoke-asy4fsyv`. Exporten återställdes dit. Antalen matchade, bland annat 1254 watchlist-rader och 7140 avsnittsrader. Identitetshashen för watchlist var `f9b5c4b06a30aab73a68f5b737d3e9eeb098747d67ee78e9d9e69ed796662d10` både i filen och i databasen. Samma gällde avsnittsidentiteterna, `35ada9b5b6d7516df5216b28185f86e2a2c74729f43fab85d93c96ef5f4be2af`. Originalgrenen och testkopians `neondb` hade oförändrade antal. Det här är inte en Vercel-produktionsbackup.
 
-Workern läste samma tomma databas. Inloggning med en tillfällig testhemlighet, CSRF och `HttpOnly`-cookie fungerade. Samma cookie syntes som inloggad i ett andra anrop. Nio listor kom tillbaka med `private, no-cache`. Ett exportlås togs inuti en transaktion och rullades tillbaka utan att raden ändrades. En syntetisk titel gick från `planned` till `watched` mellan två anrop och togs sedan bort. Watchlist var 1254 igen.
+Den lokala workerd-körningen läste samma tomma databas. CPU där var bara väggklocka. Inloggning med en tillfällig testhemlighet, CSRF och `HttpOnly`-cookie fungerade. Samma cookie syntes som inloggad i ett andra anrop. Nio listor kom tillbaka med `private, no-cache`. Ett exportlås togs inuti en transaktion och rullades tillbaka utan att raden ändrades. En syntetisk titel gick från `planned` till `watched` mellan två anrop och togs sedan bort. Watchlist var 1254 igen.

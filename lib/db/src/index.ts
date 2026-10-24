@@ -4,34 +4,54 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+function databaseUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+  }
+  return url;
 }
 
-const isServerless = Boolean(process.env.VERCEL)
-  || (typeof navigator !== "undefined" && navigator.userAgent.includes("Cloudflare-Workers"));
-const neonSsl = process.env.DATABASE_URL?.includes("neon.tech")
-  ? { rejectUnauthorized: true as const }
-  : undefined;
+function createPool(): pg.Pool {
+  const connectionString = databaseUrl();
+  const isServerless = Boolean(process.env.VERCEL)
+    || (typeof navigator !== "undefined" && navigator.userAgent.includes("Cloudflare-Workers"));
+  const neonSsl = connectionString.includes("neon.tech")
+    ? { rejectUnauthorized: true as const }
+    : undefined;
+  return new Pool({
+    connectionString,
+    max: isServerless ? 1 : 10,
+    maxUses: isServerless ? 1 : undefined,
+    idleTimeoutMillis: isServerless ? 1 : 30_000,
+    connectionTimeoutMillis: 10_000,
+    ssl: isServerless ? neonSsl : undefined,
+  });
+}
 
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: isServerless ? 1 : 10,
-  maxUses: isServerless ? 1 : undefined,
-  idleTimeoutMillis: isServerless ? 1 : 30_000,
-  connectionTimeoutMillis: 10_000,
-  ssl: isServerless ? neonSsl : undefined,
+let poolInstance: pg.Pool | undefined;
+
+function activePool(): pg.Pool {
+  if (!poolInstance) poolInstance = createPool();
+  return poolInstance;
+}
+
+export const pool: pg.Pool = new Proxy({} as pg.Pool, {
+  get(_target, property) {
+    const real = activePool();
+    const value = Reflect.get(real, property, real) as unknown;
+    return typeof value === "function" ? value.bind(real) : value;
+  },
 });
 
 export async function withDirectClient<T>(
   run: (client: pg.PoolClient) => Promise<T>,
 ): Promise<T> {
+  const connectionString = databaseUrl();
   const client = new pg.Client({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     connectionTimeoutMillis: 10_000,
-    ssl: neonSsl,
+    ssl: connectionString.includes("neon.tech") ? { rejectUnauthorized: true } : undefined,
   });
   await client.connect();
   try {
@@ -41,7 +61,22 @@ export async function withDirectClient<T>(
   }
 }
 
-export const db = drizzle(pool, { schema });
+type Database = ReturnType<typeof drizzle<typeof schema>>;
+
+let databaseInstance: Database | undefined;
+
+function activeDatabase(): Database {
+  if (!databaseInstance) databaseInstance = drizzle(activePool(), { schema });
+  return databaseInstance;
+}
+
+export const db: Database = new Proxy({} as Database, {
+  get(_target, property) {
+    const real = activeDatabase();
+    const value = Reflect.get(real, property, real) as unknown;
+    return typeof value === "function" ? value.bind(real) : value;
+  },
+});
 
 export * from "./schema";
 export {
