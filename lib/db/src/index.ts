@@ -10,7 +10,8 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-const isServerless = Boolean(process.env.VERCEL);
+const isServerless = Boolean(process.env.VERCEL)
+  || (typeof navigator !== "undefined" && navigator.userAgent.includes("Cloudflare-Workers"));
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

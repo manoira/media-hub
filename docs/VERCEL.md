@@ -1,5 +1,7 @@
 # Deploy Media Hub on Vercel
 
+Status 24 oktober 2026: den levande sajten är fortfarande den här vägen, från `main`. Vercel support säger att den kostnadsfria återaktiveringen redan är använd och hänvisar till Pro. Det bevisar inte en ny överskridning. Nästa publiceringsmål är Cloudflare Workers och är inte publicerat. Se `docs/CLOUDFLARE.md`.
+
 Vercel hosts the **React frontend** and **Express API** on the same domain — same architecture as Render, with a serverless entrypoint.
 
 ## What gets deployed

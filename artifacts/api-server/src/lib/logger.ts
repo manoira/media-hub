@@ -1,4 +1,5 @@
 import pino from "pino";
+import { runningInWorkers } from "./workers-runtime";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -20,7 +21,7 @@ export const logger = pino({
     "*.token",
     "*.creatorKey",
   ],
-  ...(isProduction
+  ...(isProduction || runningInWorkers()
     ? {}
     : {
         transport: {

@@ -4,7 +4,9 @@ Nästa release är en privat katalog på dator och mobil. Egna listor stannar i 
 
 Branchen är inte mergad till `main` och deployas inte som produktion. `vercel.json` har ingen branchpinne och ingen cron. Vercel publicerar fortfarande `main` (`3c0ae94`).
 
-Kontot är åter öppnat. Usage visade paus 24 augusti på grund av Fast Origin Transfer: 29,79 GB av den vanliga gränsen 10 GB under 1–31 augusti, nästan helt media-hub. Samma period: 628 000 funktionsanrop, 2,5 miljoner CDN-anrop och 4 timmar 38 minuter CPU. 19 september–19 oktober var origintrafiken 0 byte. Ägaren godkände en kostnadsfri återaktivering. Vercel har avblockerat kontot och tillfälligt höjt gränsen tre gånger i 30 dagar. Ingen betald uppgradering. `https://media.emmyzettergren.se/api/healthz` svarar `{"status":"ok"}`. Dimensioneringen siktar på de vanliga 10 GB, inte på den tillfälliga höjningen.
+Usage visade paus 24 augusti på grund av Fast Origin Transfer: 29,79 GB av den vanliga gränsen 10 GB under 1–31 augusti, nästan helt media-hub. Samma period: 628 000 funktionsanrop, 2,5 miljoner CDN-anrop och 4 timmar 38 minuter CPU. 19 september–19 oktober var origintrafiken 0 byte. Det är den verifierade överskridningen. Dimensioneringen siktar på de vanliga 10 GB.
+
+19 oktober svarade `https://media.emmyzettergren.se/api/healthz` `{"status":"ok"}` efter att Vercel tillfälligt höjt gränsen. 24 oktober säger Vercel support att den kostnadsfria återaktiveringen redan är använd och hänvisar till Pro. Det bevisar inte en ny överskridning. Ingen betald uppgradering är gjord. Nästa publiceringsmål är Cloudflare Workers, men DNS och den levande sajten är kvar på Vercel `main`.
 
 ## Privat katalog — läge 19 okt 2026
 
@@ -15,7 +17,7 @@ Klart i branchen:
 - Dagsbudgeten räknar varje HTTP-försök, även omsändning efter 429, 5xx eller avbrott, upp till tre försök. En träff i färsk cache räknas inte. Budgeten gäller bara manuell uppdatering och metadatafyllning.
 - TMDB-cache gallras vid skrivning: rader äldre än stale-fönstret (7 dagar om inget annat är satt), högst 400 rader, och högst 8 MB nyttolast. Ingen cron.
 - Servern läser inte `data/watchlist.json` eller `data/local-backup.json` om databasen saknas. Importskriptet vägrar när `NODE_ENV` är production eller när värden är produktionsvärden `ep-wandering-morning`.
-- Produktionsmiljöns namn, utan värden: `NODE_ENV`, `BASE_PATH`, `DATABASE_URL` och `TMDB_API_KEY` finns. `OWNER_PASSWORD` och `ALLOWED_ORIGINS` saknas. `MY_LISTS_*` och `SIMKL_TOKEN` saknas, vilket är rätt för den här releasen.
+- Produktionsmiljöns namn, utan värden: `NODE_ENV`, `BASE_PATH`, `DATABASE_URL`, `TMDB_API_KEY` och `ALLOWED_ORIGINS` finns. `ALLOWED_ORIGINS` är `https://media.emmyzettergren.se`. `OWNER_PASSWORD` saknas. `MY_LISTS_*` och `SIMKL_TOKEN` saknas i Vercel, vilket är rätt för den här releasen.
 
 TMDB-vägar som går genom samma HTTP-försök, och därför räknas när den delade budgeten är aktiv:
 
@@ -45,9 +47,9 @@ Katalog och session hämtas igen när fönstret får fokus, så ett statusbyte e
 
 Inte klart, och inte påstått som verifierat:
 
-- Ingen separat testdatabas finns. Backup, restore och migrationerna 006–009 är inte körda mot en kopia. SQL-filerna är additiva (`CREATE TABLE IF NOT EXISTS`, inget `DROP TABLE` och ingen `DELETE` mot watchlist). Dev-databasen och produktionsdatabasen är orörda.
-- Ägaren sätter själv `OWNER_PASSWORD` och `ALLOWED_ORIGINS` i Vercel. Inget lösenord hittas på här.
-- Produktionsmigrering, merge och publicering är inte gjorda. Det som svarar på domänen är fortfarande `main`.
+- Backup är inte verifierad. 24 oktober fanns en riktig export från testkopian, men ingen restore till en separat tom yta. Exportfilen är gitignorerad och är inte en backupmarkering.
+- `OWNER_PASSWORD` saknas i Vercel. Inget lösenord hittas på här.
+- Produktionsmigrering, merge, DNS-byte och publicering är inte gjorda. Det som svarar på domänen är fortfarande `main`.
 
 ## Kontroller som är gröna här
 
@@ -89,15 +91,16 @@ Installationslänken för TV finns bara i gitignorerade `artifacts/api-server/.e
 
 - Ägaren har sett titlarna i Wako på Google TV efter version `ec34c0d6-0a4c-459f-a8e6-3b68078f5e33`. De två tidigare publiceringarna visade bara katalograderna. Uppspelning är inte provad, och tiden för en liständring är inte mätt.
 - SIMKL anropas inte.
-- Ingen Cloudflare-flytt av Media Hub. Appen stannar på Vercel och Neon.
-- Produktionsdatabasen har inte fått migrationerna 006, 007, 008 eller 009. `OWNER_PASSWORD` är inte satt för produktion.
+- Media Hub är inte publicerad på Cloudflare. Lokal Workers-körning är grön. DNS och den levande sajten är kvar på Vercel. Neon är kvar som databas. Se `docs/CLOUDFLARE.md`.
+- `OWNER_PASSWORD` är inte satt för produktion.
 - Hela katalogen är inte kompletterad med land, längd och IMDb-id.
 - Jira MB-29 till MB-38 är inte klara. HTTPS-protokollet är kört och ägaren har sett titlarna på TV:n. Uppspelning är inte gjord.
 
 ## Nästa avgränsade steg
 
-1. Ägaren sätter `OWNER_PASSWORD` och `ALLOWED_ORIGINS` i Vercel. Ingen av dem finns där idag.
-2. Ägaren pekar ut en redan befintlig tom testdatabas, skild från både dev och produktion. Först då kan backup, restore och migrationerna 006–009 provas. Ingen sådan databas finns i repot, och ingen ny molnresurs skapas här.
-3. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
+1. Ägaren sätter `OWNER_PASSWORD` i Vercel. `ALLOWED_ORIGINS` är redan satt till `https://media.emmyzettergren.se`.
+2. En tom yta, skild från både originalgrenen och testkopian, behövs innan restore kan provas. Ingen sådan yta finns, och ingen ny molnresurs skapas här.
+3. Workers Free har 10 ms CPU per HTTP-anrop. Det är inte mätt mot en riktig katalog. Hyperdrive är inte skapad, och workern anropar inte Neon.
+4. TV-listan och uppspelning är pausade. De är inte ett krav för den privata katalogen.
 
 Det steget är fortfarande inte en produktionspublicering.

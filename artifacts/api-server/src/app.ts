@@ -5,6 +5,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { ownerGate } from "./lib/owner-session";
 import { registerStaticFrontend } from "./lib/static-frontend";
+import { runningInWorkers } from "./lib/workers-runtime";
 
 function allowedOrigins(): Set<string> {
   const configured = process.env.ALLOWED_ORIGINS
@@ -51,7 +52,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", ownerGate);
 app.use("/api", router);
 
-if (!process.env.VERCEL && registerStaticFrontend(app)) {
+if (!process.env.VERCEL && !runningInWorkers() && registerStaticFrontend(app)) {
   logger.info("Serving Media Tracker frontend from static build");
 }
 

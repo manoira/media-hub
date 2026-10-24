@@ -1,6 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { pool } from "@workspace/db";
 
+type SqlClient = {
+  query: (text: string, values?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
+};
+
 export const EXPORT_ATTEMPT_LIMIT = 3;
 const DEFAULT_LEASE_SECONDS = 120;
 
@@ -12,8 +16,13 @@ function safeDetail(error: unknown): string {
   return message.slice(0, 200);
 }
 
-export async function claimExport(listId: number, owner: string, leaseSeconds = DEFAULT_LEASE_SECONDS): Promise<ExportClaim> {
-  const claimed = await pool.query<{ owner: string }>(
+export async function claimExport(
+  listId: number,
+  owner: string,
+  leaseSeconds = DEFAULT_LEASE_SECONDS,
+  db: SqlClient = pool,
+): Promise<ExportClaim> {
+  const claimed = await db.query(
     `INSERT INTO list_export_locks (list_id, owner, status, attempt_count, expires_at, updated_at)
      VALUES ($1, $2, 'running', 1, now() + make_interval(secs => $3), now())
      ON CONFLICT (list_id) DO UPDATE SET
@@ -36,21 +45,21 @@ export async function claimExport(listId: number, owner: string, leaseSeconds = 
     [listId, owner, leaseSeconds, EXPORT_ATTEMPT_LIMIT],
   );
   if (claimed.rows[0]?.owner === owner) return "claimed";
-  const current = await pool.query<{ status: string; attempt_count: number; held: boolean }>(
+  const current = await db.query(
     `SELECT status, attempt_count, expires_at > now() AS held
      FROM list_export_locks WHERE list_id = $1`,
     [listId],
   );
-  const row = current.rows[0];
+  const row = current.rows[0] as { status?: string; attempt_count?: number; held?: boolean } | undefined;
   if (!row) return "busy";
-  if (row.status === "error" || (row.status === "running" && !row.held && row.attempt_count >= EXPORT_ATTEMPT_LIMIT)) {
+  if (row.status === "error" || (row.status === "running" && !row.held && Number(row.attempt_count) >= EXPORT_ATTEMPT_LIMIT)) {
     return "exhausted";
   }
   return "busy";
 }
 
-export async function finishExport(listId: number, owner: string): Promise<void> {
-  await pool.query(
+export async function finishExport(listId: number, owner: string, db: SqlClient = pool): Promise<void> {
+  await db.query(
     `UPDATE list_export_locks
      SET status = 'done', owner = NULL, attempt_count = 0, expires_at = now(), last_error = NULL, updated_at = now()
      WHERE list_id = $1 AND owner = $2`,
@@ -58,8 +67,8 @@ export async function finishExport(listId: number, owner: string): Promise<void>
   );
 }
 
-export async function failExport(listId: number, owner: string, error: unknown): Promise<void> {
-  await pool.query(
+export async function failExport(listId: number, owner: string, error: unknown, db: SqlClient = pool): Promise<void> {
+  await db.query(
     `UPDATE list_export_locks
      SET status = CASE WHEN attempt_count >= $3 THEN 'error' ELSE 'pending' END,
          owner = NULL,
