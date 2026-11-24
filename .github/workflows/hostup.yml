@@ -1,0 +1,62 @@
+name: Publish Media Hub to HostUp
+
+on:
+  push:
+    branches: [v2-local-foundation, codex/recover-hostup-navbar]
+  pull_request:
+    branches: [v2-local-foundation]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hostup-media-hub-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --global pnpm@10.34.9
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @workspace/api-server run build
+      - name: Package API and frontend
+        run: |
+          mkdir release
+          cp -a artifacts/api-server/dist release/api
+          cp -a artifacts/media-tracker/dist/public release/web
+          printf '%s\n' 'process.env.API_LISTEN_HOST = "127.0.0.1";' 'await import("./index.mjs");' > release/api/hostup-test.mjs
+          tar -C release -czf mediahub-release.tar.gz api web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mediahub-release
+          path: mediahub-release.tar.gz
+          retention-days: 7
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/v2-local-foundation'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: hostup
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mediahub-release
+      - name: Publish to the VPS
+        env:
+          HOSTUP_DEPLOY_KEY: ${{ secrets.HOSTUP_DEPLOY_KEY }}
+          HOSTUP_KNOWN_HOSTS: ${{ secrets.HOSTUP_KNOWN_HOSTS }}
+        run: |
+          test -n "$HOSTUP_DEPLOY_KEY" && test -n "$HOSTUP_KNOWN_HOSTS"
+          umask 077
+          ssh_dir=$(mktemp -d)
+          trap 'rm -rf "$ssh_dir"' EXIT
+          printf '%s\n' "$HOSTUP_DEPLOY_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$HOSTUP_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          ssh -T -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -i "$ssh_dir/key" mediahub-deploy@136.148.212.54 < mediahub-release.tar.gz
