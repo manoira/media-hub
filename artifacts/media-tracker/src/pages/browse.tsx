@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type FormEvent, type ReactNode } from "react";
+import { useLocation } from "wouter";
 import {
   useDiscoverMedia,
   useGetGenres,
@@ -11,6 +12,7 @@ import { MediaCard } from "@/components/media/media-card";
 import { ContentFilterToggles } from "@/components/media/content-filter-toggles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { withContentFilters } from "@/lib/content-filters";
 import { useHideTrackedPreference } from "@/hooks/use-hide-tracked";
@@ -29,7 +31,7 @@ import {
   providerCollectionSort,
   type ProviderCollection,
 } from "@/lib/streaming-browse";
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,6 +89,17 @@ function FilterMenu({
 }
 
 export function Browse() {
+  const [, navigate] = useLocation();
+
+  function searchTitles(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const value = new FormData(event.currentTarget).get("q");
+    const query = typeof value === "string" ? value.trim() : "";
+    if (query) {
+      navigate(`/search?${new URLSearchParams({ q: query })}`);
+    }
+  }
+
   const [mediaType, setMediaType] = useState<MediaType>("movie");
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<SortValue>("popularity.desc");
@@ -243,6 +256,21 @@ export function Browse() {
             </DropdownMenu>
           )}
         </div>
+
+        <form role="search" aria-label="Search titles from Browse" onSubmit={searchTitles} className="flex w-full max-w-2xl items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              aria-label="Search movies and TV shows"
+              className="pl-9"
+              name="q"
+              placeholder="Search movies & TV shows…"
+              required
+              type="search"
+            />
+          </div>
+          <Button type="submit">Search</Button>
+        </form>
 
         <div className="flex bg-muted rounded-lg p-1 w-fit">
           <Button
