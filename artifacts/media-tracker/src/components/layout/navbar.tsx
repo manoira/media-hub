@@ -81,7 +81,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto grid grid-cols-[auto_1fr] items-center gap-x-4 px-4 sm:px-6 md:min-h-16 md:grid-cols-[auto_1fr_auto] lg:px-8">
         <Link href="/" className="flex h-14 items-center space-x-2 md:h-auto">
           <Film className="h-6 w-6 text-primary" />
-          <span className="inline-block font-bold text-lg tracking-tight">CineTrack</span>
+          <span className="inline-block font-bold text-lg tracking-tight">MediaHub</span>
         </Link>
         <nav aria-label="Main navigation" className="col-span-2 row-start-2 grid grid-cols-5 gap-1 pb-2 md:col-span-1 md:col-start-2 md:row-start-1 md:flex md:gap-4 md:pb-0 lg:gap-6">
           {mainNavLinks.map((link) => {
