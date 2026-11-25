@@ -43,9 +43,8 @@ function UnreadBadge({ count, className }: { count: number; className?: string }
   );
 }
 
-export function Navbar() {
+export function Navbar({ isBooks }: { isBooks: boolean }) {
   const [location, setLocation] = useLocation();
-  const isBooks = location === "/books" || location.startsWith("/books/");
   const activeNavLinks = isBooks ? bookNavLinks : mainNavLinks;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -91,10 +90,10 @@ export function Navbar() {
             <span className="font-bold text-lg tracking-tight">MediaHub</span>
           </Link>
           <nav aria-label="Media type" className="flex rounded-lg bg-muted p-0.5 text-xs font-medium sm:text-sm">
-            <Link href="/" aria-current={!isBooks ? "true" : undefined} className={cn("rounded-md px-2 py-1.5", !isBooks ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+            <Link href="/" aria-current={!isBooks ? "true" : undefined} className={cn("rounded-md px-2 py-1.5", !isBooks ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}>
               Shows
             </Link>
-            <Link href="/books" aria-current={isBooks ? "true" : undefined} className={cn("rounded-md px-2 py-1.5", isBooks ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+            <Link href="/books" aria-current={isBooks ? "true" : undefined} className={cn("rounded-md px-2 py-1.5", isBooks ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
               Books
             </Link>
           </nav>
@@ -112,7 +111,12 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 aria-current={active ? "page" : undefined}
-                className={cn("justify-center whitespace-nowrap py-2 text-xs sm:text-sm md:justify-start", navLinkClass(link.href, match))}
+                className={cn(
+                  "justify-center whitespace-nowrap py-2 text-xs sm:text-sm md:justify-start",
+                  navLinkClass(link.href, match),
+                  isBooks && "border-b-2 border-transparent",
+                  isBooks && active && "border-primary text-primary hover:text-primary",
+                )}
               >
                 <Icon className="mr-1 hidden h-4 w-4 shrink-0 min-[420px]:block md:mr-2" />
                 {link.label}
