@@ -32,7 +32,7 @@ function BookCover({ book }: { book: Book }) {
           decoding="async"
           loading="lazy"
           onError={() => setFailed(true)}
-          src={`https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg?default=false`}
+          src={`${import.meta.env.BASE_URL}books/covers/${book.isbn}.jpg`}
         />
       )}
     </div>
