@@ -39,11 +39,16 @@ function BookCover({ book }: { book: Book }) {
   );
 }
 
-export function BooksPage() {
+const exampleLists = ["Fantasy", "Mystery", "Science fiction"] as const;
+
+export function BooksPage({ view }: { view: "tracking" | "lists" }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("All books");
+  const [list, setList] = useState<(typeof exampleLists)[number]>("Fantasy");
+  const isLists = view === "lists";
   const term = query.trim().toLowerCase();
   const books = exampleBooks.filter((book) =>
+    (!isLists || book.genre === list) &&
     (filter === "All books" || book.status === filter) &&
     `${book.title} ${book.author} ${book.genre}`.toLowerCase().includes(term),
   );
@@ -52,13 +57,28 @@ export function BooksPage() {
     <div className="space-y-7">
       <header className="rounded-2xl border bg-gradient-to-br from-primary/15 via-card to-card px-6 py-8 sm:px-9 sm:py-10">
         <BookOpen aria-hidden="true" className="mb-4 size-7 text-primary" />
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Books</h1>
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{isLists ? "My lists" : "Tracking"}</h1>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Explore the library layout with 20 sample books.
+          {isLists ? "Browse example book lists." : "Explore the library layout with 20 sample books."}
         </p>
       </header>
 
       <section aria-label="Book library" className="space-y-5">
+        {isLists && (
+          <div aria-label="Example book lists" role="group" className="flex flex-wrap gap-2">
+            {exampleLists.map((name) => (
+              <Button
+                key={name}
+                type="button"
+                variant={list === name ? "secondary" : "outline"}
+                aria-pressed={list === name}
+                onClick={() => setList(name)}
+              >
+                {name}
+              </Button>
+            ))}
+          </div>
+        )}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div aria-label="Reading status" role="group" className="flex flex-wrap gap-2">
             {filters.map((status) => (

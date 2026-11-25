@@ -70,7 +70,8 @@ function Router() {
         <Route path="/backup" component={BackupPage} />
         <Route path="/release" component={ReleasePage} />
         <Route path="/watch-sync" component={WatchSyncPage} />
-        <Route path="/books" component={BooksPage} />
+        <Route path="/books/lists"><BooksPage key="lists" view="lists" /></Route>
+        <Route path="/books"><BooksPage key="tracking" view="tracking" /></Route>
         <Route path="/browse" component={Browse} />
         <Route component={NotFound} />
       </Switch>
