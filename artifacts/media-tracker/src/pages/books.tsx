@@ -70,7 +70,7 @@ export function BooksPage({ view }: { view: "tracking" | "lists" }) {
               <Button
                 key={name}
                 type="button"
-                variant={list === name ? "secondary" : "outline"}
+                variant={list === name ? "default" : "outline"}
                 aria-pressed={list === name}
                 onClick={() => setList(name)}
               >
@@ -86,7 +86,7 @@ export function BooksPage({ view }: { view: "tracking" | "lists" }) {
                 key={status}
                 type="button"
                 size="sm"
-                variant={filter === status ? "secondary" : "outline"}
+                variant={filter === status ? "default" : "outline"}
                 aria-pressed={filter === status}
                 onClick={() => setFilter(status)}
               >

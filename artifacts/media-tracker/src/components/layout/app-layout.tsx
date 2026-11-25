@@ -1,9 +1,13 @@
 import { ReactNode } from "react";
+import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 import { Navbar } from "./navbar";
 import { OwnerLogin } from "@/components/auth/owner-login";
 import { useOwnerSession } from "@/hooks/use-owner-session";
 
 export function AppLayout({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+  const isBooks = location === "/books" || location.startsWith("/books/");
   const session = useOwnerSession();
 
   if (session.isLoading) {
@@ -15,8 +19,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
-      <Navbar />
+    <div className={cn("min-h-screen bg-background text-foreground flex flex-col font-sans", isBooks && "books-theme")}>
+      <Navbar isBooks={isBooks} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
