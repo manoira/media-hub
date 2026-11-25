@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, Film, Compass, BarChart2, Bookmark, Menu, Bell, Sparkles, Tv, KeyRound, Archive, ClipboardCheck } from "lucide-react";
+import { Search, Film, Compass, BarChart2, Bookmark, BookOpen, Menu, Bell, Sparkles, Tv, KeyRound, Archive, ClipboardCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -12,6 +12,7 @@ const mainNavLinks = [
   { href: "/", label: "My list", icon: Bookmark, match: (path: string) => path === "/" || path === "/lists" || path === "/watchlist" },
   { href: "/browse", label: "Browse", icon: Compass },
   { href: "/discover", label: "Discover", icon: Sparkles },
+  { href: "/books", label: "Books", icon: BookOpen },
   { href: "/stats", label: "Stats", icon: BarChart2 },
 ];
 
@@ -82,12 +83,12 @@ export function Navbar() {
           <Film className="h-6 w-6 text-primary" />
           <span className="inline-block font-bold text-lg tracking-tight">CineTrack</span>
         </Link>
-        <nav aria-label="Main navigation" className="col-span-2 row-start-2 grid grid-cols-4 gap-1 pb-2 md:col-span-1 md:col-start-2 md:row-start-1 md:flex md:gap-4 md:pb-0 lg:gap-6">
+        <nav aria-label="Main navigation" className="col-span-2 row-start-2 grid grid-cols-5 gap-1 pb-2 md:col-span-1 md:col-start-2 md:row-start-1 md:flex md:gap-4 md:pb-0 lg:gap-6">
           {mainNavLinks.map((link) => {
             const Icon = link.icon;
             return (
               <Link key={link.href} href={link.href} className={cn("justify-center whitespace-nowrap py-2 text-xs sm:text-sm md:justify-start", navLinkClass(link.href, "match" in link ? link.match : undefined))}>
-                <Icon className="mr-1 h-4 w-4 shrink-0 md:mr-2" />
+                <Icon className="mr-1 hidden h-4 w-4 shrink-0 min-[420px]:block md:mr-2" />
                 {link.label}
               </Link>
             );

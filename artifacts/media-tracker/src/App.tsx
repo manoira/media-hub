@@ -14,6 +14,7 @@ import { ListsCollectionsPage } from "@/pages/lists-collections";
 import { ListDetailPage } from "@/pages/list-detail";
 import { ListNewPage } from "@/pages/list-new";
 import { Stats } from "@/pages/stats";
+import { BooksPage } from "@/pages/books";
 import { Browse } from "@/pages/browse";
 import { PersonDetail } from "@/pages/person-detail";
 import { Updates } from "@/pages/updates";
@@ -69,6 +70,7 @@ function Router() {
         <Route path="/backup" component={BackupPage} />
         <Route path="/release" component={ReleasePage} />
         <Route path="/watch-sync" component={WatchSyncPage} />
+        <Route path="/books" component={BooksPage} />
         <Route path="/browse" component={Browse} />
         <Route component={NotFound} />
       </Switch>
