@@ -64,7 +64,7 @@ export function MediaMetadataPanel({ mediaType, tmdbId }: MediaMetadataPanelProp
                 className="flex items-center gap-2 rounded-lg border px-2 py-1.5 hover:bg-muted/50 transition-colors"
               >
                 <img
-                  src={getTmdbImageUrl(writer.profilePath, "profile") || "/favicon.svg"}
+                  src={getTmdbImageUrl(writer.profilePath, "profile") || "/icons/mediahub-192.png"}
                   alt={writer.name}
                   className="h-8 w-8 rounded-full object-cover bg-muted"
                   loading="lazy"

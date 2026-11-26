@@ -121,7 +121,7 @@ export function PersonDetail() {
     <div className="space-y-8 pb-20">
       <div className="flex flex-col md:flex-row gap-6">
         <img
-          src={profileUrl || "/favicon.svg"}
+          src={profileUrl || "/icons/mediahub-192.png"}
           alt={person.name}
           className="h-56 w-40 shrink-0 rounded-xl object-cover bg-muted shadow-lg mx-auto md:mx-0"
         />

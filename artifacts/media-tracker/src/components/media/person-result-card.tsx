@@ -20,7 +20,7 @@ export function PersonResultCard({ person, className }: PersonResultCardProps) {
       )}
     >
       <img
-        src={imageUrl || "/favicon.svg"}
+        src={imageUrl || "/icons/mediahub-192.png"}
         alt={person.name}
         className="h-24 w-24 shrink-0 rounded-lg object-cover bg-muted"
         loading="lazy"
