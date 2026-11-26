@@ -12,6 +12,14 @@ type Difference = {
   simklStatus: string | null;
 };
 
+type Direction = "to-mediahub" | "to-simkl";
+type BatchResult = { copied: number; unchanged: number; unverified: number };
+
+function canCopy(row: Difference, direction: Direction) {
+  return direction === "to-mediahub" ? Boolean(row.simklStatus)
+    : Boolean(row.status && !(row.mediaType === "movie" && row.status === "watching"));
+}
+
 const statusLabels: Record<string, string> = {
   want_to_watch: "Want to Watch",
   watching: "Watching",
@@ -62,14 +70,48 @@ export function WatchSyncPage() {
     },
   });
   const transfer = useMutation({
-    mutationFn: ({ row, direction }: { row: Difference; direction: string }) =>
-      simklRequest("/transfer-status", { ...row, direction }),
-    onSuccess: () => {
-      setNotice("Status copied.");
-      preview.mutate();
+    mutationFn: async ({ rows, direction }: { rows: Difference[]; direction: Direction }) => {
+      if (rows.length === 1) {
+        await simklRequest("/transfer-status", { ...rows[0], direction });
+        return "Status copied.";
+      }
+
+      const totals: BatchResult = { copied: 0, unchanged: 0, unverified: 0 };
+      for (let offset = 0; offset < rows.length; offset += 10) {
+        const batch = rows.slice(offset, offset + 10);
+        setNotice(`Copying statuses… ${offset} of ${rows.length} processed.`);
+        try {
+          const result = await simklRequest<BatchResult>("/transfer-status", { rows: batch, direction });
+          totals.copied += result.copied;
+          totals.unchanged += result.unchanged;
+          totals.unverified += result.unverified;
+        } catch {
+          totals.unverified += batch.length;
+          const remaining = rows.length - offset - batch.length;
+          return `${totals.copied} copied. ${totals.unchanged} unchanged. ${totals.unverified} could not be verified. ${remaining} not attempted.`;
+        }
+      }
+      return `${totals.copied} copied. ${totals.unchanged} unchanged. ${totals.unverified} could not be verified.`;
+    },
+    onMutate: () => setNotice(""),
+    onSuccess: async (message) => {
+      setNotice(message);
+      await preview.mutateAsync().catch(() => undefined);
     },
   });
 
+  const differences = preview.data?.differences ?? [];
+  const toMediaHub = differences.filter(row => canCopy(row, "to-mediahub"));
+  const toSimkl = differences.filter(row => canCopy(row, "to-simkl"));
+  const busy = transfer.isPending || preview.isPending;
+
+  function copyAll(rows: Difference[], direction: Direction) {
+    const source = direction === "to-mediahub" ? "SIMKL" : "MediaHub";
+    const destination = direction === "to-mediahub" ? "MediaHub" : "SIMKL";
+    if (window.confirm(`Copy ${rows.length} statuses from ${source} to ${destination}? Existing statuses in ${destination} may be replaced.`)) {
+      transfer.mutate({ rows, direction });
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -87,7 +129,7 @@ export function WatchSyncPage() {
         </form>
       )}
       {status.data?.connected && !showConnect && (
-        <Button variant="outline" onClick={() => setShowConnect(true)}>Reconnect SIMKL</Button>
+        <Button variant="outline" disabled={busy} onClick={() => setShowConnect(true)}>Reconnect SIMKL</Button>
       )}
       {connect.data && (
         <div className="space-y-2">
@@ -99,7 +141,7 @@ export function WatchSyncPage() {
       {check.isError && <p role="alert">{check.error.message}</p>}
       {transfer.isError && <p role="alert">{transfer.error.message}</p>}
       {notice && <p role="status">{notice}</p>}
-      <Button onClick={() => preview.mutate()} disabled={!status.data?.canPreview || preview.isPending}>
+      <Button onClick={() => preview.mutate()} disabled={!status.data?.canPreview || busy}>
         {preview.isPending ? "Comparing…" : "Compare statuses"}
       </Button>
       {preview.isError && <p role="alert">{preview.error.message}</p>}
@@ -108,8 +150,18 @@ export function WatchSyncPage() {
           <p className="text-sm text-muted-foreground">
             {preview.data.differences.length} status differences. {preview.data.skipped} SIMKL items skipped.
           </p>
+          {status.data?.connected && differences.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" disabled={busy || !toMediaHub.length} onClick={() => copyAll(toMediaHub, "to-mediahub")}>
+                Copy all to MediaHub ({toMediaHub.length})
+              </Button>
+              <Button variant="outline" disabled={busy || !toSimkl.length} onClick={() => copyAll(toSimkl, "to-simkl")}>
+                Copy all to SIMKL ({toSimkl.length})
+              </Button>
+            </div>
+          )}
           <ul className="space-y-2">
-            {preview.data.differences.map((row) => (
+            {differences.map((row) => (
               <li key={`${row.mediaType}:${row.tmdbId}`} className="rounded-lg border bg-card p-3">
                 <Link className="font-medium hover:underline" href={`/media/${row.mediaType}/${row.tmdbId}`}>{row.title}</Link>
                 <p className="text-sm text-muted-foreground">
@@ -117,11 +169,11 @@ export function WatchSyncPage() {
                 </p>
                 {status.data?.connected && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {row.simklStatus && (
-                      <Button size="sm" variant="outline" disabled={transfer.isPending || preview.isPending} onClick={() => transfer.mutate({ row, direction: "to-mediahub" })}>Copy to MediaHub</Button>
+                    {canCopy(row, "to-mediahub") && (
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => transfer.mutate({ rows: [row], direction: "to-mediahub" })}>Copy to MediaHub</Button>
                     )}
-                    {row.status && !(row.mediaType === "movie" && row.status === "watching") && (
-                      <Button size="sm" variant="outline" disabled={transfer.isPending || preview.isPending} onClick={() => transfer.mutate({ row, direction: "to-simkl" })}>Copy to SIMKL</Button>
+                    {canCopy(row, "to-simkl") && (
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => transfer.mutate({ rows: [row], direction: "to-simkl" })}>Copy to SIMKL</Button>
                     )}
                   </div>
                 )}
