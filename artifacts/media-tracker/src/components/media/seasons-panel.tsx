@@ -7,6 +7,9 @@ import {
   useMarkSeasonWatched,
   useMarkSeriesWatched,
   getGetTvProgressQueryKey,
+  getGetWatchlistQueryKey,
+  getGetWatchStatusQueryKey,
+  getGetMediaDetailsQueryKey,
   getGetTvProgressBatchQueryKey,
   getGetSeasonProgressQueryKey,
 } from "@workspace/api-client-react";
@@ -103,6 +106,9 @@ function SeasonAccordion({
   const markEpisode = useMarkEpisodeWatched();
 
   const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: getGetWatchlistQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetWatchStatusQueryKey("tv", tmdbId) });
+    queryClient.invalidateQueries({ queryKey: getGetMediaDetailsQueryKey("tv", tmdbId) });
     queryClient.invalidateQueries({ queryKey: getGetTvProgressQueryKey(tmdbId) });
     queryClient.invalidateQueries({ queryKey: getGetTvProgressBatchQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetSeasonProgressQueryKey(tmdbId, season.seasonNumber) });
@@ -203,14 +209,17 @@ export function SeasonsPanel({ tmdbId, seasons, ended }: SeasonsPanelProps) {
 
   const markSeries = useMarkSeriesWatched();
 
-  const totalEps = mainSeasons.reduce((sum, s) => sum + (s.episodeCount ?? 0), 0);
-  const watchedEps = progress?.totalWatched ?? 0;
+  const totalEps = progress?.airedProgress?.total ?? mainSeasons.reduce((sum, s) => sum + (s.episodeCount ?? 0), 0);
+  const watchedEps = progress?.airedProgress?.seen ?? progress?.totalWatched ?? 0;
   const overallPct = totalEps > 0 ? Math.round((watchedEps / totalEps) * 100) : 0;
   const allWatched = totalEps > 0 && watchedEps >= totalEps;
 
   const watched = progress?.watchedBySeasonNumber ?? {};
 
   const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: getGetWatchlistQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetWatchStatusQueryKey("tv", tmdbId) });
+    queryClient.invalidateQueries({ queryKey: getGetMediaDetailsQueryKey("tv", tmdbId) });
     queryClient.invalidateQueries({ queryKey: getGetTvProgressQueryKey(tmdbId) });
     queryClient.invalidateQueries({ queryKey: getGetTvProgressBatchQueryKey() });
     mainSeasons.forEach(s => {
