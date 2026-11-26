@@ -91,7 +91,10 @@ function buildRatingCondition(minRatings: number[]): SQL | undefined {
   return gte(watchlistTable.voteAverage, threshold);
 }
 
-async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
+async function fetchTmdbDetails(
+  tmdbId: number,
+  mediaType: string,
+): Promise<Partial<ReturnType<typeof watchlistMetadata>> & { keywordIds: number[] }> {
   const keywords = await fetchKeywords(mediaType, tmdbId).catch(() => []);
   const keywordIds = keywords.map(k => k.id);
   try {
