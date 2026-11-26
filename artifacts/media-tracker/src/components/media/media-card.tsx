@@ -97,7 +97,7 @@ export function MediaCard({
         </div>
 
         {isTracking && isWatchlistItem ? (
-          <div className="absolute bottom-3 right-3 z-20 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:has-[[data-state=open]]:opacity-100">
+          <div className="absolute bottom-3 right-3 z-20 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:has-[button:focus-visible]:opacity-100 [@media(hover:hover)]:has-[[data-state=open]]:opacity-100">
             <QuickAddButton mediaType={item.mediaType} tmdbId={item.tmdbId} statusOnly />
           </div>
         ) : (
