@@ -56,6 +56,7 @@ export function WatchSyncPage() {
         setNotice("SIMKL connected. You can now compare statuses.");
         void status.refetch();
       } else {
+        if (state === "expired" || state === "read-only") connect.reset();
         setNotice(state === "read-only" ? "SIMKL granted read-only access. Request a new code and approve write access." : state === "expired" ? "Code expired. Request a new code." : "Waiting for SIMKL approval. Try again in a few seconds.");
       }
     },

@@ -65,11 +65,11 @@ export async function writeSimklStatus(
       Authorization: `Bearer ${connection.token}`,
       "simkl-api-key": connection.clientId,
     },
-    body: JSON.stringify({ [bucket]: [{ to, ids: { tmdb: String(tmdbId) } }] }),
+    body: JSON.stringify({ [bucket]: [{ to, type: mediaType === "movie" ? "movie" : "show", ids: { tmdb: String(tmdbId) } }] }),
     redirect: "error",
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error("SIMKL rejected the status update.");
-  const payload = await response.json();
+  const payload = await response.json() as { added?: Partial<Record<"movies" | "shows", Array<{ to?: string }>>> };
   return payload.added?.[bucket]?.[0]?.to === to;
 }

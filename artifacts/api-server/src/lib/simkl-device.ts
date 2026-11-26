@@ -38,7 +38,8 @@ async function request(path: "device" | "token", body: Record<string, string>) {
     redirect: "error",
     signal: AbortSignal.timeout(15_000),
   });
-  return { ok: response.ok, data: await response.json() };
+  const data = await response.json() as Partial<Device & Token> & { error?: string; scope?: string };
+  return { ok: response.ok, data };
 }
 
 function tokenFrom(data: Partial<Token>): Token {
@@ -51,12 +52,12 @@ function tokenFrom(data: Partial<Token>): Token {
 export async function startSimklDevice(clientId: string) {
   await ensureStorage();
   const result = await request("device", { client_id: clientId, scope: "media:read media:write" });
-  const device = result.data as Device;
-  if (!result.ok || !device.device_code || !device.user_code || !Number.isFinite(device.expires_in) || !Number.isFinite(device.interval)) {
+  const device = result.data;
+  if (!result.ok || !device.device_code || !device.user_code || typeof device.expires_in !== "number" || device.expires_in <= 0 || typeof device.interval !== "number") {
     throw new Error("SIMKL did not issue a device code.");
   }
   const interval = Math.max(5, device.interval) * 1000;
-  pending = { clientId, device, expiresAt: Date.now() + device.expires_in * 1000, nextPoll: Date.now() + interval, interval };
+  pending = { clientId, device: { device_code: device.device_code, user_code: device.user_code, expires_in: device.expires_in, interval: device.interval }, expiresAt: Date.now() + device.expires_in * 1000, nextPoll: Date.now() + interval, interval };
   return { userCode: device.user_code, expiresAt: pending.expiresAt };
 }
 
