@@ -29,9 +29,10 @@ interface QuickAddButtonProps {
   mediaType: "movie" | "tv";
   tmdbId: number;
   className?: string;
+  statusOnly?: boolean;
 }
 
-export function QuickAddButton({ mediaType, tmdbId, className }: QuickAddButtonProps) {
+export function QuickAddButton({ mediaType, tmdbId, className, statusOnly = false }: QuickAddButtonProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const { getEntry } = useWatchlistIndex();
@@ -80,8 +81,8 @@ export function QuickAddButton({ mediaType, tmdbId, className }: QuickAddButtonP
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          title="Add to list"
-          onClick={(e) => {
+          title={statusOnly ? "Change status" : "Add to list"}
+          onClick={statusOnly ? undefined : (e) => {
             e.preventDefault();
             e.stopPropagation();
             setOpen((v) => !v);
@@ -100,6 +101,7 @@ export function QuickAddButton({ mediaType, tmdbId, className }: QuickAddButtonP
           ) : (
             <Icon className={cn("w-3.5 h-3.5", iconColor)} />
           )}
+          {statusOnly && <span className="ml-1 text-white">Quick Actions</span>}
           <ChevronDown className="w-2.5 h-2.5 text-white/60 ml-0.5" />
         </button>
       </DropdownMenuTrigger>
@@ -127,7 +129,7 @@ export function QuickAddButton({ mediaType, tmdbId, className }: QuickAddButtonP
             </DropdownMenuItem>
           );
         })}
-        {currentStatus && (
+        {currentStatus && !statusOnly && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
