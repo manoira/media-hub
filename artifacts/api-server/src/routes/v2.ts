@@ -250,10 +250,10 @@ router.post("/v2/simkl/transfer-status", async (req, res) => {
         res.status(400).json({ error: "There is no supported SIMKL status to copy." });
         return;
       }
-      const details = local ? null : await withManualTmdbBudget(() =>
+      const details = local ? null : await withManualTmdbBudget(async () =>
         mediaType === "movie" ? getMovieDetails(tmdbId) : getTvDetails(tmdbId),
       ).catch(() => null);
-      const metadata = details?.tmdbId === tmdbId
+      const metadata = details && details.tmdbId === tmdbId
         ? { ...watchlistMetadata(tmdbId, details), metadataFetchedAt: new Date() }
         : { title: remote.title };
 
