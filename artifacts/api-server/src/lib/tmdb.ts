@@ -407,6 +407,8 @@ export async function getTvDetails(tmdbId: number) {
     poster_path?: string; backdrop_path?: string; first_air_date?: string; status?: string;
     vote_average?: number; vote_count?: number; popularity?: number;
     homepage?: string; original_language?: string; adult?: boolean;
+    last_episode_to_air?: { season_number: number; episode_number: number; air_date?: string } | null;
+    next_episode_to_air?: { season_number: number } | null;
     number_of_seasons?: number; number_of_episodes?: number;
     episode_run_time?: number[];
     spoken_languages?: { english_name: string }[];
@@ -446,6 +448,12 @@ export async function getTvDetails(tmdbId: number) {
       id: c.id, name: c.name, logoPath: c.logo_path ?? null, originCountry: c.origin_country,
     })),
     genres: (data.genres ?? []),
+    airedSchedule: {
+      status: data.status,
+      last_episode_to_air: data.last_episode_to_air,
+      next_episode_to_air: data.next_episode_to_air,
+      seasons: data.seasons,
+    },
     numberOfSeasons: data.number_of_seasons ?? null,
     numberOfEpisodes: data.number_of_episodes ?? null,
     episodeRunTime: data.episode_run_time ?? [],

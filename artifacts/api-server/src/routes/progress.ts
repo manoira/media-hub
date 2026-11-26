@@ -164,7 +164,8 @@ router.post("/progress/tv/:tmdbId/season/:seasonNumber/watch", async (req, res) 
 
   if (watched) {
     const seasonDetails = await getSeasonDetails(tmdbId, seasonNumber);
-    const values = seasonDetails.episodes.map(ep => ({
+    const today = new Date().toISOString().slice(0, 10);
+    const values = seasonDetails.episodes.filter(ep => ep.airDate && ep.airDate <= today).map(ep => ({
       tmdbId,
       seasonNumber,
       episodeNumber: ep.episodeNumber,
@@ -172,14 +173,15 @@ router.post("/progress/tv/:tmdbId/season/:seasonNumber/watch", async (req, res) 
     if (values.length > 0) {
       await db.insert(episodeProgressTable).values(values).onConflictDoNothing();
     }
+    await syncWatchlistStatusFromProgress(tmdbId);
     res.json({ tmdbId, seasonNumber, watched: true, episodeCount: values.length });
   } else {
     await db.delete(episodeProgressTable).where(
       and(eq(episodeProgressTable.tmdbId, tmdbId), eq(episodeProgressTable.seasonNumber, seasonNumber))
     );
+    await syncWatchlistStatusFromProgress(tmdbId);
     res.json({ tmdbId, seasonNumber, watched: false });
   }
-  await syncWatchlistStatusFromProgress(tmdbId);
 });
 
 router.post("/progress/tv/:tmdbId/watch-all", async (req, res) => {
@@ -190,15 +192,17 @@ router.post("/progress/tv/:tmdbId/watch-all", async (req, res) => {
 
   if (watched) {
     const tvDetails = await getTvDetails(tmdbId);
+    const today = new Date().toISOString().slice(0, 10);
     const seasonNumbers = (tvDetails.seasons ?? [])
-      .map(s => s.seasonNumber)
-      .filter(n => n > 0);
+      .filter(season => season.seasonNumber > 0 && season.airDate && season.airDate <= today)
+      .map(season => season.seasonNumber);
 
     const allEpisodes: { tmdbId: number; seasonNumber: number; episodeNumber: number }[] = [];
     await Promise.all(
       seasonNumbers.map(async (sn) => {
         const season = await getSeasonDetails(tmdbId, sn);
         for (const ep of season.episodes) {
+          if (!ep.airDate || ep.airDate > today) continue;
           allEpisodes.push({ tmdbId, seasonNumber: sn, episodeNumber: ep.episodeNumber });
         }
       })
@@ -207,12 +211,13 @@ router.post("/progress/tv/:tmdbId/watch-all", async (req, res) => {
     if (allEpisodes.length > 0) {
       await db.insert(episodeProgressTable).values(allEpisodes).onConflictDoNothing();
     }
+    await syncWatchlistStatusFromProgress(tmdbId);
     res.json({ tmdbId, watched: true, episodeCount: allEpisodes.length });
   } else {
     await db.delete(episodeProgressTable).where(eq(episodeProgressTable.tmdbId, tmdbId));
+    await syncWatchlistStatusFromProgress(tmdbId);
     res.json({ tmdbId, watched: false });
   }
-  await syncWatchlistStatusFromProgress(tmdbId);
 });
 
 export default router;

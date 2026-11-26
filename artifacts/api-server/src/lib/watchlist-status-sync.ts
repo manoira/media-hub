@@ -1,66 +1,32 @@
-import { db, watchlistTable, episodeProgressTable } from "@workspace/db";
+import { db, watchlistTable, episodeProgressTable, watchEventsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { countAiredTvProgress, resolveProgressStatus } from "./aired-tv-progress";
 import { getTvDetails } from "./tmdb";
-import { expectsMoreSeasons, isSeriesComplete } from "./tv-show-status";
-
-type WatchlistStatus = "watching" | "watched" | "want_to_watch" | "unsure" | "waiting";
-
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function isSeasonAired(airDate: string | null | undefined): boolean {
-  if (!airDate) return true;
-  return airDate <= todayIsoDate();
-}
-
-function countAiredEpisodes(tvDetails: Awaited<ReturnType<typeof getTvDetails>>): number {
-  return (tvDetails.seasons ?? [])
-    .filter((s) => s.seasonNumber > 0 && isSeasonAired(s.airDate))
-    .reduce((sum, s) => sum + (s.episodeCount ?? 0), 0);
-}
+import { invalidateWatchlistCache } from "./watchlist-cache";
 
 export async function syncWatchlistStatusFromProgress(tmdbId: number): Promise<void> {
-  const [entry] = await db
-    .select()
-    .from(watchlistTable)
-    .where(and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, "tv")))
-    .limit(1);
+  const match = and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, "tv"));
+  const [tracked] = await db.select({ id: watchlistTable.id }).from(watchlistTable).where(match);
+  if (!tracked) return;
 
-  if (!entry) return;
+  const details = await getTvDetails(tmdbId).catch(() => null);
+  if (!details) return;
 
-  const [progressRows, tvDetails] = await Promise.all([
-    db.select().from(episodeProgressTable).where(eq(episodeProgressTable.tmdbId, tmdbId)),
-    getTvDetails(tmdbId),
-  ]);
+  const changed = await db.transaction(async tx => {
+    const [entry] = await tx.select().from(watchlistTable).where(match).for("update");
+    if (!entry) return false;
 
-  const watchedCount = progressRows.length;
-  const airedEpisodeCount = countAiredEpisodes(tvDetails);
-  const currentStatus = entry.status as WatchlistStatus;
-  let nextStatus: WatchlistStatus | null = null;
+    const rows = await tx.select().from(episodeProgressTable).where(eq(episodeProgressTable.tmdbId, tmdbId));
+    const progress = countAiredTvProgress(details.airedSchedule, rows);
+    const next = resolveProgressStatus(entry.status, details.airedSchedule, progress, rows.some(row => row.seasonNumber > 0));
+    if (entry.status === next) return false;
 
-  if (watchedCount > 0 && currentStatus === "want_to_watch") {
-    nextStatus = "watching";
-  } else if (currentStatus === "waiting" && airedEpisodeCount > 0 && watchedCount < airedEpisodeCount) {
-    nextStatus = "watching";
-  } else if (airedEpisodeCount > 0 && watchedCount >= airedEpisodeCount) {
-    const tmdbStatus = tvDetails.status;
-    if (expectsMoreSeasons(tmdbStatus)) {
-      if (currentStatus === "watching" || currentStatus === "want_to_watch") {
-        nextStatus = "waiting";
-      }
-    } else if (
-      isSeriesComplete(tmdbStatus) &&
-      (currentStatus === "watching" || currentStatus === "want_to_watch" || currentStatus === "waiting")
-    ) {
-      nextStatus = "watched";
+    const now = new Date();
+    await tx.update(watchlistTable).set({ status: next, statusChangedAt: now }).where(eq(watchlistTable.id, entry.id));
+    if ((entry.status === "watched") !== (next === "watched")) {
+      await tx.insert(watchEventsTable).values({ tmdbId, mediaType: "tv", action: next === "watched" ? "watched" : "unwatched", occurredAt: now });
     }
-  }
-
-  if (nextStatus && nextStatus !== currentStatus) {
-    await db
-      .update(watchlistTable)
-      .set({ status: nextStatus })
-      .where(eq(watchlistTable.id, entry.id));
-  }
+    return true;
+  });
+  if (changed) invalidateWatchlistCache();
 }
