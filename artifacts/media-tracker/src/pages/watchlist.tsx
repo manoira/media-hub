@@ -86,9 +86,10 @@ export function WatchlistContent() {
 
   const { data: genres } = useGetGenres({ query: { queryKey: getGetGenresQueryKey() } });
 
+  const showEpisodeProgress = !(filters.statuses.length === 1 && filters.statuses.includes("watched"));
   const tvProgressIds = useMemo(
-    () => displayItems.filter(item => item.mediaType === "tv").map(item => item.tmdbId),
-    [displayItems],
+    () => showEpisodeProgress ? displayItems.filter(item => item.mediaType === "tv").map(item => item.tmdbId) : [],
+    [displayItems, showEpisodeProgress],
   );
 
   const activeGenres = useMemo(() => {
@@ -200,7 +201,7 @@ export function WatchlistContent() {
             {viewMode === "list" ? (
               <div className="flex flex-col gap-2">
                 {displayItems.map(item => (
-                  <WatchlistListRow key={item.id} item={item} showProgress={item.mediaType === "tv"} />
+                  <WatchlistListRow key={item.id} item={item} showProgress={showEpisodeProgress && item.mediaType === "tv"} />
                 ))}
               </div>
             ) : (
@@ -210,7 +211,7 @@ export function WatchlistContent() {
                     key={item.id}
                     item={item}
                     variant="tracking"
-                    showProgress={item.mediaType === "tv"}
+                    showProgress={showEpisodeProgress && item.mediaType === "tv"}
                   />
                 ))}
               </div>
