@@ -22,6 +22,7 @@ import { WakoCheckPage } from "@/pages/wako-check";
 import { AccessPage } from "@/pages/access";
 import { BackupPage } from "@/pages/backup";
 import { ReleasePage } from "@/pages/release";
+import { TvPage } from "@/pages/tv";
 import { WatchSyncPage } from "@/pages/watch-sync";
 import { getGetWatchlistQueryKey } from "@workspace/api-client-react";
 
@@ -55,6 +56,7 @@ function Router() {
     <AppLayout>
       <Switch>
         <Route path="/" component={ListsHubPage} />
+        <Route path="/tv" component={TvPage} />
         <Route path="/discover" component={Home} />
         <Route path="/search" component={Search} />
         <Route path="/person/:personId" component={PersonDetail} />
