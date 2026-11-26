@@ -1,5 +1,6 @@
 type EpisodePosition = { season_number: number; episode_number: number; air_date?: string };
 type TvSchedule = {
+  status?: string;
   last_episode_to_air?: EpisodePosition | null;
   seasons?: { season_number: number; episode_count?: number; air_date?: string | null }[];
 };
@@ -11,7 +12,7 @@ export function countAiredTvProgress(
 ) {
   const last = schedule.last_episode_to_air;
   const seasons = (schedule.seasons ?? []).filter(season => season.season_number > 0);
-  if (seasons.length < 2 || !last || last.season_number < 1 || last.episode_number < 1 ||
+  if (seasons.length === 0 || !last || last.season_number < 1 || last.episode_number < 1 ||
       !last.air_date || last.air_date > today) return null;
 
   const airedBySeason = new Map<number, number>();
@@ -24,5 +25,5 @@ export function countAiredTvProgress(
   const total = [...airedBySeason.values()].reduce((sum, count) => sum + count, 0);
   const seen = watched.filter(episode => episode.episodeNumber > 0 &&
     episode.episodeNumber <= (airedBySeason.get(episode.seasonNumber) ?? 0)).length;
-  return { seen, total };
+  return { seen, total, ended: schedule.status === "Ended" };
 }

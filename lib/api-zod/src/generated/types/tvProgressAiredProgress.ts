@@ -12,4 +12,5 @@
 export type TvProgressAiredProgress = {
   seen: number;
   total: number;
+  ended: boolean;
 } | null;
