@@ -11,6 +11,7 @@ import {
 import { explainListRules } from "../lib/list-rules";
 import { checkLocalListRoundTrip, readListSync, setListExport } from "../lib/list-export";
 import { finishSimklDevice, getSimklConnection, hasSimklConnection, startSimklDevice } from "../lib/simkl-device";
+import { watchlistMetadata } from "../lib/watchlist-metadata";
 import { invalidateWatchlistCache } from "../lib/watchlist-cache";
 import { readSimklPreview, writeSimklStatus } from "../lib/simkl-preview";
 import { integrationSecret, listIntegrations } from "../lib/integrations";
@@ -249,13 +250,20 @@ router.post("/v2/simkl/transfer-status", async (req, res) => {
         res.status(400).json({ error: "There is no supported SIMKL status to copy." });
         return;
       }
+      const details = local ? null : await withManualTmdbBudget(async () =>
+        mediaType === "movie" ? getMovieDetails(tmdbId) : getTvDetails(tmdbId),
+      ).catch(() => null);
+      const metadata = details && details.tmdbId === tmdbId
+        ? { ...watchlistMetadata(tmdbId, details), metadataFetchedAt: new Date() }
+        : { title: remote.title };
+
       const changed = await db.transaction(async tx => {
         const now = new Date();
         const updated = local
           ? await tx.update(watchlistTable).set({ status: remote.status, statusChangedAt: now, updatedAt: now })
             .where(and(condition, eq(watchlistTable.status, local.status))).returning({ id: watchlistTable.id })
           : await tx.insert(watchlistTable).values({
-            tmdbId, mediaType, title: remote.title, status: remote.status, statusChangedAt: now,
+            ...metadata, tmdbId, mediaType, status: remote.status, statusChangedAt: now,
           }).onConflictDoNothing().returning({ id: watchlistTable.id });
         if (!updated.length) return false;
         if ((localStatus === "watched") !== (remote.status === "watched")) {

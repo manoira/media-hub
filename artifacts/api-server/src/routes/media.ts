@@ -2,8 +2,10 @@ import { Router, type IRouter } from "express";
 import { getMovieDetails, getTvDetails, getCredits, getVideos, getSimilar, getWatchProviders, getMediaMetadata } from "../lib/tmdb";
 import { applyExcludeAdult, parseExcludeAdultFromQuery } from "../lib/filter-adult";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
+import { watchlistMetadata } from "../lib/watchlist-metadata";
+import { invalidateWatchlistCache } from "../lib/watchlist-cache";
 import { db, watchlistTable } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   GetMediaDetailsParams,
   GetMediaDetailsResponse,
@@ -40,6 +42,18 @@ router.get("/media/:mediaType/:tmdbId", async (req, res): Promise<void> => {
         .from(watchlistTable)
         .where(and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, mediaType)));
       watchlistEntry = entry ? serializeWatchlistItem(entry) : null;
+      // Early SIMKL imports only saved the title and watch status.
+      if (entry && entry.metadataFetchedAt === null && entry.genreIds === null &&
+          entry.posterPath === null && entry.originalLanguage === null && details.tmdbId === tmdbId) {
+        const [enriched] = await db.update(watchlistTable)
+          .set({ ...watchlistMetadata(tmdbId, details), metadataFetchedAt: new Date() })
+          .where(and(eq(watchlistTable.id, entry.id), isNull(watchlistTable.metadataFetchedAt)))
+          .returning();
+        if (enriched) {
+          watchlistEntry = serializeWatchlistItem(enriched);
+          invalidateWatchlistCache();
+        }
+      }
     } catch (watchlistErr: unknown) {
       req.log.error({ err: watchlistErr }, "Watchlist lookup failed on media details");
     }

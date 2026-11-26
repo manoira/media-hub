@@ -5,7 +5,7 @@ import { serializeWatchlistItem } from "../lib/watchlist-item";
 import { fetchKeywords, getMovieDetails, getTvDetails } from "../lib/tmdb";
 import { invalidateWatchlistCache } from "../lib/watchlist-cache";
 import { recordLocalRead } from "../lib/tmdb-cache";
-import { acceptImdbId } from "@workspace/db";
+import { watchlistMetadata } from "../lib/watchlist-metadata";
 import { catalogEtag, notModified } from "../lib/private-cache";
 import {
   GetWatchlistQueryParams,
@@ -91,32 +91,17 @@ function buildRatingCondition(minRatings: number[]): SQL | undefined {
   return gte(watchlistTable.voteAverage, threshold);
 }
 
-async function fetchTmdbDetails(tmdbId: number, mediaType: string) {
+async function fetchTmdbDetails(
+  tmdbId: number,
+  mediaType: string,
+): Promise<Partial<ReturnType<typeof watchlistMetadata>> & { keywordIds: number[] }> {
   const keywords = await fetchKeywords(mediaType, tmdbId).catch(() => []);
   const keywordIds = keywords.map(k => k.id);
   try {
     const details = mediaType === "tv"
       ? await getTvDetails(tmdbId)
       : await getMovieDetails(tmdbId);
-    return {
-      title: details.title,
-      posterPath: details.posterPath,
-      backdropPath: details.backdropPath,
-      releaseDate: details.releaseDate,
-      originalLanguage: details.originalLanguage,
-      adult: details.adult,
-      voteAverage: details.voteAverage,
-      overview: details.overview,
-      genreIds: details.genres.map(g => String(g.id)),
-      keywordIds,
-      productionCountries: details.productionCountryCodes,
-      runtimeMinutes: details.runtime,
-      imdbId: acceptImdbId({
-        requestedTmdbId: tmdbId,
-        returnedTmdbId: details.tmdbId,
-        imdbId: details.imdbId,
-      }),
-    };
+    return { ...watchlistMetadata(tmdbId, details), keywordIds };
   } catch {
     return { keywordIds };
   }
