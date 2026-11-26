@@ -2307,7 +2307,9 @@ components:
               type: integer
             total:
               type: integer
-          required: [seen, total]
+            ended:
+              type: boolean
+          required: [seen, total, ended]
         watchedBySeasonNumber:
           type: object
           additionalProperties:

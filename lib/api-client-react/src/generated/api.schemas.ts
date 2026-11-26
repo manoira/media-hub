@@ -746,6 +746,7 @@ export interface SeasonWithProgress {
 export type TvProgressAiredProgress = {
   seen: number;
   total: number;
+  ended: boolean;
 } | null;
 
 export type TvProgressWatchedBySeasonNumber = {[key: string]: number[]};

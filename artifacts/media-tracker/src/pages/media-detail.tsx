@@ -238,7 +238,7 @@ export function MediaDetail() {
       </div>
 
       {type === "tv" && details.seasons && details.seasons.length > 0 && (
-        <SeasonsPanel tmdbId={id} seasons={details.seasons} />
+        <SeasonsPanel tmdbId={id} seasons={details.seasons} ended={details.status === "Ended"} />
       )}
 
       {similar?.results && similar.results.length > 0 && (

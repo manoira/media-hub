@@ -27,7 +27,7 @@ function renderProgress(data: TvProgress | undefined) {
         aria-valuenow={seen}
         className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
       >
-        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-full ${aired.ended ? "bg-green-500" : "bg-primary"}`} style={{ width: `${pct}%` }} />
       </div>
       <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{seen}/{total}</span>
     </div>
