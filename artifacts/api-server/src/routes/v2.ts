@@ -207,13 +207,98 @@ router.get("/v2/simkl/compare", async (_req, res) => {
   res.json({ differences, skipped: preview.skipped });
 });
 
+type SimklDirection = "to-mediahub" | "to-simkl";
+type SimklTransfer = {
+  tmdbId: number;
+  mediaType: "movie" | "tv";
+  status: string | null;
+  simklStatus: string | null;
+};
+
+function isSimklTransfer(value: unknown): value is SimklTransfer {
+  if (!value || typeof value !== "object") return false;
+  const { tmdbId, mediaType, status, simklStatus } = value as Partial<SimklTransfer>;
+  const validStatus = (candidate: unknown) =>
+    candidate === null || candidate === "want_to_watch" || candidate === "watching" || candidate === "watched";
+  return typeof tmdbId === "number" && Number.isSafeInteger(tmdbId) && tmdbId > 0 &&
+    tmdbId <= 2147483647 && (mediaType === "movie" || mediaType === "tv") &&
+    validStatus(status) && validStatus(simklStatus);
+}
+
+type SimklConnection = NonNullable<Awaited<ReturnType<typeof getSimklConnection>>>;
+
+async function transferSimklStatus(
+  { tmdbId, mediaType, status, simklStatus }: SimklTransfer,
+  direction: SimklDirection,
+  connection: SimklConnection,
+  preview: Awaited<ReturnType<typeof readSimklPreview>>,
+) {
+  const key = `${mediaType}:${tmdbId}`;
+  const remote = preview.matches.get(key);
+  const condition = and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, mediaType));
+  const [local] = await db.select().from(watchlistTable).where(condition);
+  const localStatus = local?.status ?? null;
+  if (preview.unsupported.has(key) || localStatus !== status || (remote?.status ?? null) !== simklStatus ||
+      (localStatus && !["want_to_watch", "watching", "watched"].includes(localStatus))) {
+    return { statusCode: 409, error: "The status changed or is not supported. Compare statuses again." };
+  }
+
+  if (direction === "to-simkl") {
+    if ((localStatus !== "want_to_watch" && localStatus !== "watching" && localStatus !== "watched") ||
+        (mediaType === "movie" && localStatus === "watching")) {
+      return { statusCode: 400, error: "SIMKL does not support this status for the title." };
+    }
+    if (!await writeSimklStatus(connection, mediaType, tmdbId, localStatus)) {
+      return { statusCode: 502, error: "SIMKL did not confirm the exact status. Compare again before retrying." };
+    }
+  } else {
+    if (!remote) {
+      return { statusCode: 400, error: "There is no supported SIMKL status to copy." };
+    }
+    const details = local ? null : await withManualTmdbBudget(async () =>
+      mediaType === "movie" ? getMovieDetails(tmdbId) : getTvDetails(tmdbId),
+    ).catch(() => null);
+    const metadata = details && details.tmdbId === tmdbId
+      ? { ...watchlistMetadata(tmdbId, details), metadataFetchedAt: new Date() }
+      : { title: remote.title };
+
+    const changed = await db.transaction(async tx => {
+      const now = new Date();
+      const updated = local
+        ? await tx.update(watchlistTable).set({ status: remote.status, statusChangedAt: now, updatedAt: now })
+          .where(and(condition, eq(watchlistTable.status, local.status))).returning({ id: watchlistTable.id })
+        : await tx.insert(watchlistTable).values({
+          ...metadata, tmdbId, mediaType, status: remote.status, statusChangedAt: now,
+        }).onConflictDoNothing().returning({ id: watchlistTable.id });
+      if (!updated.length) return false;
+      if ((localStatus === "watched") !== (remote.status === "watched")) {
+        await tx.insert(watchEventsTable).values({
+          tmdbId, mediaType, action: remote.status === "watched" ? "watched" : "unwatched", occurredAt: null,
+        });
+      }
+      return true;
+    });
+    if (!changed) {
+      return { statusCode: 409, error: "MediaHub changed. Compare statuses again." };
+    }
+    invalidateWatchlistCache();
+  }
+  return null;
+}
+
 router.post("/v2/simkl/transfer-status", async (req, res) => {
   res.set("Cache-Control", "no-store");
-  const { tmdbId, mediaType, direction, status, simklStatus } = req.body ?? {};
-  if (!Number.isSafeInteger(tmdbId) || tmdbId <= 0 ||
-      (mediaType !== "movie" && mediaType !== "tv") ||
-      (direction !== "to-mediahub" && direction !== "to-simkl")) {
-    res.status(400).json({ error: "Choose a valid title and sync direction." });
+  const { direction, rows } = req.body ?? {};
+  if (direction !== "to-mediahub" && direction !== "to-simkl") {
+    res.status(400).json({ error: "Choose a valid sync direction." });
+    return;
+  }
+  const batch = rows !== undefined;
+  const transfers: unknown = batch ? rows : [req.body];
+  if (!Array.isArray(transfers) || !transfers.length || transfers.length > 10 ||
+      !transfers.every(isSimklTransfer) ||
+      new Set(transfers.map(row => `${row.mediaType}:${row.tmdbId}`)).size !== transfers.length) {
+    res.status(400).json({ error: "Choose up to 10 distinct titles with valid statuses." });
     return;
   }
 
@@ -224,62 +309,30 @@ router.post("/v2/simkl/transfer-status", async (req, res) => {
       return;
     }
     const preview = await readSimklPreview(connection.clientId, connection.token);
-    const key = `${mediaType}:${tmdbId}`;
-    const remote = preview.matches.get(key);
-    const condition = and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, mediaType));
-    const [local] = await db.select().from(watchlistTable).where(condition);
-    const localStatus = local?.status ?? null;
-    if (preview.unsupported.has(key) || localStatus !== status || (remote?.status ?? null) !== simklStatus ||
-        (localStatus && !["want_to_watch", "watching", "watched"].includes(localStatus))) {
-      res.status(409).json({ error: "The status changed or is not supported. Compare statuses again." });
+    if (!batch) {
+      const failure = await transferSimklStatus(transfers[0], direction, connection, preview);
+      if (failure) {
+        res.status(failure.statusCode).json({ error: failure.error });
+        return;
+      }
+      res.json({ ok: true });
       return;
     }
 
-    if (direction === "to-simkl") {
-      if ((localStatus !== "want_to_watch" && localStatus !== "watching" && localStatus !== "watched") ||
-          (mediaType === "movie" && localStatus === "watching")) {
-        res.status(400).json({ error: "SIMKL does not support this status for the title." });
-        return;
+    let copied = 0;
+    let unchanged = 0;
+    let unverified = 0;
+    for (const row of transfers) {
+      try {
+        const failure = await transferSimklStatus(row, direction, connection, preview);
+        if (!failure) copied += 1;
+        else if (failure.statusCode === 502) unverified += 1;
+        else unchanged += 1;
+      } catch {
+        unverified += 1;
       }
-      if (!await writeSimklStatus(connection, mediaType, tmdbId, localStatus)) {
-        res.status(409).json({ error: "SIMKL did not confirm the exact status. Compare again before retrying." });
-        return;
-      }
-    } else {
-      if (!remote) {
-        res.status(400).json({ error: "There is no supported SIMKL status to copy." });
-        return;
-      }
-      const details = local ? null : await withManualTmdbBudget(async () =>
-        mediaType === "movie" ? getMovieDetails(tmdbId) : getTvDetails(tmdbId),
-      ).catch(() => null);
-      const metadata = details && details.tmdbId === tmdbId
-        ? { ...watchlistMetadata(tmdbId, details), metadataFetchedAt: new Date() }
-        : { title: remote.title };
-
-      const changed = await db.transaction(async tx => {
-        const now = new Date();
-        const updated = local
-          ? await tx.update(watchlistTable).set({ status: remote.status, statusChangedAt: now, updatedAt: now })
-            .where(and(condition, eq(watchlistTable.status, local.status))).returning({ id: watchlistTable.id })
-          : await tx.insert(watchlistTable).values({
-            ...metadata, tmdbId, mediaType, status: remote.status, statusChangedAt: now,
-          }).onConflictDoNothing().returning({ id: watchlistTable.id });
-        if (!updated.length) return false;
-        if ((localStatus === "watched") !== (remote.status === "watched")) {
-          await tx.insert(watchEventsTable).values({
-            tmdbId, mediaType, action: remote.status === "watched" ? "watched" : "unwatched", occurredAt: null,
-          });
-        }
-        return true;
-      });
-      if (!changed) {
-        res.status(409).json({ error: "MediaHub changed. Compare statuses again." });
-        return;
-      }
-      invalidateWatchlistCache();
     }
-    res.json({ ok: true });
+    res.json({ copied, unchanged, unverified });
   } catch {
     res.status(502).json({ error: "Could not verify the status transfer. Compare again before retrying." });
   }
