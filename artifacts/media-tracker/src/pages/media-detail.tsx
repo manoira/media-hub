@@ -156,7 +156,7 @@ export function MediaDetail() {
                     className="min-w-[120px] max-w-[120px] flex flex-col gap-2 group/person"
                   >
                     <img 
-                      src={getTmdbImageUrl(person.profilePath, "profile") || "/favicon.svg"} 
+                      src={getTmdbImageUrl(person.profilePath, "profile") || "/icons/mediahub-192.png"}
                       alt={person.name} 
                       className="w-full aspect-[2/3] object-cover rounded-lg bg-muted transition-transform group-hover/person:scale-[1.02]"
                     />

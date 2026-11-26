@@ -89,7 +89,7 @@ export function Updates() {
                 className="flex gap-4 rounded-xl border bg-card p-4 hover:border-primary/40 transition-colors"
               >
                 <img
-                  src={getTmdbImageUrl(item.posterPath, "poster") || "/favicon.svg"}
+                  src={getTmdbImageUrl(item.posterPath, "poster") || "/icons/mediahub-192.png"}
                   alt=""
                   className="w-12 h-[72px] object-cover rounded-md bg-muted shrink-0"
                 />
