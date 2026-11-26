@@ -68,8 +68,8 @@ export function TvPage() {
   const queryClient = useQueryClient();
 
   const watchlist = useGetWatchlist();
-  const title = useGetMediaDetails(kind, titleId, { query: { enabled: titleId > 0 } });
-  const episodes = useGetSeasonProgress(titleId, season, { query: { enabled: kind === "tv" && titleId > 0 && season > 0 } });
+  const title = useGetMediaDetails(kind, titleId, { query: { enabled: titleId > 0, queryKey: getGetMediaDetailsQueryKey(kind, titleId) } });
+  const episodes = useGetSeasonProgress(titleId, season, { query: { enabled: kind === "tv" && titleId > 0 && season > 0, queryKey: getGetSeasonProgressQueryKey(titleId, season) } });
   const mark = useMarkEpisodeWatched();
   const [savingEpisode, setSavingEpisode] = useState<number | null>(null);
 
