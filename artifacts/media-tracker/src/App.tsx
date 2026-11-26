@@ -42,6 +42,7 @@ const queryClient = new QueryClient({
 
 queryClient.setQueryDefaults(getGetWatchlistQueryKey(), {
   staleTime: 0,
+  refetchOnMount: true,
   refetchOnWindowFocus: true,
 });
 queryClient.setQueryDefaults(["owner-session"], {

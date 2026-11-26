@@ -24,7 +24,7 @@ export function MediaDetail() {
   const type = mediaType as "movie" | "tv";
 
   const { data: details, isLoading: isLoadingDetails, isError: detailsError } = useGetMediaDetails(type, id, {
-    query: { enabled: !!id && !!type, queryKey: getGetMediaDetailsQueryKey(type, id) }
+    query: { enabled: !!id && !!type, refetchOnMount: true, staleTime: 0, queryKey: getGetMediaDetailsQueryKey(type, id) }
   });
 
   const { data: credits } = useGetMediaCredits(type, id, {

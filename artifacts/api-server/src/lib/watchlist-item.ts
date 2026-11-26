@@ -13,7 +13,7 @@ export function serializeWatchlistItem(item: typeof watchlistTable.$inferSelect)
     updatedAt: item.updatedAt.toISOString(),
     title: item.title,
     posterPath: item.posterPath ?? null,
-    backdropPath: null,
+    backdropPath: item.posterPath ? null : item.backdropPath ?? null,
     releaseDate: item.releaseDate ?? null,
     originalLanguage: item.originalLanguage ?? null,
     adult: item.adult ?? null,
