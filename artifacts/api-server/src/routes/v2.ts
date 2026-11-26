@@ -10,7 +10,8 @@ import {
 } from "@workspace/db";
 import { explainListRules } from "../lib/list-rules";
 import { checkLocalListRoundTrip, readListSync, setListExport } from "../lib/list-export";
-import { listIntegrations } from "../lib/integrations";
+import { readSimklPreview } from "../lib/simkl-preview";
+import { integrationSecret, listIntegrations } from "../lib/integrations";
 import { demonstrateNotificationLock } from "../lib/notification-sync";
 import { mergeWatchState, practiceMergeSamples } from "../lib/simkl-sync";
 import { getCredits, getMovieDetails, getTvDetails } from "../lib/tmdb";
@@ -133,8 +134,49 @@ router.get("/v2/simkl", async (_req, res) => {
     verified: false,
     liveSync: false,
     pendingEvents: events.length,
+    canPreview: Boolean(configured && process.env.SIMKL_CLIENT_ID?.trim()),
     policy: "SIMKL is not called. Unsure and waiting stay local. A series you are still watching is not marked completed. Watch dates are not invented. Notes, labels, and list membership stay put.",
   });
+});
+
+router.get("/v2/simkl/compare", async (_req, res) => {
+  const token = integrationSecret("simkl");
+  const clientId = process.env.SIMKL_CLIENT_ID?.trim();
+  res.set("Cache-Control", "no-store");
+  if (!token || !clientId) {
+    res.status(409).json({ error: "Set SIMKL_CLIENT_ID and SIMKL_TOKEN on the server to compare statuses." });
+    return;
+  }
+
+  let preview: Awaited<ReturnType<typeof readSimklPreview>>;
+  try {
+    preview = await readSimklPreview(clientId, token);
+  } catch {
+    res.status(502).json({ error: "Could not read SIMKL. Check the server credentials or try again later." });
+    return;
+  }
+
+  const rows = await db.select({
+    tmdbId: watchlistTable.tmdbId,
+    mediaType: watchlistTable.mediaType,
+    title: watchlistTable.title,
+    status: watchlistTable.status,
+  }).from(watchlistTable);
+  const differences = [];
+  const remaining = preview.matches;
+  for (const row of rows) {
+    const key = `${row.mediaType}:${row.tmdbId}`;
+    const remote = remaining.get(key);
+    remaining.delete(key);
+    if (!["want_to_watch", "watching", "watched"].includes(row.status)) continue;
+    if (!remote || remote.status !== row.status) {
+      differences.push({ ...row, simklStatus: remote?.status ?? null });
+    }
+  }
+  for (const remote of remaining.values()) {
+    differences.push({ ...remote, status: null, simklStatus: remote.status });
+  }
+  res.json({ differences, skipped: preview.skipped });
 });
 
 router.post("/v2/simkl/preview", async (req, res) => {
