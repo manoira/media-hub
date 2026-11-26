@@ -1304,6 +1304,10 @@ export const GetTvProgressBatchResponse = zod.object({
   "tmdbId": zod.number(),
   "totalWatched": zod.number(),
   "totalEpisodes": zod.number().nullish(),
+  "airedProgress": zod.object({
+  "seen": zod.number(),
+  "total": zod.number()
+}).nullish(),
   "watchedBySeasonNumber": zod.record(zod.string(), zod.array(zod.number()))
 }))
 })
@@ -1320,6 +1324,10 @@ export const GetTvProgressResponse = zod.object({
   "tmdbId": zod.number(),
   "totalWatched": zod.number(),
   "totalEpisodes": zod.number().nullish(),
+  "airedProgress": zod.object({
+  "seen": zod.number(),
+  "total": zod.number()
+}).nullish(),
   "watchedBySeasonNumber": zod.record(zod.string(), zod.array(zod.number()))
 })
 

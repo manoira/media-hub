@@ -740,6 +740,14 @@ export interface SeasonWithProgress {
   totalCount: number;
 }
 
+/**
+ * @nullable
+ */
+export type TvProgressAiredProgress = {
+  seen: number;
+  total: number;
+} | null;
+
 export type TvProgressWatchedBySeasonNumber = {[key: string]: number[]};
 
 export interface TvProgress {
@@ -747,6 +755,8 @@ export interface TvProgress {
   totalWatched: number;
   /** @nullable */
   totalEpisodes?: number | null;
+  /** @nullable */
+  airedProgress?: TvProgressAiredProgress;
   watchedBySeasonNumber: TvProgressWatchedBySeasonNumber;
 }
 

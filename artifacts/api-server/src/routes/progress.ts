@@ -1,12 +1,42 @@
 import { Router } from "express";
-import { db, episodeProgressTable } from "@workspace/db";
+import { db, episodeProgressTable, tmdbCacheTable } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
-import { getSeasonDetails, getTvDetails } from "../lib/tmdb";
+import { getSeasonDetails, getTvDetails, getTmdbLanguage } from "../lib/tmdb";
 import { syncWatchlistStatusFromProgress } from "../lib/watchlist-status-sync";
+
+import { countAiredTvProgress } from "../lib/aired-tv-progress";
+import { tmdbCacheKey } from "../lib/tmdb-cache";
+import { withManualTmdbBudget } from "../lib/tmdb-budget";
 
 const router = Router();
 
 const BATCH_MAX_IDS = 500;
+const BATCH_REFRESH_LIMIT = 4;
+
+async function loadAiredProgress(rowsByShow: Map<number, { seasonNumber: number; episodeNumber: number }[]>) {
+  const keys = new Map([...rowsByShow].filter(([, rows]) => rows.some(row => row.seasonNumber > 0))
+    .map(([id]) => [tmdbCacheKey(`/tv/${id}`, { language: getTmdbLanguage() }), id]));
+  if (!keys.size) return new Map<number, ReturnType<typeof countAiredTvProgress>>();
+
+  const read = () => db.select().from(tmdbCacheTable).where(inArray(tmdbCacheTable.cacheKey, [...keys.keys()]));
+  let cached = await read();
+  const byKey = new Map(cached.map(row => [row.cacheKey, row]));
+  const missing = [...keys].filter(([key]) => !byKey.has(key));
+  const stale = [...keys].filter(([key]) => {
+    const row = byKey.get(key);
+    return row && row.expiresAt.getTime() <= Date.now();
+  }).sort(([a], [b]) => byKey.get(a)!.expiresAt.getTime() - byKey.get(b)!.expiresAt.getTime());
+  const refresh = [...missing, ...stale].slice(0, BATCH_REFRESH_LIMIT);
+  if (refresh.length) {
+    await withManualTmdbBudget(() => Promise.allSettled(refresh.map(([, id]) => getTvDetails(id))));
+    cached = await read();
+  }
+
+  return new Map(cached.map(row => {
+    const id = keys.get(row.cacheKey)!;
+    return [id, countAiredTvProgress(row.payload as Parameters<typeof countAiredTvProgress>[0], rowsByShow.get(id)!)];
+  }));
+}
 
 function parseTmdbIds(raw: unknown): number[] | null {
   if (typeof raw !== "string" || !raw.trim()) return null;
@@ -54,9 +84,10 @@ router.get("/progress/tv/batch", async (req, res) => {
     if (bucket) bucket.push(row);
   }
 
-  const items: Record<string, ReturnType<typeof buildProgressFromRows>> = {};
+  const aired = await loadAiredProgress(rowsByShow).catch(() => new Map());
+  const items: Record<string, ReturnType<typeof buildProgressFromRows> & { airedProgress?: ReturnType<typeof countAiredTvProgress> }> = {};
   for (const tmdbId of tmdbIds) {
-    items[String(tmdbId)] = buildProgressFromRows(tmdbId, rowsByShow.get(tmdbId) ?? []);
+    items[String(tmdbId)] = { ...buildProgressFromRows(tmdbId, rowsByShow.get(tmdbId) ?? []), airedProgress: aired.get(tmdbId) ?? null };
   }
 
   res.set("Cache-Control", "private, no-cache");
@@ -73,7 +104,8 @@ router.get("/progress/tv/:tmdbId", async (req, res) => {
   ]);
 
   res.set("Cache-Control", "private, no-cache");
-  res.json(buildProgressFromRows(tmdbId, rows, tvDetails.numberOfEpisodes ?? null));
+  const aired = await loadAiredProgress(new Map([[tmdbId, rows]])).catch(() => new Map());
+  res.json({ ...buildProgressFromRows(tmdbId, rows, tvDetails.numberOfEpisodes ?? null), airedProgress: aired.get(tmdbId) ?? null });
 });
 
 router.get("/progress/tv/:tmdbId/season/:seasonNumber", async (req, res) => {

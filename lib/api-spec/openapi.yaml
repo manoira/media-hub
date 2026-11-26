@@ -2300,6 +2300,14 @@ components:
           type: integer
         totalEpisodes:
           type: ["integer", "null"]
+        airedProgress:
+          type: ["object", "null"]
+          properties:
+            seen:
+              type: integer
+            total:
+              type: integer
+          required: [seen, total]
         watchedBySeasonNumber:
           type: object
           additionalProperties:
