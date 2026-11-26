@@ -46,7 +46,7 @@ export function AccessPage() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Connections</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Keys stay in server environment variables. Configured, verified, and simulated are different states. This page cannot save or revoke a secret. Watch sync stays a local preview. <Link href="/watch-sync" className="underline">Open watch sync</Link>.
+          Keys stay in server environment variables. Configured, verified, and simulated are different states. This page cannot save or revoke a secret. Use Watch sync to connect SIMKL and compare or transfer viewing statuses. <Link href="/watch-sync" className="underline">Open watch sync</Link>.
         </p>
       </div>
 

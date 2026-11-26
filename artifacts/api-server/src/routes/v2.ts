@@ -10,7 +10,10 @@ import {
 } from "@workspace/db";
 import { explainListRules } from "../lib/list-rules";
 import { checkLocalListRoundTrip, readListSync, setListExport } from "../lib/list-export";
-import { listIntegrations } from "../lib/integrations";
+import { finishSimklDevice, getSimklConnection, hasSimklConnection, startSimklDevice } from "../lib/simkl-device";
+import { invalidateWatchlistCache } from "../lib/watchlist-cache";
+import { readSimklPreview, writeSimklStatus } from "../lib/simkl-preview";
+import { integrationSecret, listIntegrations } from "../lib/integrations";
 import { demonstrateNotificationLock } from "../lib/notification-sync";
 import { mergeWatchState, practiceMergeSamples } from "../lib/simkl-sync";
 import { getCredits, getMovieDetails, getTvDetails } from "../lib/tmdb";
@@ -128,13 +131,150 @@ router.post("/v2/lists/:id/sync", async (req, res) => {
 router.get("/v2/simkl", async (_req, res) => {
   const configured = listIntegrations().some((item) => item.provider === "simkl" && item.configured);
   const events = await db.select().from(watchEventsTable);
+  const connected = await hasSimklConnection();
   res.json({
-    configured,
-    verified: false,
+    configured: configured || connected,
+    verified: connected,
     liveSync: false,
     pendingEvents: events.length,
-    policy: "SIMKL is not called. Unsure and waiting stay local. A series you are still watching is not marked completed. Watch dates are not invented. Notes, labels, and list membership stay put.",
+    connected,
+    canPreview: Boolean(configured && process.env.SIMKL_CLIENT_ID?.trim()) || connected,
+    policy: "Watch sync reads SIMKL on request and transfers selected statuses. Unsure and waiting stay local. A series you are still watching is not marked completed. Watch dates are not invented. Notes, labels, and list membership stay put.",
   });
+});
+
+router.post("/v2/simkl/connect", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const clientId = typeof req.body?.clientId === "string" ? req.body.clientId.trim() : "";
+  if (!/^[0-9a-f]{64}$/i.test(clientId)) {
+    res.status(400).json({ error: "Enter your SIMKL app Client ID." });
+    return;
+  }
+  try {
+    res.json(await startSimklDevice(clientId));
+  } catch {
+    res.status(502).json({ error: "Could not get a code from SIMKL. Check the Client ID." });
+  }
+});
+
+router.post("/v2/simkl/connect/check", async (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  try {
+    res.json({ state: await finishSimklDevice() });
+  } catch {
+    res.status(502).json({ error: "Could not complete the SIMKL connection." });
+  }
+});
+
+router.get("/v2/simkl/compare", async (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  let preview: Awaited<ReturnType<typeof readSimklPreview>>;
+  try {
+    const connection = await getSimklConnection();
+    const token = connection?.token ?? integrationSecret("simkl");
+    const clientId = connection?.clientId ?? process.env.SIMKL_CLIENT_ID?.trim();
+    if (!token || !clientId) {
+      res.status(409).json({ error: "Connect your SIMKL account before comparing statuses." });
+      return;
+    }
+    preview = await readSimklPreview(clientId, token);
+  } catch {
+    res.status(502).json({ error: "Could not read SIMKL. Reconnect your account or try again later." });
+    return;
+  }
+
+  const rows = await db.select({
+    tmdbId: watchlistTable.tmdbId,
+    mediaType: watchlistTable.mediaType,
+    title: watchlistTable.title,
+    status: watchlistTable.status,
+  }).from(watchlistTable);
+  const differences = [];
+  const remaining = preview.matches;
+  for (const row of rows) {
+    const key = `${row.mediaType}:${row.tmdbId}`;
+    const remote = remaining.get(key);
+    remaining.delete(key);
+    if (preview.unsupported.has(key) || !["want_to_watch", "watching", "watched"].includes(row.status)) continue;
+    if (!remote || remote.status !== row.status) {
+      differences.push({ ...row, simklStatus: remote?.status ?? null });
+    }
+  }
+  for (const remote of remaining.values()) {
+    differences.push({ ...remote, status: null, simklStatus: remote.status });
+  }
+  res.json({ differences, skipped: preview.skipped });
+});
+
+router.post("/v2/simkl/transfer-status", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const { tmdbId, mediaType, direction, status, simklStatus } = req.body ?? {};
+  if (!Number.isSafeInteger(tmdbId) || tmdbId <= 0 ||
+      (mediaType !== "movie" && mediaType !== "tv") ||
+      (direction !== "to-mediahub" && direction !== "to-simkl")) {
+    res.status(400).json({ error: "Choose a valid title and sync direction." });
+    return;
+  }
+
+  try {
+    const connection = await getSimklConnection();
+    if (!connection) {
+      res.status(409).json({ error: "Connect MediaHub to SIMKL first." });
+      return;
+    }
+    const preview = await readSimklPreview(connection.clientId, connection.token);
+    const key = `${mediaType}:${tmdbId}`;
+    const remote = preview.matches.get(key);
+    const condition = and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, mediaType));
+    const [local] = await db.select().from(watchlistTable).where(condition);
+    const localStatus = local?.status ?? null;
+    if (preview.unsupported.has(key) || localStatus !== status || (remote?.status ?? null) !== simklStatus ||
+        (localStatus && !["want_to_watch", "watching", "watched"].includes(localStatus))) {
+      res.status(409).json({ error: "The status changed or is not supported. Compare statuses again." });
+      return;
+    }
+
+    if (direction === "to-simkl") {
+      if ((localStatus !== "want_to_watch" && localStatus !== "watching" && localStatus !== "watched") ||
+          (mediaType === "movie" && localStatus === "watching")) {
+        res.status(400).json({ error: "SIMKL does not support this status for the title." });
+        return;
+      }
+      if (!await writeSimklStatus(connection, mediaType, tmdbId, localStatus)) {
+        res.status(409).json({ error: "SIMKL did not confirm the exact status. Compare again before retrying." });
+        return;
+      }
+    } else {
+      if (!remote) {
+        res.status(400).json({ error: "There is no supported SIMKL status to copy." });
+        return;
+      }
+      const changed = await db.transaction(async tx => {
+        const now = new Date();
+        const updated = local
+          ? await tx.update(watchlistTable).set({ status: remote.status, statusChangedAt: now, updatedAt: now })
+            .where(and(condition, eq(watchlistTable.status, local.status))).returning({ id: watchlistTable.id })
+          : await tx.insert(watchlistTable).values({
+            tmdbId, mediaType, title: remote.title, status: remote.status, statusChangedAt: now,
+          }).onConflictDoNothing().returning({ id: watchlistTable.id });
+        if (!updated.length) return false;
+        if ((localStatus === "watched") !== (remote.status === "watched")) {
+          await tx.insert(watchEventsTable).values({
+            tmdbId, mediaType, action: remote.status === "watched" ? "watched" : "unwatched", occurredAt: null,
+          });
+        }
+        return true;
+      });
+      if (!changed) {
+        res.status(409).json({ error: "MediaHub changed. Compare statuses again." });
+        return;
+      }
+      invalidateWatchlistCache();
+    }
+    res.json({ ok: true });
+  } catch {
+    res.status(502).json({ error: "Could not verify the status transfer. Compare again before retrying." });
+  }
 });
 
 router.post("/v2/simkl/preview", async (req, res) => {
