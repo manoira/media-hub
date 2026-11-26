@@ -11,35 +11,25 @@ interface TvProgressBarProps {
 }
 
 function renderProgress(data: TvProgress | undefined) {
-  if (!data) return null;
+  const aired = data?.airedProgress;
+  if (!aired || aired.seen === 0 || aired.total === 0) return null;
 
-  const watched = data.totalWatched;
-  const total = data.totalEpisodes;
-
-  if (watched === 0 && !total) return null;
-
-  const pct = total && total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 0;
-  const allDone = total != null && watched >= total;
+  const { seen, total } = aired;
+  const pct = Math.min(100, Math.round((seen / total) * 100));
 
   return (
-    <div className="mt-1 space-y-0.5">
-      {total != null ? (
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${allDone ? "bg-green-500" : "bg-primary"}`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <span className="text-[10px] text-muted-foreground flex-shrink-0 tabular-nums">
-            {watched}/{total}
-          </span>
-        </div>
-      ) : (
-        <p className="text-[10px] text-muted-foreground">
-          {watched} ep{watched !== 1 ? "s" : ""} watched
-        </p>
-      )}
+    <div className="mt-1 flex items-center gap-1.5">
+      <div
+        role="progressbar"
+        aria-label="Aired episodes watched"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={seen}
+        className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+      >
+        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{seen}/{total}</span>
     </div>
   );
 }

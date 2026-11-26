@@ -5,6 +5,7 @@
  * Media Tracker API - TMDB powered movie and TV tracking
  * OpenAPI spec version: 0.1.0
  */
+import type { TvProgressAiredProgress } from './tvProgressAiredProgress';
 import type { TvProgressWatchedBySeasonNumber } from './tvProgressWatchedBySeasonNumber';
 
 export interface TvProgress {
@@ -12,5 +13,7 @@ export interface TvProgress {
   totalWatched: number;
   /** @nullable */
   totalEpisodes?: number | null;
+  /** @nullable */
+  airedProgress?: TvProgressAiredProgress;
   watchedBySeasonNumber: TvProgressWatchedBySeasonNumber;
 }

@@ -92,6 +92,7 @@ export * from './statsSummary';
 export * from './streamingProviderList';
 export * from './tagSearchResult';
 export * from './tvProgress';
+export * from './tvProgressAiredProgress';
 export * from './tvProgressBatch';
 export * from './tvProgressBatchItems';
 export * from './tvProgressWatchedBySeasonNumber';
