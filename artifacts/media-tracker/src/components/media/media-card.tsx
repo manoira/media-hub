@@ -31,7 +31,7 @@ export function MediaCard({
   const userRating = isWatchlistItem ? item.userRating : null;
   const tmdbRating = item.voteAverage;
 
-  const imageUrl = getTmdbImageUrl(item.posterPath, "poster");
+  const imageUrl = getTmdbImageUrl(item.posterPath, "poster") ?? getTmdbImageUrl(item.backdropPath, "backdrop");
   const statusConfig = status ? WATCHLIST_STATUS_BY_VALUE[status] : null;
   const detailHref = `/media/${item.mediaType}/${item.tmdbId}`;
 

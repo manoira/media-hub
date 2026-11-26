@@ -13,7 +13,7 @@ interface WatchlistListRowProps {
 }
 
 export function WatchlistListRow({ item, className, showProgress = false }: WatchlistListRowProps) {
-  const imageUrl = getTmdbImageUrl(item.posterPath, "poster");
+  const imageUrl = getTmdbImageUrl(item.posterPath, "poster") ?? getTmdbImageUrl(item.backdropPath, "backdrop");
   const statusConfig = WATCHLIST_STATUS_BY_VALUE[item.status];
   const detailHref = `/media/${item.mediaType}/${item.tmdbId}`;
   const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : "TBA";

@@ -170,7 +170,7 @@ router.get("/watchlist", async (req, res): Promise<void> => {
     const stamp = await pool.query<{ count: number; latest: Date | null }>(
       "SELECT count(*)::int AS count, max(updated_at) AS latest FROM watchlist",
     );
-    const etag = catalogEtag(stamp.rows[0]?.count ?? 0, stamp.rows[0]?.latest ?? null, sort_by);
+    const etag = catalogEtag(stamp.rows[0]?.count ?? 0, stamp.rows[0]?.latest ?? null, `${sort_by}:artwork`);
     if (notModified(req, res, etag)) return;
   } else {
     res.set("Cache-Control", "private, no-cache");
