@@ -18,6 +18,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return <OwnerLogin />;
   }
 
+  if (location === "/tv") return <main>{children}</main>;
+
   return (
     <div className={cn("min-h-screen bg-background text-foreground flex flex-col font-sans", isBooks && "books-theme")}>
       <Navbar isBooks={isBooks} />
