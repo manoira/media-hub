@@ -8,9 +8,11 @@ import {
   getGetTvProgressBatchQueryKey,
   getGetTvProgressQueryKey,
   getGetWatchlistQueryKey,
+  getGetWatchProvidersQueryKey,
   useGetMediaDetails,
   useGetSeasonProgress,
   useGetWatchlist,
+  useGetWatchProviders,
   useMarkEpisodeWatched,
 } from "@workspace/api-client-react";
 import { cn, getTmdbImageUrl } from "@/lib/utils";
@@ -20,6 +22,8 @@ const tabs = [
   { status: "waiting", label: "Waiting" },
   { status: "want_to_watch", label: "Want to Watch" },
 ];
+
+const netflixDemo = { tmdbId: 725201, url: "https://www.netflix.com/title/81160697" };
 
 const control = "rounded-xl border border-white/15 bg-white/5 text-left transition-colors hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-violet-400 focus:bg-violet-950";
 
@@ -53,6 +57,18 @@ function arrowFocus(event: KeyboardEvent<HTMLElement>) {
   closest?.focus();
 }
 
+function netflixTitleUrl(link: string | null | undefined) {
+  if (!link) return null;
+  try {
+    const url = new URL(link);
+    if (url.protocol !== "https:" || !["www.netflix.com", "netflix.com"].includes(url.hostname)) return null;
+    const id = /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?(?:title|watch)\/(\d+)\/?$/i.exec(url.pathname)?.[1];
+    return id ? `https://www.netflix.com/title/${id}` : null;
+  } catch {
+    return null;
+  }
+}
+
 export function TvPage() {
   const [, navigate] = useLocation();
   const params = new URLSearchParams(useSearch());
@@ -70,6 +86,13 @@ export function TvPage() {
   const watchlist = useGetWatchlist();
   const title = useGetMediaDetails(kind, titleId, { query: { enabled: titleId > 0, queryKey: getGetMediaDetailsQueryKey(kind, titleId) } });
   const episodes = useGetSeasonProgress(titleId, season, { query: { enabled: kind === "tv" && titleId > 0 && season > 0, queryKey: getGetSeasonProgressQueryKey(titleId, season) } });
+  const providers = useGetWatchProviders(kind, titleId, {
+    query: { enabled: titleId > 0 && !season, queryKey: getGetWatchProvidersQueryKey(kind, titleId) },
+  });
+  const netflix = [...(providers.data?.flatrate ?? []), ...(providers.data?.ads ?? [])]
+    .filter(provider => /^Netflix(?:$| )/i.test(provider.providerName));
+  const netflixUrl = netflix.map(provider => netflixTitleUrl(provider.link)).find(Boolean)
+    ?? (kind === "movie" && titleId === netflixDemo.tmdbId ? netflixDemo.url : null);
   const mark = useMarkEpisodeWatched();
   const [savingEpisode, setSavingEpisode] = useState<number | null>(null);
 
@@ -148,6 +171,9 @@ export function TvPage() {
               >{entry.label}</Link>
             ))}
           </nav>
+          <Link href={titleUrl(netflixDemo.tmdbId, "movie")} data-tv-focus className={cn(control, "inline-flex px-5 py-3 text-lg")}>
+            Test Netflix · The Gray Man
+          </Link>
           {watchlist.isError && <button data-tv-focus className={cn(control, "p-4")} onClick={() => void watchlist.refetch()}>Retry loading your list</button>}
           {watchlist.isPending && <p role="status" className="text-xl">Loading your list…</p>}
           {watchlist.isSuccess && !items.length && <p className="text-xl text-slate-300">No titles in {tab.label}.</p>}
@@ -184,6 +210,14 @@ export function TvPage() {
                 {season > 0 ? <h2 className="text-2xl text-violet-300">Season {season}</h2> : <p className="max-w-3xl text-lg text-slate-200">{title.data.overview}</p>}
               </div>
             </div>
+          )}
+          {!season && title.data && netflixUrl && (
+            <a data-tv-focus href={netflixUrl} className={cn(control, "inline-flex border-red-500 bg-red-950 px-6 py-4 text-xl font-semibold")}>
+              Open in Netflix
+            </a>
+          )}
+          {!season && title.data && netflix.length > 0 && !netflixUrl && (
+            <p className="text-slate-300">Netflix lists this title, but a direct link is unavailable.</p>
           )}
           {!season && title.data && (
             <nav aria-label="Seasons" className="flex flex-wrap gap-4">
