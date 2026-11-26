@@ -77,7 +77,7 @@ export function QuickAddButton({ mediaType, tmdbId, className, statusOnly = fals
   const hoverClass = activeConfig?.quickAddHoverClass ?? QUICK_ADD_DEFAULT_HOVER;
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={!statusOnly}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
