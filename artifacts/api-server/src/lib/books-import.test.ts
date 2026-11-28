@@ -14,9 +14,9 @@ test("CSV supports a BOM, Excel ISBNs, commas, quotes and multiline notes", () =
 });
 
 test("Goodreads shelves become statuses and supplementary tags", () => {
-  const result = importBooks([], gr('1,A,Author,vill-l�sa-sp�nning,"2026, vill-l�sa-sp�nning",9781234567890\n2,B,Author,read,"2025, sp�nning",9781234567891'));
+  const result = importBooks([], gr('1,A,Author,vill-läsa-spänning,"2026, vill-läsa-spänning",9781234567890\n2,B,Author,read,"2025, spänning",9781234567891'));
   assert.deepEqual(result.summary.counts, { "want-to-read": 1, reading: 0, read: 1 });
-  assert.deepEqual(result.books[0].tags, ["2026", "vill-l�sa-sp�nning"]);
+  assert.deepEqual(result.books[0].tags, ["2026", "vill-läsa-spänning"]);
   assert.throws(() => importBooks([], gr('1,A,Author,unknown,,9781234567890')));
 });
 
