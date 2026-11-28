@@ -119,7 +119,7 @@ export function BooksPage({ view }: { view: "tracking" | "lists" }) {
             Goodreads sets reading status. Storytel-only books use Currently reading. Other shelves become tags.
           </p>
           <Button type="submit" disabled={importMutation.isPending || (!goodreadsFile && !storytelFile)}>
-            {importMutation.isPending ? "Importing." : "Import selected files"}
+            {importMutation.isPending ? "Importing…" : "Import selected files"}
           </Button>
           {importMutation.error && <p role="alert" className="text-sm text-destructive">{importMutation.error.message}</p>}
           {importMutation.data && <p role="status" className="text-sm">
@@ -149,7 +149,7 @@ export function BooksPage({ view }: { view: "tracking" | "lists" }) {
                 type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} />
             </div>
           </div>
-          {library.isPending && <p role="status" className="text-sm text-muted-foreground">Loading books.</p>}
+          {library.isPending && <p role="status" className="text-sm text-muted-foreground">Loading books…</p>}
           {library.error && <div role="alert" className="space-y-2 text-sm text-destructive">
             <p>{library.error.message}</p><Button variant="outline" onClick={() => void library.refetch()}>Try again</Button>
           </div>}
