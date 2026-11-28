@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { Search, Film, Compass, BarChart2, Bookmark, Menu, Bell, Sparkles } from "lucide-react";
+import { Search, Film, Compass, BarChart2, Bookmark, BookOpen, List, Menu, Bell, Sparkles, Tv, KeyRound, Archive, ClipboardCheck } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useGetUnreadNotificationCount, getGetUnreadNotificationCountQueryKey } from "@workspace/api-client-react";
@@ -12,6 +13,18 @@ const mainNavLinks = [
   { href: "/browse", label: "Browse", icon: Compass },
   { href: "/discover", label: "Discover", icon: Sparkles },
   { href: "/stats", label: "Stats", icon: BarChart2 },
+];
+
+const bookNavLinks = [
+  { href: "/books", label: "Tracking", icon: BookOpen },
+  { href: "/books/lists", label: "My lists", icon: List },
+];
+
+const menuNavLinks = [
+  { href: "/wako-check", label: "Wako check", icon: Tv },
+  { href: "/access", label: "Access", icon: KeyRound },
+  { href: "/backup", label: "Backup", icon: Archive },
+  { href: "/release", label: "Release", icon: ClipboardCheck },
 ];
 
 const updatesLink = { href: "/updates", label: "Updates", icon: Bell };
@@ -30,11 +43,23 @@ function UnreadBadge({ count, className }: { count: number; className?: string }
   );
 }
 
-export function Navbar() {
+export function Navbar({ isBooks }: { isBooks: boolean }) {
   const [location, setLocation] = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const activeNavLinks: typeof mainNavLinks = isBooks ? bookNavLinks : mainNavLinks;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  async function signOut() {
+    await fetch("/api/session/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "x-media-hub-request": "1" },
+    });
+    setIsMenuOpen(false);
+    await queryClient.invalidateQueries();
+  }
   const { data: unreadData } = useGetUnreadNotificationCount({
-    query: { queryKey: getGetUnreadNotificationCountQueryKey() },
+    query: { queryKey: getGetUnreadNotificationCountQueryKey(), enabled: !isBooks },
   });
   const unreadCount = unreadData?.count ?? 0;
 
@@ -44,7 +69,7 @@ export function Navbar() {
     const query = formData.get("q") as string;
     if (query) {
       setLocation(`/search?q=${encodeURIComponent(query)}`);
-      setIsMobileMenuOpen(false);
+      setIsMenuOpen(false);
     }
   };
 
@@ -58,60 +83,80 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-7xl mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-6 md:gap-10">
-          <Link href="/" className="flex items-center space-x-2">
-            <Film className="h-6 w-6 text-primary" />
-            <span className="inline-block font-bold text-lg tracking-tight">CineTrack</span>
+      <div className="max-w-7xl mx-auto grid grid-cols-[auto_1fr] items-center gap-x-4 px-4 sm:px-6 md:min-h-16 md:grid-cols-[auto_1fr_auto] lg:px-8">
+        <div className="flex h-14 items-center gap-2 sm:gap-4 md:h-auto">
+          <Link href={isBooks ? "/books" : "/"} className="flex items-center gap-2">
+            <Film aria-hidden="true" className="hidden h-6 w-6 text-primary min-[420px]:block" />
+            <span className="font-bold text-lg tracking-tight">MediaHub</span>
           </Link>
-          <nav className="hidden md:flex gap-6">
-            {mainNavLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link key={link.href} href={link.href} className={navLinkClass(link.href, "match" in link ? link.match : undefined)}>
-                  <Icon className="h-4 w-4 mr-2" />
-                  {link.label}
-                </Link>
-              );
-            })}
+          <nav aria-label="Media type" className="flex rounded-lg bg-muted p-0.5 text-xs font-medium sm:text-sm">
+            <Link href="/" aria-current={!isBooks ? "true" : undefined} className={cn("rounded-md px-2 py-1.5", !isBooks ? "bg-primary/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+              Shows
+            </Link>
+            <Link href="/books" aria-current={isBooks ? "true" : undefined} className={cn("rounded-md px-2 py-1.5", isBooks ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+              Books
+            </Link>
           </nav>
         </div>
+        <nav aria-label={isBooks ? "Book navigation" : "Main navigation"} className={cn(
+          "col-span-2 row-start-2 grid gap-1 pb-2 md:col-span-1 md:col-start-2 md:row-start-1 md:flex md:gap-4 md:pb-0 lg:gap-6",
+          isBooks ? "grid-cols-2" : "grid-cols-4",
+        )}>
+          {activeNavLinks.map((link) => {
+            const Icon = link.icon;
+            const match = "match" in link ? link.match : undefined;
+            const active = match ? match(location) : location === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "justify-center whitespace-nowrap py-2 text-xs sm:text-sm md:justify-start",
+                  navLinkClass(link.href, match),
+                  isBooks && "border-b-2 border-transparent",
+                  isBooks && active && "border-primary text-primary hover:text-primary",
+                )}
+              >
+                <Icon className="mr-1 hidden h-4 w-4 shrink-0 min-[420px]:block md:mr-2" />
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end md:gap-4">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <form onSubmit={handleSearch} className="relative hidden md:flex items-center max-w-sm ml-auto">
+        <div className="col-start-2 row-start-1 flex items-center justify-end gap-2 md:col-start-3 lg:gap-4">
+          {!isBooks && <div className="w-full flex-1 md:w-auto md:flex-none">
+            <form onSubmit={handleSearch} className="relative hidden xl:flex items-center max-w-sm ml-auto">
               <Search className="absolute left-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 name="q"
                 placeholder="Search movies, TV, people & tags..."
-                className="pl-8 bg-muted/50 border-none focus-visible:ring-1 md:w-[300px]"
+                className="pl-8 bg-muted/50 border-none focus-visible:ring-1 xl:w-[240px]"
               />
             </form>
-          </div>
+          </div>}
 
-          <Link href={updatesLink.href} className={cn("hidden md:flex items-center gap-2", navLinkClass(updatesLink.href))}>
+          <Button variant="ghost" className="hidden lg:inline-flex" onClick={() => void signOut()}>
+            Sign out
+          </Button>
+          {!isBooks && <Link href={updatesLink.href} className={cn("gap-1 sm:gap-2", navLinkClass(updatesLink.href))}>
             <updatesLink.icon className="h-4 w-4" />
-            {updatesLink.label}
+            <span className="sr-only min-[420px]:not-sr-only">{updatesLink.label}</span>
             <UnreadBadge count={unreadCount} />
-          </Link>
+          </Link>}
 
-          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden relative">
+              <Button variant="ghost" size="icon" className={cn("shrink-0", isBooks && "lg:hidden")}>
                 <Menu className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
-                )}
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="pr-0 flex flex-col">
-              <Link href="/" className="flex items-center space-x-2 mb-8" onClick={() => setIsMobileMenuOpen(false)}>
-                <Film className="h-6 w-6 text-primary" />
-                <span className="font-bold">CineTrack</span>
-              </Link>
-              <form onSubmit={handleSearch} className="relative mb-8 pr-6">
+              <SheetTitle className="mb-6">Menu</SheetTitle>
+              {!isBooks && <form onSubmit={handleSearch} className="relative mb-4 pr-6 xl:hidden">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
@@ -119,33 +164,27 @@ export function Navbar() {
                   placeholder="Search..."
                   className="pl-8 bg-muted"
                 />
-              </form>
-              <div className="flex flex-col space-y-3 flex-1">
-                {mainNavLinks.map((link) => {
+              </form>}
+              {!isBooks && <nav aria-label="More options" className="flex flex-1 flex-col space-y-3">
+                {menuNavLinks.map((link) => {
                   const Icon = link.icon;
                   return (
                     <Link
                       key={link.href}
                       href={link.href}
                       className="flex items-center py-2 text-sm font-medium"
-                      onClick={() => setIsMobileMenuOpen(false)}
+                      onClick={() => setIsMenuOpen(false)}
                     >
-                      <Icon className="h-4 w-4 mr-2" />
+                      <Icon className="mr-1 h-4 w-4 shrink-0 md:mr-2" />
                       {link.label}
                     </Link>
                   );
                 })}
-              </div>
-              <div className="mt-auto border-t pt-4 pr-6 pb-2">
-                <Link
-                  href={updatesLink.href}
-                  className="flex items-center py-2 text-sm font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <updatesLink.icon className="h-4 w-4 mr-2" />
-                  {updatesLink.label}
-                  <UnreadBadge count={unreadCount} className="ml-2" />
-                </Link>
+              </nav>}
+              <div className="mt-auto border-t pt-4 pr-6 pb-2 lg:hidden">
+                <button type="button" className="py-2 text-left text-sm font-medium" onClick={() => void signOut()}>
+                  Sign out
+                </button>
               </div>
             </SheetContent>
           </Sheet>

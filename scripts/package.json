@@ -7,6 +7,8 @@
     "hello": "tsx ./src/hello.ts",
     "export-data": "tsx ./src/export-data.ts",
     "import-data": "tsx ./src/import-data.ts",
+    "probe-restore": "tsx ./src/probe-restore.ts",
+    "backfill-list-hashes": "tsx ./src/backfill-list-hashes.ts",
     "import-notion": "tsx ./src/import-notion-csv.ts",
     "backfill-watchlist-language": "tsx ./src/backfill-watchlist-language.ts",
     "backfill-watchlist-keywords": "tsx ./src/backfill-watchlist-keywords.ts",

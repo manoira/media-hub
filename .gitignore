@@ -15,6 +15,12 @@ node_modules
 .env
 .env.local
 .env.*.local
+.dev.vars
+.local/
+.wrangler/
+data/local-backup.json
+data/mediahub-v2-test-20261024-export.json
+deploy/my-lists-test/wrangler.local.toml
 
 # IDEs and editors
 /.idea

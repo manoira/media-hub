@@ -358,9 +358,19 @@ export async function customFetch<T = unknown>(
     }
   }
 
+  if (method !== "GET" && method !== "HEAD" && !headers.has("x-media-hub-request")) {
+    headers.set("x-media-hub-request", "1");
+  }
+
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(input, {
+    ...init,
+    method,
+    headers,
+    credentials: init.credentials ?? "include",
+    cache: init.cache ?? (method === "GET" || method === "HEAD" ? "no-cache" : "default"),
+  });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

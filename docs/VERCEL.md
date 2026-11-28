@@ -1,5 +1,7 @@
 # Deploy Media Hub on Vercel
 
+Status 24 oktober 2026: den levande sajten är fortfarande den här vägen, från `main`. Vercel support säger att den kostnadsfria återaktiveringen redan är använd och hänvisar till Pro. Det bevisar inte en ny överskridning. Nästa publiceringsmål är Cloudflare Workers och är inte publicerat. Se `docs/CLOUDFLARE.md`.
+
 Vercel hosts the **React frontend** and **Express API** on the same domain — same architecture as Render, with a serverless entrypoint.
 
 ## What gets deployed
@@ -39,6 +41,12 @@ In **Project → Settings → Environment Variables**:
 | `TMDB_API_KEY` | TMDB v3 API key | Production, Preview |
 | `NODE_ENV` | `production` | Production, Preview |
 | `BASE_PATH` | `/` | Production, Preview |
+| `OWNER_PASSWORD` | Owner sign-in password. Never commit it. | Production, Preview |
+| `MY_LISTS_ORIGIN` | Optional later. HTTPS origin of a separate My Lists test install. Do not set this to mylistsaddon.com, and do not set it on production until that install exists. | Production, Preview |
+| `MY_LISTS_CREATOR_NAME` | Optional later. Creator profile name for that install. | Production, Preview |
+| `MY_LISTS_CREATOR_KEY` | Optional later. Server secret for that install. Presence of the key alone is not a verified sync, and the app does not store this value. | Production, Preview |
+| `MY_LISTS_MODE` | Leave unset. `simulator` is only for a local memory test. | Local |
+| `SIMKL_TOKEN` | Optional. Same rule as the creator key. | Production, Preview |
 
 Do **not** set `PORT` on Vercel.
 

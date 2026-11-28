@@ -2,8 +2,10 @@ import { Router, type IRouter } from "express";
 import { getMovieDetails, getTvDetails, getCredits, getVideos, getSimilar, getWatchProviders, getMediaMetadata } from "../lib/tmdb";
 import { applyExcludeAdult, parseExcludeAdultFromQuery } from "../lib/filter-adult";
 import { serializeWatchlistItem } from "../lib/watchlist-item";
+import { watchlistMetadata } from "../lib/watchlist-metadata";
+import { invalidateWatchlistCache } from "../lib/watchlist-cache";
 import { db, watchlistTable } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   GetMediaDetailsParams,
   GetMediaDetailsResponse,
@@ -40,6 +42,27 @@ router.get("/media/:mediaType/:tmdbId", async (req, res): Promise<void> => {
         .from(watchlistTable)
         .where(and(eq(watchlistTable.tmdbId, tmdbId), eq(watchlistTable.mediaType, mediaType)));
       watchlistEntry = entry ? serializeWatchlistItem(entry) : null;
+      const needsMetadata = entry?.genreIds === null && entry.originalLanguage === null;
+      const needsArtwork = entry && (
+        (!entry.posterPath && details.posterPath) || (!entry.backdropPath && details.backdropPath)
+      );
+      if (entry && details.tmdbId === tmdbId && (needsMetadata || needsArtwork)) {
+        const metadata = needsMetadata
+          ? { ...watchlistMetadata(tmdbId, details), metadataFetchedAt: new Date() }
+          : {};
+        const [enriched] = await db.update(watchlistTable)
+          .set({
+            ...metadata,
+            posterPath: sql`coalesce(nullif(${watchlistTable.posterPath}, ''), ${details.posterPath})`,
+            backdropPath: sql`coalesce(nullif(${watchlistTable.backdropPath}, ''), ${details.backdropPath})`,
+          })
+          .where(and(eq(watchlistTable.id, entry.id), needsMetadata ? isNull(watchlistTable.genreIds) : undefined))
+          .returning();
+        if (enriched) {
+          watchlistEntry = serializeWatchlistItem(enriched);
+          invalidateWatchlistCache();
+        }
+      }
     } catch (watchlistErr: unknown) {
       req.log.error({ err: watchlistErr }, "Watchlist lookup failed on media details");
     }

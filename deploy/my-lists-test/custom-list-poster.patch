@@ -1,0 +1,58 @@
+﻿diff --git a/worker_entry_combined.js b/worker_entry_combined.js
+index 226c12a..93647ad 100644
+--- a/worker_entry_combined.js
++++ b/worker_entry_combined.js
+@@ -14519,11 +14519,11 @@ async function fetchCustomListCatalog(entry, skip = 0, keys = {}) {
+     })
+     .map((it) => ({
+       id: it.imdbId || it.id || it.showId,
+-      showId: it.showId || (!it.isMovie && (it.imdbId || it.id)),
++      showId: entry.type === 'series' ? (it.showId || it.imdbId || it.id) : undefined,
+       type: entry.type || (it.kind === 'series' || it.type === 'series' || it.type === 'tv' ? 'series' : 'movie'),
+       name: it.title || it.name || it.showTitle,
+-      poster: it.poster || it.showPoster || undefined,
+-      releaseInfo: it.year || undefined,
++      poster: it.poster || it.showPoster || (String(it.imdbId || it.id || '').startsWith('tt') ? 'https://images.metahub.space/poster/medium/' + (it.imdbId || it.id) + '/img.jpg' : undefined),
++      releaseInfo: it.year ? String(it.year).slice(0, 4) : undefined,
+       seasonNum: it.seasonNum != null ? it.seasonNum : (it.season != null ? it.season : undefined),
+       episodeNum: it.episodeNum != null ? it.episodeNum : (it.episode != null ? it.episode : undefined),
+       airDate: it.airDate || undefined,
+@@ -22661,6 +22661,30 @@ async function fetchTmdbSeasonDetailsUncached(imdbId, seasonNum, apiKey, knownTm
+ // Builds standard Stremio/Nuvio metadata for any movie or series keyed by IMDb id.
+ // Provides full metadata (details, ratings, cast, genres, seasons, and episodes)
+ // so clients without a dedicated metadata addon (like Nuvio) render rich pages automatically.
++async function metaFromInstalledLists(resolved, imdbId, metaType, env) {
++  const entries = Array.isArray(resolved && resolved.entries) ? resolved.entries : [];
++  const keys = { env, verifiedOwner: resolved && resolved.trackOwner || "", trackCreatorName: resolved && resolved.trackCreatorName || "" };
++  for (const entry of entries) {
++    if (!entry || entry.enabled === false || entry.type !== metaType) continue;
++    const payload = parseCustomListPayload(entry.url);
++    if (!payload) continue;
++    let items = Array.isArray(payload.items) ? payload.items : [];
++    const live = await resolveLiveCustomList(env, payload, keys);
++    if (live && Array.isArray(live.items)) items = live.items;
++    const found = items.find((item) => item && (item.imdbId || item.id) === imdbId);
++    if (!found) continue;
++    const posterId = found.imdbId || found.id || imdbId;
++    return {
++      id: imdbId,
++      type: metaType,
++      name: found.title || found.name || imdbId,
++      poster: found.poster || (String(posterId).startsWith("tt") ? "https://images.metahub.space/poster/medium/" + posterId + "/img.jpg" : undefined),
++      releaseInfo: found.year ? String(found.year).slice(0, 4) : undefined,
++    };
++  }
++  return null;
++}
++
+ async function fetchStandardItemMeta(imdbId, type, apiKey, env = null, ctx = null) {
+   if (!apiKey || !imdbId) return null;
+   const wantType = type === "series" ? "series" : "movie";
+@@ -75457,6 +75481,7 @@ Sitemap: ${url.origin}/sitemap.xml`;
+           const metaConfig = config ? await resolveConfig(config, env) : {};
+           const effectiveKey = metaConfig.tmdbKey || TMDB_API_KEY;
+           let meta = await fetchStandardItemMeta(id, metaType, effectiveKey, env, ctx);
++          if (!meta && id.startsWith("tt")) meta = await metaFromInstalledLists(metaConfig, id, metaType, env);
+           if (!meta) return jsonPublic({ meta: null });
+           // Same opt-in artwork the catalog rows get, so a title's detail
+           // page does not fall back to the plain poster the moment it is

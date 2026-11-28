@@ -8,6 +8,12 @@ import statsRouter from "./stats";
 import progressRouter from "./progress";
 import peopleRouter from "./people";
 import notificationsRouter from "./notifications";
+import wakoProbeRouter from "./wako-probe";
+import sessionRouter from "./session";
+import integrationsRouter from "./integrations";
+import backupRouter from "./backup";
+import v2Router from "./v2";
+import booksRouter from "./books";
 
 const router: IRouter = Router();
 
@@ -20,5 +26,11 @@ router.use(watchlistRouter);
 router.use(listsRouter);
 router.use(progressRouter);
 router.use(notificationsRouter);
+router.use(wakoProbeRouter);
+router.use(sessionRouter);
+router.use(integrationsRouter);
+router.use(backupRouter);
+router.use(v2Router);
+router.use(booksRouter);
 
 export default router;

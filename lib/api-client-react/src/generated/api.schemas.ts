@@ -5,6 +5,14 @@
  * Media Tracker API - TMDB powered movie and TV tracking
  * OpenAPI spec version: 0.1.0
  */
+export interface NotificationRefresh {
+  /** @nullable */
+  skipped: string | null;
+  checked: number;
+  remaining: number;
+  limit: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -471,7 +479,14 @@ export interface ListRules {
   genreIds?: number[];
   languages?: string[];
   keywordIds?: number[];
+  /** TMDB vote average. OR within the selected thresholds; the lowest selected threshold is used. */
   minRatings?: number[];
+  /** Production country ISO codes, separate from original language. OR within the list. */
+  productionCountries?: string[];
+  /** Keep titles whose stored runtime is shorter than this many minutes. */
+  runtimeBelow?: number;
+  /** Personal rating, separate from the TMDB vote. The lowest selected threshold is used. */
+  minUserRatings?: number[];
   yearRanges?: YearRange[];
 }
 
@@ -725,6 +740,15 @@ export interface SeasonWithProgress {
   totalCount: number;
 }
 
+/**
+ * @nullable
+ */
+export type TvProgressAiredProgress = {
+  seen: number;
+  total: number;
+  ended: boolean;
+} | null;
+
 export type TvProgressWatchedBySeasonNumber = {[key: string]: number[]};
 
 export interface TvProgress {
@@ -732,6 +756,8 @@ export interface TvProgress {
   totalWatched: number;
   /** @nullable */
   totalEpisodes?: number | null;
+  /** @nullable */
+  airedProgress?: TvProgressAiredProgress;
   watchedBySeasonNumber: TvProgressWatchedBySeasonNumber;
 }
 
@@ -1076,7 +1102,7 @@ limit?: number;
 
 export type GetNotificationsParams = {
 /**
- * Force a notification sync before listing
+ * Ignored. Listing never calls TMDB. Use POST /notifications/refresh.
  */
 refresh?: boolean;
 };

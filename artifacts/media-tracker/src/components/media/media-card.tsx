@@ -5,7 +5,6 @@ import { cn, getTmdbImageUrl } from "@/lib/utils";
 import { MediaItem, WatchlistItem, Genre } from "@workspace/api-client-react";
 import { TvProgressBar } from "./tv-progress-bar";
 import { WatchStatusBadge } from "./watch-status-badge";
-import { CardHoverActions } from "./card-hover-actions";
 import { QuickAddButton } from "./quick-add-button";
 import { WATCHLIST_STATUS_BY_VALUE } from "@/lib/watchlist-status";
 
@@ -31,7 +30,7 @@ export function MediaCard({
   const userRating = isWatchlistItem ? item.userRating : null;
   const tmdbRating = item.voteAverage;
 
-  const imageUrl = getTmdbImageUrl(item.posterPath, "poster");
+  const imageUrl = getTmdbImageUrl(item.posterPath, "poster") ?? getTmdbImageUrl(item.backdropPath, "backdrop");
   const statusConfig = status ? WATCHLIST_STATUS_BY_VALUE[status] : null;
   const detailHref = `/media/${item.mediaType}/${item.tmdbId}`;
 
@@ -98,11 +97,9 @@ export function MediaCard({
         </div>
 
         {isTracking && isWatchlistItem ? (
-          <CardHoverActions
-            detailHref={detailHref}
-            mediaType={item.mediaType as "movie" | "tv"}
-            tmdbId={item.tmdbId}
-          />
+          <div className="absolute bottom-3 right-3 z-20 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:has-[button:focus-visible]:opacity-100 [@media(hover:hover)]:has-[[data-state=open]]:opacity-100">
+            <QuickAddButton mediaType={item.mediaType} tmdbId={item.tmdbId} statusOnly />
+          </div>
         ) : (
           <>
             <div className="absolute bottom-2 right-2 z-20">

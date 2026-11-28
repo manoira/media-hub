@@ -2,9 +2,9 @@
 
 Guide för daglig utveckling i den här workspace och push till produktion.
 
-**Prod:** https://media.emmyzettergren.se · **GitHub:** `manoira/media-hub` · **Deploy:** Vercel auto-deploy från `main`
+**Prod:** https://media.emmyzettergren.se · **GitHub:** `manoira/media-hub` · **Levande sajt:** Vercel auto-deploy från `main`
 
-Du behöver **inte** konfigurera om Vercel, Neon eller DNS vid varje push — det sitter redan. Pusha kod → Vercel deployar.
+Push till `main` deployar fortfarande Vercel. Branchen `v2-local-foundation` deployar inte. Nästa publiceringsmål är Cloudflare Workers, och det är inte publicerat. DNS är oförändrad. Se `docs/CLOUDFLARE.md`.
 
 ---
 
@@ -89,6 +89,8 @@ corepack pnpm --filter @workspace/db run push-force
 Alternativ: kör SQL i Neon-konsolen (t.ex. `lib/db/migrations/*.sql`).
 
 **Regel:** lokal dev = dev-DB. Prod-DB = bara medveten migrering.
+
+Vad som återstår på `v2-local-foundation` står i `docs/V2-REMAINING.md`. Migrationerna 006–009 ska inte köras mot produktion förrän den branchen ska publiceras.
 
 ---
 

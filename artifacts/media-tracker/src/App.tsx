@@ -14,9 +14,17 @@ import { ListsCollectionsPage } from "@/pages/lists-collections";
 import { ListDetailPage } from "@/pages/list-detail";
 import { ListNewPage } from "@/pages/list-new";
 import { Stats } from "@/pages/stats";
+import { BooksPage } from "@/pages/books";
 import { Browse } from "@/pages/browse";
 import { PersonDetail } from "@/pages/person-detail";
 import { Updates } from "@/pages/updates";
+import { WakoCheckPage } from "@/pages/wako-check";
+import { AccessPage } from "@/pages/access";
+import { BackupPage } from "@/pages/backup";
+import { ReleasePage } from "@/pages/release";
+import { TvPage } from "@/pages/tv";
+import { WatchSyncPage } from "@/pages/watch-sync";
+import { getGetWatchlistQueryKey } from "@workspace/api-client-react";
 
 const ONE_DAY_MS = 24 * 60 * 60_000;
 
@@ -33,11 +41,22 @@ const queryClient = new QueryClient({
   },
 });
 
+queryClient.setQueryDefaults(getGetWatchlistQueryKey(), {
+  staleTime: 0,
+  refetchOnMount: true,
+  refetchOnWindowFocus: true,
+});
+queryClient.setQueryDefaults(["owner-session"], {
+  staleTime: 0,
+  refetchOnWindowFocus: true,
+});
+
 function Router() {
   return (
     <AppLayout>
       <Switch>
         <Route path="/" component={ListsHubPage} />
+        <Route path="/tv" component={TvPage} />
         <Route path="/discover" component={Home} />
         <Route path="/search" component={Search} />
         <Route path="/person/:personId" component={PersonDetail} />
@@ -49,6 +68,13 @@ function Router() {
         <Route path="/lists" component={ListsHubPage} />
         <Route path="/stats" component={Stats} />
         <Route path="/updates" component={Updates} />
+        <Route path="/wako-check" component={WakoCheckPage} />
+        <Route path="/access" component={AccessPage} />
+        <Route path="/backup" component={BackupPage} />
+        <Route path="/release" component={ReleasePage} />
+        <Route path="/watch-sync" component={WatchSyncPage} />
+        <Route path="/books/lists"><BooksPage key="lists" view="lists" /></Route>
+        <Route path="/books"><BooksPage key="tracking" view="tracking" /></Route>
         <Route path="/browse" component={Browse} />
         <Route component={NotFound} />
       </Switch>

@@ -24,7 +24,7 @@ export function MediaDetail() {
   const type = mediaType as "movie" | "tv";
 
   const { data: details, isLoading: isLoadingDetails, isError: detailsError } = useGetMediaDetails(type, id, {
-    query: { enabled: !!id && !!type, queryKey: getGetMediaDetailsQueryKey(type, id) }
+    query: { enabled: !!id && !!type, refetchOnMount: true, staleTime: 0, queryKey: getGetMediaDetailsQueryKey(type, id) }
   });
 
   const { data: credits } = useGetMediaCredits(type, id, {
@@ -156,7 +156,7 @@ export function MediaDetail() {
                     className="min-w-[120px] max-w-[120px] flex flex-col gap-2 group/person"
                   >
                     <img 
-                      src={getTmdbImageUrl(person.profilePath, "profile") || "/favicon.svg"} 
+                      src={getTmdbImageUrl(person.profilePath, "profile") || "/icons/mediahub-192.png"}
                       alt={person.name} 
                       className="w-full aspect-[2/3] object-cover rounded-lg bg-muted transition-transform group-hover/person:scale-[1.02]"
                     />
@@ -238,7 +238,7 @@ export function MediaDetail() {
       </div>
 
       {type === "tv" && details.seasons && details.seasons.length > 0 && (
-        <SeasonsPanel tmdbId={id} seasons={details.seasons} />
+        <SeasonsPanel tmdbId={id} seasons={details.seasons} ended={details.status === "Ended"} />
       )}
 
       {similar?.results && similar.results.length > 0 && (

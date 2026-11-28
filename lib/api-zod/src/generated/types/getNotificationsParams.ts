@@ -8,7 +8,7 @@
 
 export type GetNotificationsParams = {
 /**
- * Force a notification sync before listing
+ * Ignored. Listing never calls TMDB. Use POST /notifications/refresh.
  */
 refresh?: boolean;
 };

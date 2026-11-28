@@ -7,6 +7,9 @@ import {
   useMarkSeasonWatched,
   useMarkSeriesWatched,
   getGetTvProgressQueryKey,
+  getGetWatchlistQueryKey,
+  getGetWatchStatusQueryKey,
+  getGetMediaDetailsQueryKey,
   getGetTvProgressBatchQueryKey,
   getGetSeasonProgressQueryKey,
 } from "@workspace/api-client-react";
@@ -19,14 +22,15 @@ import type { Season } from "@workspace/api-client-react";
 interface SeasonsPanelProps {
   tmdbId: number;
   seasons: Season[];
+  ended: boolean;
 }
 
 function EpisodeRow({
-  tmdbId,
   episode,
+  disabled,
   onToggle,
 }: {
-  tmdbId: number;
+  disabled: boolean;
   episode: { id: number; episodeNumber: number; seasonNumber: number; name: string; overview?: string | null; airDate?: string | null; runtime?: number | null; stillPath?: string | null; watched: boolean };
   onToggle: () => void;
 }) {
@@ -34,8 +38,7 @@ function EpisodeRow({
 
   return (
     <div
-      className={`flex gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/60 ${episode.watched ? "bg-primary/5 border border-primary/20" : "bg-muted/20"}`}
-      onClick={onToggle}
+      className={`flex flex-wrap items-start gap-3 p-3 rounded-lg ${episode.watched ? "bg-primary/5 border border-primary/20" : "bg-muted/20"}`}
     >
       <div className="relative flex-shrink-0">
         {stillUrl ? (
@@ -59,6 +62,16 @@ function EpisodeRow({
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{episode.overview}</p>
         )}
       </div>
+      <Button
+        type="button"
+        size="sm"
+        variant={episode.watched ? "outline" : "secondary"}
+        aria-label={`Mark episode ${episode.episodeNumber} as ${episode.watched ? "unwatched" : "watched"}`}
+        disabled={disabled}
+        onClick={onToggle}
+      >
+        {episode.watched ? "Unmark" : "Mark watched"}
+      </Button>
     </div>
   );
 }
@@ -67,10 +80,12 @@ function SeasonAccordion({
   tmdbId,
   season,
   progress,
+  ended,
 }: {
   tmdbId: number;
   season: Season;
   progress: Record<number, number[]>;
+  ended: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -80,7 +95,7 @@ function SeasonAccordion({
   const pct = totalEps > 0 ? Math.round((watchedEps.length / totalEps) * 100) : 0;
   const allWatched = totalEps > 0 && watchedEps.length >= totalEps;
 
-  const { data: seasonData, isLoading } = useGetSeasonProgress(tmdbId, season.seasonNumber, {
+  const { data: seasonData, isLoading, isError, refetch } = useGetSeasonProgress(tmdbId, season.seasonNumber, {
     query: {
       enabled: isOpen,
       queryKey: getGetSeasonProgressQueryKey(tmdbId, season.seasonNumber),
@@ -91,6 +106,9 @@ function SeasonAccordion({
   const markEpisode = useMarkEpisodeWatched();
 
   const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: getGetWatchlistQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetWatchStatusQueryKey("tv", tmdbId) });
+    queryClient.invalidateQueries({ queryKey: getGetMediaDetailsQueryKey("tv", tmdbId) });
     queryClient.invalidateQueries({ queryKey: getGetTvProgressQueryKey(tmdbId) });
     queryClient.invalidateQueries({ queryKey: getGetTvProgressBatchQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetSeasonProgressQueryKey(tmdbId, season.seasonNumber) });
@@ -116,7 +134,7 @@ function SeasonAccordion({
   return (
     <div className="border border-border/50 rounded-xl overflow-hidden">
       <div
-        className="flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/40 transition-colors"
+        className="flex flex-wrap items-center gap-4 p-4 cursor-pointer hover:bg-muted/40 transition-colors"
         onClick={() => setIsOpen(o => !o)}
       >
         {posterUrl && (
@@ -130,7 +148,7 @@ function SeasonAccordion({
           <div className="flex items-center gap-3">
             <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary rounded-full transition-all"
+                className={`h-full rounded-full transition-all ${ended ? "bg-green-500" : "bg-primary"}`}
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -139,7 +157,7 @@ function SeasonAccordion({
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant={allWatched ? "outline" : "secondary"}
             size="sm"
@@ -149,7 +167,12 @@ function SeasonAccordion({
           >
             {allWatched ? "Unmark" : "Mark watched"}
           </Button>
-          <span className={`text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+          <Button type="button" variant="ghost" size="sm" aria-expanded={isOpen} onClick={event => {
+            event.stopPropagation();
+            setIsOpen(value => !value);
+          }}>
+            {isOpen ? "Hide episodes" : "Show episodes"}
+          </Button>
         </div>
       </div>
 
@@ -157,23 +180,26 @@ function SeasonAccordion({
         <div className="border-t border-border/50 p-3 space-y-2 bg-background/50">
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)
+          ) : isError ? (
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>Retry loading episodes</Button>
           ) : (
             seasonData?.episodes?.map(ep => (
               <EpisodeRow
                 key={ep.id}
-                tmdbId={tmdbId}
+                disabled={markEpisode.isPending || markSeason.isPending}
                 episode={ep}
                 onToggle={() => handleToggleEpisode(ep)}
               />
             ))
           )}
+          {markEpisode.isError && <p role="alert" className="text-sm text-destructive">Could not update the episode. Try again.</p>}
         </div>
       )}
     </div>
   );
 }
 
-export function SeasonsPanel({ tmdbId, seasons }: SeasonsPanelProps) {
+export function SeasonsPanel({ tmdbId, seasons, ended }: SeasonsPanelProps) {
   const queryClient = useQueryClient();
   const mainSeasons = seasons.filter(s => s.seasonNumber > 0);
 
@@ -183,14 +209,17 @@ export function SeasonsPanel({ tmdbId, seasons }: SeasonsPanelProps) {
 
   const markSeries = useMarkSeriesWatched();
 
-  const totalEps = mainSeasons.reduce((sum, s) => sum + (s.episodeCount ?? 0), 0);
-  const watchedEps = progress?.totalWatched ?? 0;
+  const totalEps = progress?.airedProgress?.total ?? mainSeasons.reduce((sum, s) => sum + (s.episodeCount ?? 0), 0);
+  const watchedEps = progress?.airedProgress?.seen ?? progress?.totalWatched ?? 0;
   const overallPct = totalEps > 0 ? Math.round((watchedEps / totalEps) * 100) : 0;
   const allWatched = totalEps > 0 && watchedEps >= totalEps;
 
   const watched = progress?.watchedBySeasonNumber ?? {};
 
   const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: getGetWatchlistQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetWatchStatusQueryKey("tv", tmdbId) });
+    queryClient.invalidateQueries({ queryKey: getGetMediaDetailsQueryKey("tv", tmdbId) });
     queryClient.invalidateQueries({ queryKey: getGetTvProgressQueryKey(tmdbId) });
     queryClient.invalidateQueries({ queryKey: getGetTvProgressBatchQueryKey() });
     mainSeasons.forEach(s => {
@@ -214,7 +243,7 @@ export function SeasonsPanel({ tmdbId, seasons }: SeasonsPanelProps) {
           <h2 className="text-2xl font-semibold">Seasons & Episodes</h2>
           <div className="flex items-center gap-3">
             <div className="w-48 h-2 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${overallPct}%` }} />
+              <div className={`h-full rounded-full transition-all ${ended ? "bg-green-500" : "bg-primary"}`} style={{ width: `${overallPct}%` }} />
             </div>
             <span className="text-sm text-muted-foreground">
               {watchedEps} / {totalEps} episodes watched ({overallPct}%)
@@ -238,6 +267,7 @@ export function SeasonsPanel({ tmdbId, seasons }: SeasonsPanelProps) {
             tmdbId={tmdbId}
             season={season}
             progress={watched}
+            ended={ended}
           />
         ))}
       </div>

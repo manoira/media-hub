@@ -196,7 +196,7 @@ router.get("/home", async (req, res): Promise<void> => {
       excludeTracked,
       excludeAdult,
     });
-    res.set("Cache-Control", "private, max-age=60");
+    res.set("Cache-Control", "private, no-cache");
     res.json(GetHomeFeedResponse.parse(feed));
   } catch (err: unknown) {
     req.log.error({ err }, "Home feed error");

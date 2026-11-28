@@ -1,0 +1,42 @@
+name: Build MediaHub Google TV preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [v2-local-foundation]
+    paths:
+      - 'deploy/google-tv/**'
+      - '.github/workflows/google-tv-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install pinned Android SDK packages
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSL --retry 3 https://dl.google.com/android/repository/platform-34-ext7_r03.zip -o platform.zip
+          curl -fsSL --retry 3 https://dl.google.com/android/repository/build-tools_r34-linux.zip -o tools.zip
+          sha256sum --check <<'CHECKSUMS'
+          16fdb74c55e59ae3ef52def135aec713508467bd56d7dabcd8c9be31fa8b20f3  platform.zip
+          e858c4b60069d0431051b225d384413b1643e1289b00a4825aed347f25bd510f  tools.zip
+          CHECKSUMS
+          mkdir -p android-sdk/platforms android-sdk/build-tools
+          unzip -q platform.zip -d android-sdk/platforms
+          unzip -q tools.zip -d android-sdk/build-tools
+          mv android-sdk/build-tools/android-14 android-sdk/build-tools/34.0.0
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+      - run: bash deploy/google-tv/build-preview.sh "$RUNNER_TEMP/MediaHub-TV-preview.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MediaHub-TV-preview
+          path: ${{ runner.temp }}/MediaHub-TV-preview.apk
+          if-no-files-found: error

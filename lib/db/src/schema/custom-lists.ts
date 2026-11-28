@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, jsonb, unique, real } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, jsonb, unique, real, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { watchlistTable } from "./watchlist";
@@ -10,6 +10,9 @@ export const listRulesSchema = z.object({
   languages: z.array(z.string()).optional(),
   keywordIds: z.array(z.number()).optional(),
   minRatings: z.array(z.number()).optional(),
+  productionCountries: z.array(z.string()).optional(),
+  runtimeBelow: z.number().optional(),
+  minUserRatings: z.array(z.number()).optional(),
   yearRanges: z.array(z.object({
     min: z.number().optional(),
     max: z.number().optional(),
@@ -25,6 +28,14 @@ export const customListsTable = pgTable("custom_lists", {
   kind: text("kind").notNull(), // manual | smart
   smartMode: text("smart_mode"), // live | snapshot | null
   rules: jsonb("rules").$type<ListRules | null>(),
+  myListsSlug: text("my_lists_slug"),
+  contentHash: text("content_hash"),
+  externalVersion: text("external_version"),
+  syncStatus: text("sync_status"),
+  exportEnabled: boolean("export_enabled").notNull().default(false),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  syncError: text("sync_error"),
+  syncTarget: text("sync_target"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

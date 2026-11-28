@@ -137,6 +137,17 @@
   --sidebar-accent-foreground: 0 0% 98%;
 }
 
+.books-theme {
+  --primary: 22 90% 35%;
+  --primary-foreground: 0 0% 100%;
+  --ring: var(--primary);
+}
+
+.dark .books-theme {
+  --primary: 29 100% 65%;
+  --primary-foreground: 24 35% 12%;
+}
+
 @layer base {
   * {
     @apply border-border;
