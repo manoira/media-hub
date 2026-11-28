@@ -25,3 +25,4 @@ export * from "./custom-lists";
 export * from "./notifications";
 export * from "./sync";
 export * from "./tmdb-cache";
+export * from "./book-library";
