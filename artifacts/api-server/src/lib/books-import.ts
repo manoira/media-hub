@@ -96,7 +96,7 @@ function fingerprint(book: LibraryBook): string {
 function goodreadsStatus(shelf: string): ReadingStatus {
   if (shelf === "read") return "read";
   if (shelf === "currently-reading") return "reading";
-  if (shelf === "to-read" || /^(vill-l�sa|att-l�sa)/i.test(shelf)) return "want-to-read";
+  if (shelf === "to-read" || /^(vill-läsa|att-läsa)/i.test(shelf)) return "want-to-read";
   throw new BookImportError(`Unrecognized Goodreads reading shelf: ${shelf || "(empty)"}.`);
 }
 
