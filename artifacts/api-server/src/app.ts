@@ -46,6 +46,7 @@ app.use(cors({
   },
   credentials: true,
 }));
+app.use("/api/books/import", express.json({ limit: "5mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
