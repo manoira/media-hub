@@ -45,7 +45,7 @@ function UnreadBadge({ count, className }: { count: number; className?: string }
 
 export function Navbar({ isBooks }: { isBooks: boolean }) {
   const [location, setLocation] = useLocation();
-  const activeNavLinks = isBooks ? bookNavLinks : mainNavLinks;
+  const activeNavLinks: typeof mainNavLinks = isBooks ? bookNavLinks : mainNavLinks;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const queryClient = useQueryClient();
 
